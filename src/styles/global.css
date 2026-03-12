@@ -36,6 +36,15 @@ a:hover { text-decoration: underline; }
   gap: 0.5rem;
 }
 
+.user-link {
+  color: inherit;
+  text-decoration: none;
+}
+
+.user-link:hover {
+  text-decoration: none;
+}
+
 .user-handle {
   font-weight: 600;
 }

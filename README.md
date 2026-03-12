@@ -44,6 +44,14 @@ npm run game:generate
   - `game/generated/users/<username>.json`
   - `game/generated/leaderboard.json`
   - user and leaderboard entries include `avatarUrl` when available
+  - user files include public metadata like:
+    - `profileUrl`
+    - `joinedAt`
+    - `lastUpdatedAt`
+    - `totalPostsContributed`
+    - `contributedPostSlugs`
+    - `labelsUsed`
+    - `lastContribution`
 - Leaderboard sorting: highest `totalPoints`, then highest `acceptedPrs`.
 
 ## Owner checklist

@@ -1,9 +1,27 @@
 {
   "username": "hamidhp",
+  "profileUrl": "https://github.com/hamidhp",
   "avatarUrl": null,
+  "joinedAt": "2026-03-11T09:30:00Z",
+  "lastUpdatedAt": "2026-03-11T09:30:00Z",
   "totalPoints": 25,
   "acceptedPrs": 1,
+  "totalContributions": 1,
+  "totalPostsContributed": 1,
+  "contributedPostSlugs": [
+    "how-dns-works"
+  ],
+  "labelsUsed": [
+    "fact-check",
+    "source-added"
+  ],
   "events": [
     184
-  ]
+  ],
+  "lastContribution": {
+    "prNumber": 184,
+    "postSlug": "how-dns-works",
+    "mergedAt": "2026-03-11T09:30:00Z",
+    "points": 25
+  }
 }

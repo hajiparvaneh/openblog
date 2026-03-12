@@ -14,6 +14,7 @@ const contributors = getContributorsForPost(slug);
 const html = marked.parse(post.body);
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
+const getProfileUrl = (username: string) => `https://github.com/${username}`;
 ---
 <BaseLayout title={`${post.title} | OpenBlog`}>
   <article class="card">
@@ -30,10 +31,10 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
       <ul>
         {contributors.map((contributor) => (
           <li>
-            <div class="user-chip">
+            <a class="user-chip user-link" href={getProfileUrl(contributor.username)} target="_blank" rel="noopener noreferrer">
               <img class="avatar" src={getAvatarUrl(contributor.username, contributor.avatarUrl)} alt={`@${contributor.username} avatar`} loading="lazy" />
               <strong class="user-handle">@{contributor.username}</strong>
-            </div>
+            </a>
             <div style="margin-top:0.25rem;">{contributor.totalPoints} points</div>
             <div class="meta">{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''} on this post</div>
             <div style="margin-top:0.35rem; display:flex; flex-wrap:wrap; gap:0.35rem;">

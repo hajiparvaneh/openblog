@@ -1,11 +1,29 @@
 {
   "username": "hajiparvaneh",
+  "profileUrl": "https://github.com/hajiparvaneh",
   "avatarUrl": null,
+  "joinedAt": "2026-03-12T15:00:09Z",
+  "lastUpdatedAt": "2026-03-12T17:22:53Z",
   "totalPoints": 15,
   "acceptedPrs": 3,
+  "totalContributions": 3,
+  "totalPostsContributed": 1,
+  "contributedPostSlugs": [
+    "codex/define-game-logic-and-scoring-system"
+  ],
+  "labelsUsed": [
+    "codex",
+    "typo"
+  ],
   "events": [
     5,
     6,
     7
-  ]
+  ],
+  "lastContribution": {
+    "prNumber": 7,
+    "postSlug": "codex/define-game-logic-and-scoring-system",
+    "mergedAt": "2026-03-12T17:22:53Z",
+    "points": 5
+  }
 }

@@ -19,29 +19,76 @@ const users = new Map();
 for (const event of events) {
   const current = users.get(event.username) ?? {
     username: event.username,
+    profileUrl: `https://github.com/${event.username}`,
     avatarUrl: null,
+    joinedAt: event.mergedAt,
+    lastUpdatedAt: event.mergedAt,
     totalPoints: 0,
     acceptedPrs: 0,
-    events: []
+    events: [],
+    contributedPostSlugs: new Set(),
+    labelsUsed: new Set(),
+    lastContribution: null
   };
 
   if (event.userAvatarUrl) {
     current.avatarUrl = event.userAvatarUrl;
   }
 
+  if (event.mergedAt < current.joinedAt) {
+    current.joinedAt = event.mergedAt;
+  }
+  if (event.mergedAt >= current.lastUpdatedAt) {
+    current.lastUpdatedAt = event.mergedAt;
+    current.lastContribution = {
+      prNumber: event.prNumber,
+      postSlug: event.postSlug,
+      mergedAt: event.mergedAt,
+      points: event.points
+    };
+  }
+
   current.totalPoints += event.points;
   current.acceptedPrs += 1;
   current.events.push(event.prNumber);
+  current.contributedPostSlugs.add(event.postSlug);
+  for (const label of event.labels ?? []) {
+    current.labelsUsed.add(label);
+  }
   users.set(event.username, current);
 }
 
+const leaderboard = [];
+
 for (const user of users.values()) {
+  const serializedUser = {
+    username: user.username,
+    profileUrl: user.profileUrl,
+    avatarUrl: user.avatarUrl,
+    joinedAt: user.joinedAt,
+    lastUpdatedAt: user.lastUpdatedAt,
+    totalPoints: user.totalPoints,
+    acceptedPrs: user.acceptedPrs,
+    totalContributions: user.acceptedPrs,
+    totalPostsContributed: user.contributedPostSlugs.size,
+    contributedPostSlugs: [...user.contributedPostSlugs].sort((a, b) => a.localeCompare(b)),
+    labelsUsed: [...user.labelsUsed].sort((a, b) => a.localeCompare(b)),
+    events: user.events,
+    lastContribution: user.lastContribution
+  };
+
   const userPath = path.join(generatedUsersDir, `${user.username}.json`);
-  fs.writeFileSync(userPath, `${JSON.stringify(user, null, 2)}\n`);
+  fs.writeFileSync(userPath, `${JSON.stringify(serializedUser, null, 2)}\n`);
+
+  leaderboard.push({
+    username: user.username,
+    avatarUrl: user.avatarUrl,
+    totalPoints: user.totalPoints,
+    acceptedPrs: user.acceptedPrs
+  });
 }
 
-const leaderboard = [...users.values()]
-  .map(({ events: _events, ...item }) => item)
+leaderboard
   .sort((a, b) => b.totalPoints - a.totalPoints || b.acceptedPrs - a.acceptedPrs);
 
 const updatedAt = events.length > 0 ? events[events.length - 1].mergedAt : null;
