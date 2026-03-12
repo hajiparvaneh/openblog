@@ -12,6 +12,23 @@ export type Post = {
   body: string;
 };
 
+type EventContributionRecord = {
+  postSlug: string;
+  points: number;
+  labels: string[];
+};
+
+type RawEventRecord = {
+  prNumber: number;
+  username: string;
+  userAvatarUrl?: string;
+  mergedAt: string;
+  postSlug?: string;
+  points?: number;
+  labels?: string[];
+  contributions?: EventContributionRecord[];
+};
+
 type EventRecord = {
   prNumber: number;
   username: string;
@@ -116,6 +133,35 @@ function resolvePostSlug(postSlug: string, availableSlugs: Set<string>): string 
   return matches.length === 1 ? matches[0] : null;
 }
 
+function normalizeEventContribution(raw: unknown): EventContributionRecord | null {
+  if (!raw || typeof raw !== 'object') return null;
+  const candidate = raw as Partial<EventContributionRecord>;
+  if (typeof candidate.postSlug !== 'string' || !candidate.postSlug.trim()) return null;
+  const labels = Array.isArray(candidate.labels) ? candidate.labels.filter((label): label is string => typeof label === 'string') : [];
+  const points = typeof candidate.points === 'number' && Number.isFinite(candidate.points) ? candidate.points : 0;
+  return {
+    postSlug: candidate.postSlug,
+    points,
+    labels
+  };
+}
+
+function getEventContributions(event: RawEventRecord): EventContributionRecord[] {
+  if (Array.isArray(event.contributions) && event.contributions.length > 0) {
+    return event.contributions
+      .map((item) => normalizeEventContribution(item))
+      .filter((item): item is EventContributionRecord => item !== null);
+  }
+
+  if (typeof event.postSlug === 'string' && event.postSlug.trim()) {
+    const labels = Array.isArray(event.labels) ? event.labels.filter((label): label is string => typeof label === 'string') : [];
+    const points = typeof event.points === 'number' && Number.isFinite(event.points) ? event.points : 0;
+    return [{ postSlug: event.postSlug, points, labels }];
+  }
+
+  return [];
+}
+
 export function getPosts(): Post[] {
   if (!fs.existsSync(POSTS_DIR)) return [];
 
@@ -182,38 +228,70 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
     avatarUrl: string | null;
     totalPoints: number;
     acceptedPrs: number;
+    acceptedPrNumbers: Set<number>;
     labels: Set<string>;
-    pullRequests: PostContributorPrRecord[];
+    pullRequestsByNumber: Map<number, {
+      prNumber: number;
+      points: number;
+      labels: Set<string>;
+      mergedAt: string;
+    }>;
   }>();
 
   for (const file of fs.readdirSync(EVENTS_DIR)) {
     if (!file.endsWith('.json')) continue;
-    const event: EventRecord = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8'));
-    const resolvedPostSlug = resolvePostSlug(event.postSlug, knownSlugs);
-    if (resolvedPostSlug !== postSlug) continue;
+    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+    if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) continue;
+    const contributions = getEventContributions(event);
 
     const current = byUser.get(event.username) ?? {
       avatarUrl: null,
       totalPoints: 0,
       acceptedPrs: 0,
+      acceptedPrNumbers: new Set<number>(),
       labels: new Set<string>(),
-      pullRequests: []
+      pullRequestsByNumber: new Map<number, {
+        prNumber: number;
+        points: number;
+        labels: Set<string>;
+        mergedAt: string;
+      }>()
     };
 
     if (event.userAvatarUrl) {
       current.avatarUrl = event.userAvatarUrl;
     }
 
-    current.totalPoints += event.points;
-    current.acceptedPrs += 1;
-    event.labels.forEach((label) => current.labels.add(label));
-    current.pullRequests.push({
-      prNumber: event.prNumber,
-      points: event.points,
-      labels: [...event.labels].sort((a, b) => a.localeCompare(b)),
-      mergedAt: event.mergedAt
-    });
-    byUser.set(event.username, current);
+    let matchedContribution = false;
+    for (const contribution of contributions) {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs);
+      if (resolvedPostSlug !== postSlug) continue;
+      matchedContribution = true;
+
+      current.totalPoints += contribution.points;
+      current.acceptedPrNumbers.add(event.prNumber);
+      current.acceptedPrs = current.acceptedPrNumbers.size;
+      contribution.labels.forEach((label) => current.labels.add(label));
+
+      const existingPullRequest = current.pullRequestsByNumber.get(event.prNumber);
+      if (existingPullRequest) {
+        existingPullRequest.points += contribution.points;
+        contribution.labels.forEach((label) => existingPullRequest.labels.add(label));
+        if (event.mergedAt > existingPullRequest.mergedAt) {
+          existingPullRequest.mergedAt = event.mergedAt;
+        }
+      } else {
+        current.pullRequestsByNumber.set(event.prNumber, {
+          prNumber: event.prNumber,
+          points: contribution.points,
+          labels: new Set<string>(contribution.labels),
+          mergedAt: event.mergedAt
+        });
+      }
+    }
+    if (matchedContribution || byUser.has(event.username)) {
+      byUser.set(event.username, current);
+    }
   }
 
   return [...byUser.entries()]
@@ -223,7 +301,14 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
       totalPoints: info.totalPoints,
       acceptedPrs: info.acceptedPrs,
       labels: [...info.labels].sort((a, b) => a.localeCompare(b)),
-      pullRequests: info.pullRequests.sort((a, b) => b.mergedAt.localeCompare(a.mergedAt))
+      pullRequests: [...info.pullRequestsByNumber.values()]
+        .map((pullRequest) => ({
+          prNumber: pullRequest.prNumber,
+          points: pullRequest.points,
+          labels: [...pullRequest.labels].sort((a, b) => a.localeCompare(b)),
+          mergedAt: pullRequest.mergedAt
+        }))
+        .sort((a, b) => b.mergedAt.localeCompare(a.mergedAt))
     }))
     .sort((a, b) => b.totalPoints - a.totalPoints || b.acceptedPrs - a.acceptedPrs || a.username.localeCompare(b.username));
 }
@@ -235,11 +320,21 @@ export function getRecentEvents(limit = 10): EventRecord[] {
   return fs
     .readdirSync(EVENTS_DIR)
     .filter((file) => file.endsWith('.json'))
-    .map((file) => JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as EventRecord)
-    .map((event) => {
-      const resolvedPostSlug = resolvePostSlug(event.postSlug, knownSlugs);
-      if (!resolvedPostSlug) return event;
-      return { ...event, postSlug: resolvedPostSlug };
+    .flatMap((file) => {
+      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+      if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) return [];
+      return getEventContributions(event).map((contribution) => {
+        const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
+        return {
+          prNumber: event.prNumber,
+          username: event.username,
+          userAvatarUrl: event.userAvatarUrl,
+          postSlug: resolvedPostSlug,
+          points: contribution.points,
+          labels: contribution.labels,
+          mergedAt: event.mergedAt
+        } satisfies EventRecord;
+      });
     })
     .sort((a, b) => b.mergedAt.localeCompare(a.mergedAt))
     .slice(0, limit);
@@ -276,7 +371,7 @@ export function getLatestContributors(limit = 8): LatestContributorRecord[] {
     const latestByUser = new Map<string, LatestContributorRecord>();
     for (const file of fs.readdirSync(EVENTS_DIR)) {
       if (!file.endsWith('.json')) continue;
-      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as EventRecord;
+      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
       if (!event.username || !event.mergedAt) continue;
 
       const current = latestByUser.get(event.username);
@@ -304,9 +399,14 @@ export function getLatestContributorsForPost(postSlug: string, limit = 5): Lates
 
   for (const file of fs.readdirSync(EVENTS_DIR)) {
     if (!file.endsWith('.json')) continue;
-    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as EventRecord;
-    const resolvedPostSlug = resolvePostSlug(event.postSlug, knownSlugs);
-    if (resolvedPostSlug !== postSlug || !event.username || !event.mergedAt) continue;
+    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+    if (!event.username || !event.mergedAt) continue;
+
+    const hasContributionForPost = getEventContributions(event).some((contribution) => {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs);
+      return resolvedPostSlug === postSlug;
+    });
+    if (!hasContributionForPost) continue;
 
     const current = latestByUser.get(event.username);
     if (!current || event.mergedAt > current.lastContributionAt) {

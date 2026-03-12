@@ -3,10 +3,32 @@
   "prNumber": 9,
   "username": "hajiparvaneh",
   "userAvatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
-  "postSlug": "database/postgresql-indexing-basics",
   "mergedAt": "2026-03-12T20:47:55Z",
-  "labels": [
-    "new-post"
-  ],
-  "points": 50
+  "contributions": [
+    {
+      "postSlug": "database/postgresql-indexing-basics",
+      "labels": ["new-post"],
+      "points": 50
+    },
+    {
+      "postSlug": "security/password-hashing-bcrypt-argon2",
+      "labels": ["new-post"],
+      "points": 50
+    },
+    {
+      "postSlug": "javascript/async-await-error-handling",
+      "labels": ["new-post"],
+      "points": 50
+    },
+    {
+      "postSlug": "devops/dockerfile-best-practices-nodejs",
+      "labels": ["new-post"],
+      "points": 50
+    },
+    {
+      "postSlug": "networking/http-vs-https-explained",
+      "labels": ["new-post"],
+      "points": 50
+    }
+  ]
 }

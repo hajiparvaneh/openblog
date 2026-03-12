@@ -118,6 +118,13 @@ Rules:
 - At least one scoring label is required to generate an event.
 - If multiple scoring labels are applied, points are summed.
 
+Event schema:
+
+- Legacy single-post event: `postSlug`, `labels`, `points`
+- Multi-post event (recommended): `contributions` array with `postSlug`, `labels`, and `points`
+
+This allows one merged PR (same `prNumber`) to contribute to multiple posts.
+
 ## 📁 Project Structure
 
 - `content/posts/<category>/*.md`: blog content

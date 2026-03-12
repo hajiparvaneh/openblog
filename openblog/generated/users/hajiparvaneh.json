@@ -4,13 +4,17 @@
   "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
   "joinedAt": "2026-03-12T15:00:09Z",
   "lastUpdatedAt": "2026-03-12T20:47:55Z",
-  "totalPoints": 65,
+  "totalPoints": 265,
   "acceptedPrs": 4,
-  "totalContributions": 4,
-  "totalPostsContributed": 2,
+  "totalContributions": 8,
+  "totalPostsContributed": 6,
   "contributedPostSlugs": [
     "codex/define-game-logic-and-scoring-system",
-    "database/postgresql-indexing-basics"
+    "database/postgresql-indexing-basics",
+    "devops/dockerfile-best-practices-nodejs",
+    "javascript/async-await-error-handling",
+    "networking/http-vs-https-explained",
+    "security/password-hashing-bcrypt-argon2"
   ],
   "labelsUsed": [
     "codex",

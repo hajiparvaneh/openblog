@@ -8,6 +8,34 @@ const leaderboardFile = path.join(root, 'openblog/generated/leaderboard.json');
 
 fs.mkdirSync(generatedUsersDir, { recursive: true });
 
+function normalizeContribution(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  if (typeof raw.postSlug !== 'string' || !raw.postSlug.trim()) return null;
+  const labels = Array.isArray(raw.labels) ? raw.labels.filter((label) => typeof label === 'string') : [];
+  const points = typeof raw.points === 'number' && Number.isFinite(raw.points) ? raw.points : 0;
+  return {
+    postSlug: raw.postSlug,
+    labels,
+    points
+  };
+}
+
+function getEventContributions(event) {
+  if (Array.isArray(event.contributions) && event.contributions.length > 0) {
+    return event.contributions
+      .map((item) => normalizeContribution(item))
+      .filter((item) => item !== null);
+  }
+
+  if (typeof event.postSlug === 'string' && event.postSlug.trim()) {
+    const labels = Array.isArray(event.labels) ? event.labels.filter((label) => typeof label === 'string') : [];
+    const points = typeof event.points === 'number' && Number.isFinite(event.points) ? event.points : 0;
+    return [{ postSlug: event.postSlug, labels, points }];
+  }
+
+  return [];
+}
+
 const events = fs
   .readdirSync(eventsDir)
   .filter((file) => file.endsWith('.json'))
@@ -25,6 +53,8 @@ for (const event of events) {
     lastUpdatedAt: event.mergedAt,
     totalPoints: 0,
     acceptedPrs: 0,
+    acceptedPrNumbers: new Set(),
+    totalContributions: 0,
     events: [],
     contributedPostSlugs: new Set(),
     labelsUsed: new Set(),
@@ -35,25 +65,35 @@ for (const event of events) {
     current.avatarUrl = event.userAvatarUrl;
   }
 
+  const contributions = getEventContributions(event);
+  if (contributions.length === 0) {
+    continue;
+  }
+
   if (event.mergedAt < current.joinedAt) {
     current.joinedAt = event.mergedAt;
   }
   if (event.mergedAt >= current.lastUpdatedAt) {
+    const lastContribution = contributions[0];
     current.lastUpdatedAt = event.mergedAt;
     current.lastContribution = {
       prNumber: event.prNumber,
-      postSlug: event.postSlug,
+      postSlug: lastContribution.postSlug,
       mergedAt: event.mergedAt,
-      points: event.points
+      points: lastContribution.points
     };
   }
 
-  current.totalPoints += event.points;
-  current.acceptedPrs += 1;
+  current.acceptedPrNumbers.add(event.prNumber);
+  current.acceptedPrs = current.acceptedPrNumbers.size;
   current.events.push(event.prNumber);
-  current.contributedPostSlugs.add(event.postSlug);
-  for (const label of event.labels ?? []) {
-    current.labelsUsed.add(label);
+  for (const contribution of contributions) {
+    current.totalPoints += contribution.points;
+    current.totalContributions += 1;
+    current.contributedPostSlugs.add(contribution.postSlug);
+    for (const label of contribution.labels) {
+      current.labelsUsed.add(label);
+    }
   }
   users.set(event.username, current);
 }
@@ -69,11 +109,11 @@ for (const user of users.values()) {
     lastUpdatedAt: user.lastUpdatedAt,
     totalPoints: user.totalPoints,
     acceptedPrs: user.acceptedPrs,
-    totalContributions: user.acceptedPrs,
+    totalContributions: user.totalContributions,
     totalPostsContributed: user.contributedPostSlugs.size,
     contributedPostSlugs: [...user.contributedPostSlugs].sort((a, b) => a.localeCompare(b)),
     labelsUsed: [...user.labelsUsed].sort((a, b) => a.localeCompare(b)),
-    events: user.events,
+    events: [...new Set(user.events)].sort((a, b) => a - b),
     lastContribution: user.lastContribution
   };
 
