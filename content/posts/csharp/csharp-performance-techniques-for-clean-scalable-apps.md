@@ -6,7 +6,7 @@ date: 2026-03-12
 
 High-quality C# code should be readable, maintainable, and fast enough for real production traffic.
 
-## Use async I/O for scalability  
+## Use async I/O for scalability
 
 Use `async` and `await` for database calls, HTTP requests, and file operations. This reduces blocked threads and improves throughput under load.
 
