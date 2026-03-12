@@ -1,10 +1,15 @@
 {
-  "updatedAt": "2026-03-11T09:30:00Z",
+  "updatedAt": "2026-03-12T15:13:59Z",
   "leaderboard": [
     {
       "username": "hamidhp",
       "totalPoints": 25,
       "acceptedPrs": 1
+    },
+    {
+      "username": "hajiparvaneh",
+      "totalPoints": 10,
+      "acceptedPrs": 2
     }
   ]
 }
