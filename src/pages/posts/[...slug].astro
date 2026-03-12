@@ -17,42 +17,49 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const getProfileUrl = (username: string) => `https://github.com/${username}`;
 const categoryPath = `/categories/${encodeURIComponent(post.category)}`;
+const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
 ---
 <BaseLayout title={`${post.title} | OpenBlog`}>
-  <div class="two-column">
-    <article class="card">
-      <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.category}</a></p>
-      <h1>{post.title}</h1>
-      <p class="meta meta-inline">
-        <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{post.date}</span>
-        <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.category}</a></span>
-      </p>
-      <div class="article-content" set:html={html} />
-    </article>
+  <article class="card">
+    <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.category}</a></p>
+    <h1>{post.title}</h1>
+    <p class="meta meta-inline">
+      <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{post.date}</span>
+      <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.category}</a></span>
+    </p>
+    <div class="article-content" set:html={html} />
+    <section class="post-contribute meta">
+      <span class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>Want to contribute to this post?</span>
+      <a class="post-contribute-link" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+        Edit it on GitHub
+      </a>
+      , open a PR, and earn contribution points.
+    </section>
+  </article>
 
-    <aside class="card">
-      <h2 class="icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Contributors</h2>
-      {contributors.length === 0 ? (
-        <p class="meta">No accepted contributions yet.</p>
-      ) : (
-        <ul class="contributors">
-          {contributors.map((contributor) => (
-            <li class="contributor-card">
-              <a class="user-chip user-link" href={getProfileUrl(contributor.username)} target="_blank" rel="noopener noreferrer">
-                <img class="avatar" src={getAvatarUrl(contributor.username, contributor.avatarUrl)} alt={`@${contributor.username} avatar`} loading="lazy" />
-                <strong class="user-handle">@{contributor.username}</strong>
-              </a>
-              <div class="icon-label"><i class="ti ti-award icon-sm" aria-hidden="true"></i>{contributor.totalPoints} points</div>
-              <div class="meta icon-label"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i>{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''} on this post</div>
-              <div class="label-row">
-                {contributor.labels.map((label) => (
-                  <span class="badge">{label}</span>
-                ))}
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </aside>
-  </div>
+  <section class="card">
+    <p class="kicker icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Contributors</p>
+    {contributors.length === 0 ? (
+      <p class="meta">No accepted contributions yet.</p>
+    ) : (
+      <ul class="contributors">
+        {contributors.map((contributor) => (
+          <li class="contributor-card">
+            <a class="user-chip user-link" href={getProfileUrl(contributor.username)} target="_blank" rel="noopener noreferrer">
+              <img class="avatar" src={getAvatarUrl(contributor.username, contributor.avatarUrl)} alt={`@${contributor.username} avatar`} loading="lazy" />
+              <strong class="user-handle">@{contributor.username}</strong>
+            </a>
+            <div class="icon-label"><i class="ti ti-award icon-sm" aria-hidden="true"></i>{contributor.totalPoints} points</div>
+            <div class="meta icon-label"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i>{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''} on this post</div>
+            <div class="label-row">
+              {contributor.labels.map((label) => (
+                <span class="badge">{label}</span>
+              ))}
+            </div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
 </BaseLayout>

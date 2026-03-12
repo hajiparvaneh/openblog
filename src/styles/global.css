@@ -102,7 +102,7 @@ p {
 
 .content-layout {
   display: grid;
-  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
   gap: 1rem;
   align-items: start;
 }
@@ -355,6 +355,22 @@ p {
 
 .article-content {
   margin-top: 1rem;
+}
+
+.post-contribute {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--border);
+  font-size: 0.84rem;
+}
+
+.post-contribute-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 0.84rem;
+  font-weight: 600;
 }
 
 .article-content :is(h2, h3) {

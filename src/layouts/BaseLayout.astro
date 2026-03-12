@@ -5,6 +5,7 @@ const { title = 'OpenBlog' } = Astro.props;
 const categories = [...new Set(getPosts().map((post) => post.category))].sort((a, b) => a.localeCompare(b));
 const categoryPath = (category: string) => `/categories/${encodeURIComponent(category)}`;
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
+const hasSidebarExtra = Astro.slots.has('sidebar-extra');
 ---
 <html lang="en">
   <head>
@@ -51,6 +52,10 @@ const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 
       {categories.length > 0 ? (
         <div class="content-layout">
+          <main class="container">
+            <slot />
+          </main>
+
           <aside class="category-sidebar card">
             <section class="sidebar-block">
               <p class="kicker icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>New blog</p>
@@ -63,6 +68,13 @@ const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 
             <hr class="sidebar-sep" />
 
+            {hasSidebarExtra && (
+              <>
+                <slot name="sidebar-extra" />
+                <hr class="sidebar-sep" />
+              </>
+            )}
+
             <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Categories</p>
             <nav aria-label="Post categories">
               <div class="category-links category-links-sidebar">
@@ -72,10 +84,6 @@ const repoUrl = 'https://github.com/hajiparvaneh/openblog';
               </div>
             </nav>
           </aside>
-
-          <main class="container">
-            <slot />
-          </main>
         </div>
       ) : (
         <main class="container">
