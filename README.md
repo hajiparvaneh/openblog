@@ -45,6 +45,12 @@ Create a file at:
 
 `content/posts/<category>/<post>.md`
 
+Important:
+
+- A new folder under `content/posts/` means a new category.
+- Be careful when creating categories and reuse existing ones whenever possible.
+- Create a new category only when the topic clearly does not fit any current category.
+
 Example:
 
 `content/posts/networking/how-http-works.md`
@@ -68,6 +74,7 @@ Add clear examples, references, and practical notes.
 Content guidelines:
 
 - Keep category and filename lowercase and hyphenated.
+- Use clear, consistent category names (for example: `networking`, `security`, `javascript`).
 - Prefer clear, factual writing with practical examples.
 - Keep PR scope focused on one post/topic where possible.
 
