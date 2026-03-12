@@ -7,7 +7,7 @@ const scoreByLabelPath = path.join(process.cwd(), 'game/enums/scoring-labels.jso
 const scoreByLabel = JSON.parse(fs.readFileSync(scoreByLabelPath, 'utf8')) as Record<string, number>;
 const sortedScoringRules = Object.entries(scoreByLabel).sort(([, pointsA], [, pointsB]) => pointsA - pointsB);
 ---
-<BaseLayout title="How to contribute | Git Blog Play">
+<BaseLayout title="How to contribute | OpenBlog">
   <h1>How to contribute</h1>
   <ol class="card">
     <li>Choose a post from <code>/content/posts</code> and improve it (fix typo, add source, fact-check, add examples, translation, or new post).</li>

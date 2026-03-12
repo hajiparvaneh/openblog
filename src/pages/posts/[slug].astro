@@ -13,7 +13,7 @@ if (!post) throw new Error('Post not found');
 const contributors = getContributorsForPost(slug);
 const html = marked.parse(post.body);
 ---
-<BaseLayout title={`${post.title} | Git Blog Play`}>
+<BaseLayout title={`${post.title} | OpenBlog`}>
   <article class="card">
     <h1>{post.title}</h1>
     <p class="meta">{post.date}</p>

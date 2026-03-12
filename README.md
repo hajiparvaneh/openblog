@@ -1,6 +1,6 @@
-# Git Blog Play (MVP)
+# OpenBlog (MVP)
 
-A minimal Git-based collaborative blog game built with Astro.
+OpenBlog is a minimal Git-based collaborative blog game built with Astro.
 
 ## Architecture
 
