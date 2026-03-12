@@ -3,7 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { marked } from 'marked';
-import { getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/openblog';
+import { formatPostDate, getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/openblog';
 
 type ScoringLabelConfig = {
   points: number;
@@ -55,7 +55,7 @@ const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/conten
     <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.categoryLabel}</a></p>
     <h1>{post.title}</h1>
     <p class="meta meta-inline">
-      <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{post.date}</span>
+      <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
       <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.categoryLabel}</a></span>
     </p>
     <div class="article-content" set:html={html} />

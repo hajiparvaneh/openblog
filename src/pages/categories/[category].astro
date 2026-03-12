@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPosts, normalizeCategoryKey } from '../../lib/openblog';
+import { formatPostDate, getPosts, normalizeCategoryKey } from '../../lib/openblog';
 
 export function getStaticPaths() {
   const categoryMap = new Map<string, string>();
@@ -42,7 +42,7 @@ if (posts.length === 0) {
           <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
           <p>{post.description}</p>
           <p class="meta meta-inline">
-            <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{post.date}</span>
+            <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
           </p>
         </article>
       ))}

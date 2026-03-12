@@ -64,6 +64,38 @@ export function getCategoryPath(category: string): string {
   return `/categories/${encodeURIComponent(normalizeCategoryKey(category))}`;
 }
 
+function toDateString(value: unknown): string {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? '' : value.toISOString().slice(0, 10);
+  }
+
+  if (typeof value === 'string') {
+    const dateValue = value.trim();
+    if (!dateValue) return '';
+
+    const isoPrefix = dateValue.match(/^(\d{4}-\d{2}-\d{2})/);
+    if (isoPrefix) return isoPrefix[1];
+
+    const parsed = new Date(dateValue);
+    if (!Number.isNaN(parsed.getTime())) {
+      return parsed.toISOString().slice(0, 10);
+    }
+
+    return dateValue;
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? '' : parsed.toISOString().slice(0, 10);
+  }
+
+  return '';
+}
+
+export function formatPostDate(value: unknown): string {
+  return toDateString(value);
+}
+
 function resolvePostSlug(postSlug: string, availableSlugs: Set<string>): string | null {
   if (availableSlugs.has(postSlug)) return postSlug;
   if (postSlug.includes('/')) return null;
@@ -110,7 +142,7 @@ export function getPosts(): Post[] {
         categoryLabel,
         title: data.title ?? postName,
         description: data.description ?? '',
-        date: data.date ?? '',
+        date: toDateString(data.date),
         body: content.trim()
       });
     }
@@ -249,6 +281,33 @@ export function getLatestContributors(limit = 8): LatestContributorRecord[] {
   }
 
   return users
+    .sort((a, b) => b.lastContributionAt.localeCompare(a.lastContributionAt) || a.username.localeCompare(b.username))
+    .slice(0, limit);
+}
+
+export function getLatestContributorsForPost(postSlug: string, limit = 5): LatestContributorRecord[] {
+  if (!fs.existsSync(EVENTS_DIR)) return [];
+  const knownSlugs = new Set(getPosts().map((post) => post.slug));
+  const latestByUser = new Map<string, LatestContributorRecord>();
+
+  for (const file of fs.readdirSync(EVENTS_DIR)) {
+    if (!file.endsWith('.json')) continue;
+    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as EventRecord;
+    const resolvedPostSlug = resolvePostSlug(event.postSlug, knownSlugs);
+    if (resolvedPostSlug !== postSlug || !event.username || !event.mergedAt) continue;
+
+    const current = latestByUser.get(event.username);
+    if (!current || event.mergedAt > current.lastContributionAt) {
+      latestByUser.set(event.username, {
+        username: event.username,
+        profileUrl: `https://github.com/${event.username}`,
+        avatarUrl: event.userAvatarUrl ?? null,
+        lastContributionAt: event.mergedAt
+      });
+    }
+  }
+
+  return [...latestByUser.values()]
     .sort((a, b) => b.lastContributionAt.localeCompare(a.lastContributionAt) || a.username.localeCompare(b.username))
     .slice(0, limit);
 }

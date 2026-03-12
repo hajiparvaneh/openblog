@@ -544,6 +544,40 @@ p {
   font-size: 1.35rem;
 }
 
+.latest-post-card {
+  position: relative;
+  padding-right: 8.2rem;
+}
+
+.latest-post-category {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+}
+
+.latest-post-contributors-inline {
+  align-items: flex-start;
+}
+
+.latest-post-contributors-list {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.latest-post-contributor-inline {
+  gap: 0.28rem;
+  line-height: 1;
+}
+
+.latest-post-contributor-inline .avatar {
+  border-width: 1px;
+}
+
+.latest-post-contributor-name {
+  font-weight: 400;
+}
+
 .post-card p {
   margin: 0;
 }
@@ -846,6 +880,11 @@ p {
 
   .post-grid {
     grid-template-columns: 1fr;
+  }
+
+  .latest-post-card {
+    padding-right: 1rem;
+    padding-top: 3rem;
   }
 
   .two-column {
