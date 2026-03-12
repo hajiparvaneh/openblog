@@ -1,7 +1,7 @@
 name: Score merged pull requests
 
 on:
-  pull_request:
+  pull_request_target:
     types: [closed]
     paths:
       - 'content/posts/*/*.md'
@@ -34,7 +34,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref_name }}
+          ref: ${{ github.event_name != 'workflow_dispatch' && github.event.pull_request.base.ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Setup Node
@@ -46,7 +46,7 @@ jobs:
         run: npm install --no-audit --no-fund
 
       - name: Resolve post slugs from eligible PR file changes
-        if: github.event_name == 'pull_request'
+        if: github.event_name != 'workflow_dispatch'
         id: resolve_post_slug
         uses: actions/github-script@v7
         with:
@@ -94,8 +94,8 @@ jobs:
           PR_USER_AVATAR_URL: ${{ github.event.pull_request.user.avatar_url }}
           PR_MERGED_AT: ${{ github.event.pull_request.merged_at }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-          PR_POST_SLUGS: ${{ github.event_name == 'pull_request' && steps.resolve_post_slug.outputs.post_slugs || github.event.inputs.post_slugs || github.event.inputs.post_slug || '' }}
-          PR_NEW_POST_SLUGS: ${{ github.event_name == 'pull_request' && steps.resolve_post_slug.outputs.new_post_slugs || github.event.inputs.new_post_slugs || '' }}
+          PR_POST_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.post_slugs || github.event.inputs.post_slugs || github.event.inputs.post_slug || '' }}
+          PR_NEW_POST_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.new_post_slugs || github.event.inputs.new_post_slugs || '' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual dispatch: set all PR_* values (especially PR_POST_SLUGS and optional PR_NEW_POST_SLUGS) via inputs/env."
@@ -122,12 +122,12 @@ jobs:
         if: steps.openblog_changes.outputs.has_changes == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
-          branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref_name }}
+          branch: ${{ github.event_name != 'workflow_dispatch' && github.event.pull_request.base.ref || github.ref_name }}
           commit_message: "chore(openblog): update events and leaderboard from merged PR"
           file_pattern: openblog/events/*.json openblog/generated/*.json openblog/generated/**/*.json
 
       - name: Comment contributed post links on PR
-        if: github.event_name == 'pull_request' && steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
+        if: github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
         uses: actions/github-script@v7
         env:
           POST_SLUGS: ${{ steps.resolve_post_slug.outputs.post_slugs }}
@@ -174,30 +174,38 @@ jobs:
             // Delay comment publishing to allow downstream systems to settle.
             await new Promise((resolve) => setTimeout(resolve, 10_000));
 
-            const comments = await github.paginate(github.rest.issues.listComments, {
-              owner,
-              repo,
-              issue_number: prNumber,
-              per_page: 100
-            });
-
-            const existing = comments.find((comment) => comment.body?.includes(marker));
-
-            if (existing) {
-              await github.rest.issues.updateComment({
+            try {
+              const comments = await github.paginate(github.rest.issues.listComments, {
                 owner,
                 repo,
-                comment_id: existing.id,
+                issue_number: prNumber,
+                per_page: 100
+              });
+
+              const existing = comments.find((comment) => comment.body?.includes(marker));
+
+              if (existing) {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existing.id,
+                  body
+                });
+                core.info(`Updated existing contribution comment (${existing.id}).`);
+                return;
+              }
+
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number: prNumber,
                 body
               });
-              core.info(`Updated existing contribution comment (${existing.id}).`);
-              return;
+              core.info('Created contribution summary comment.');
+            } catch (error) {
+              if (error?.status === 403) {
+                core.warning('Skipping PR comment because token cannot write issue comments in this context.');
+                return;
+              }
+              throw error;
             }
-
-            await github.rest.issues.createComment({
-              owner,
-              repo,
-              issue_number: prNumber,
-              body
-            });
-            core.info('Created contribution summary comment.');
