@@ -29,7 +29,12 @@ const html = marked.parse(post.body);
         {contributors.map((contributor) => (
           <li>
             <strong>@{contributor.username}</strong> — {contributor.totalPoints} points
-            <div class="meta">{contributor.labels.join(', ')}</div>
+            <div class="meta">{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''} on this post</div>
+            <div style="margin-top:0.35rem; display:flex; flex-wrap:wrap; gap:0.35rem;">
+              {contributor.labels.map((label) => (
+                <span class="badge">{label}</span>
+              ))}
+            </div>
           </li>
         ))}
       </ul>

@@ -21,6 +21,8 @@ type EventRecord = {
 
 type UserRecord = { username: string; totalPoints: number; acceptedPrs: number };
 
+type PostContributorRecord = UserRecord & { labels: string[] };
+
 const ROOT = process.cwd();
 
 export function getPosts(): Post[] {
@@ -53,27 +55,37 @@ export function getLeaderboard(): UserRecord[] {
   return data.leaderboard ?? [];
 }
 
-export function getContributorsForPost(postSlug: string): Array<UserRecord & { labels: string[] }> {
+export function getContributorsForPost(postSlug: string): PostContributorRecord[] {
   const eventsDir = path.join(ROOT, 'game/events');
-  const userPoints = new Map(getLeaderboard().map((u) => [u.username, u.totalPoints]));
   if (!fs.existsSync(eventsDir)) return [];
 
-  const byUser = new Map<string, { labels: Set<string> }>();
+  const byUser = new Map<string, { totalPoints: number; acceptedPrs: number; labels: Set<string> }>();
 
   for (const file of fs.readdirSync(eventsDir)) {
     if (!file.endsWith('.json')) continue;
     const event: EventRecord = JSON.parse(fs.readFileSync(path.join(eventsDir, file), 'utf8'));
     if (event.postSlug !== postSlug) continue;
-    if (!byUser.has(event.username)) byUser.set(event.username, { labels: new Set() });
-    event.labels.forEach((label) => byUser.get(event.username)?.labels.add(label));
+
+    const current = byUser.get(event.username) ?? {
+      totalPoints: 0,
+      acceptedPrs: 0,
+      labels: new Set<string>()
+    };
+
+    current.totalPoints += event.points;
+    current.acceptedPrs += 1;
+    event.labels.forEach((label) => current.labels.add(label));
+    byUser.set(event.username, current);
   }
 
-  return [...byUser.entries()].map(([username, info]) => ({
-    username,
-    totalPoints: userPoints.get(username) ?? 0,
-    acceptedPrs: 0,
-    labels: [...info.labels]
-  }));
+  return [...byUser.entries()]
+    .map(([username, info]) => ({
+      username,
+      totalPoints: info.totalPoints,
+      acceptedPrs: info.acceptedPrs,
+      labels: [...info.labels].sort((a, b) => a.localeCompare(b))
+    }))
+    .sort((a, b) => b.totalPoints - a.totalPoints || b.acceptedPrs - a.acceptedPrs || a.username.localeCompare(b.username));
 }
 
 export function getRecentEvents(limit = 10): EventRecord[] {

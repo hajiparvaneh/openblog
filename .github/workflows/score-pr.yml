@@ -66,4 +66,4 @@ jobs:
         with:
           branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref_name }}
           commit_message: "chore(game): update events and leaderboard from merged PR"
-          file_pattern: game/events/*.json game/generated/**/*.json
+          file_pattern: game/events/*.json game/generated/*.json game/generated/**/*.json
