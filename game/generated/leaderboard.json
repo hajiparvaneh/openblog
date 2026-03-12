@@ -3,11 +3,13 @@
   "leaderboard": [
     {
       "username": "hamidhp",
+      "avatarUrl": null,
       "totalPoints": 25,
       "acceptedPrs": 1
     },
     {
       "username": "hajiparvaneh",
+      "avatarUrl": null,
       "totalPoints": 15,
       "acceptedPrs": 3
     }

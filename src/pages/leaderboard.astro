@@ -4,6 +4,8 @@ import { getLeaderboard, getRecentEvents } from '../lib/game';
 
 const leaderboard = getLeaderboard();
 const recentEvents = getRecentEvents(10);
+const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
+  avatarUrl ?? `https://github.com/${username}.png?size=80`;
 ---
 <BaseLayout title="Leaderboard | OpenBlog">
   <h1>Leaderboard</h1>
@@ -15,7 +17,12 @@ const recentEvents = getRecentEvents(10);
       {leaderboard.map((user, index) => (
         <tr>
           <td>#{index + 1}</td>
-          <td>@{user.username}</td>
+          <td>
+            <span class="user-chip">
+              <img class="avatar" src={getAvatarUrl(user.username, user.avatarUrl)} alt={`@${user.username} avatar`} loading="lazy" />
+              <span class="user-handle">@{user.username}</span>
+            </span>
+          </td>
           <td>{user.totalPoints}</td>
           <td>{user.acceptedPrs}</td>
         </tr>
@@ -27,8 +34,13 @@ const recentEvents = getRecentEvents(10);
     <h2>Recent accepted contributions</h2>
     <ul>
       {recentEvents.map((event) => (
-        <li>
-          PR #{event.prNumber} by @{event.username} on <a href={`/posts/${event.postSlug}`}>{event.postSlug}</a> — <span class="badge">+{event.points}</span>
+        <li class="recent-item">
+          <span>PR #{event.prNumber} by</span>
+          <span class="user-chip">
+            <img class="avatar avatar-sm" src={getAvatarUrl(event.username, event.userAvatarUrl)} alt={`@${event.username} avatar`} loading="lazy" />
+            <span class="user-handle">@{event.username}</span>
+          </span>
+          <span>on <a href={`/posts/${event.postSlug}`}>{event.postSlug}</a> — <span class="badge">+{event.points}</span></span>
         </li>
       ))}
     </ul>

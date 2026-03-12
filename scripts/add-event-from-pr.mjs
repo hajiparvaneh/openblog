@@ -5,6 +5,7 @@ import { calculatePoints } from './scoring.mjs';
 const payload = {
   prNumber: Number(process.env.PR_NUMBER),
   username: process.env.PR_USERNAME,
+  userAvatarUrl: process.env.PR_USER_AVATAR_URL || undefined,
   postSlug: process.env.PR_POST_SLUG,
   mergedAt: process.env.PR_MERGED_AT,
   labels: (process.env.PR_LABELS ?? '').split(',').map((s) => s.trim()).filter(Boolean)

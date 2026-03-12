@@ -19,10 +19,15 @@ const users = new Map();
 for (const event of events) {
   const current = users.get(event.username) ?? {
     username: event.username,
+    avatarUrl: null,
     totalPoints: 0,
     acceptedPrs: 0,
     events: []
   };
+
+  if (event.userAvatarUrl) {
+    current.avatarUrl = event.userAvatarUrl;
+  }
 
   current.totalPoints += event.points;
   current.acceptedPrs += 1;

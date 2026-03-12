@@ -29,3 +29,35 @@ a:hover { text-decoration: underline; }
 .table { width: 100%; border-collapse: collapse; }
 .table th, .table td { padding: 0.75rem; border-bottom: 1px solid var(--border); text-align: left; }
 .badge { display: inline-block; background: #dbeafe; color: #1e40af; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.8rem; }
+
+.user-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.user-handle {
+  font-weight: 600;
+}
+
+.avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 999px;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  vertical-align: middle;
+}
+
+.avatar-sm {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.recent-item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}

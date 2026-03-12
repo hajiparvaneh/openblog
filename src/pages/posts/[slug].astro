@@ -12,6 +12,8 @@ const post = getPostBySlug(slug);
 if (!post) throw new Error('Post not found');
 const contributors = getContributorsForPost(slug);
 const html = marked.parse(post.body);
+const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
+  avatarUrl ?? `https://github.com/${username}.png?size=80`;
 ---
 <BaseLayout title={`${post.title} | OpenBlog`}>
   <article class="card">
@@ -28,7 +30,11 @@ const html = marked.parse(post.body);
       <ul>
         {contributors.map((contributor) => (
           <li>
-            <strong>@{contributor.username}</strong> — {contributor.totalPoints} points
+            <div class="user-chip">
+              <img class="avatar" src={getAvatarUrl(contributor.username, contributor.avatarUrl)} alt={`@${contributor.username} avatar`} loading="lazy" />
+              <strong class="user-handle">@{contributor.username}</strong>
+            </div>
+            <div style="margin-top:0.25rem;">{contributor.totalPoints} points</div>
             <div class="meta">{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''} on this post</div>
             <div style="margin-top:0.35rem; display:flex; flex-wrap:wrap; gap:0.35rem;">
               {contributor.labels.map((label) => (

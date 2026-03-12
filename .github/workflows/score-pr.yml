@@ -37,6 +37,7 @@ jobs:
         env:
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           PR_USERNAME: ${{ github.event.pull_request.user.login }}
+          PR_USER_AVATAR_URL: ${{ github.event.pull_request.user.avatar_url }}
           PR_MERGED_AT: ${{ github.event.pull_request.merged_at }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
           PR_POST_SLUG: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref || '' }}

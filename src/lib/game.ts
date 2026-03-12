@@ -13,13 +13,14 @@ export type Post = {
 type EventRecord = {
   prNumber: number;
   username: string;
+  userAvatarUrl?: string;
   postSlug: string;
   points: number;
   labels: string[];
   mergedAt: string;
 };
 
-type UserRecord = { username: string; totalPoints: number; acceptedPrs: number };
+type UserRecord = { username: string; avatarUrl?: string | null; totalPoints: number; acceptedPrs: number };
 
 type PostContributorRecord = UserRecord & { labels: string[] };
 
@@ -59,7 +60,7 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
   const eventsDir = path.join(ROOT, 'game/events');
   if (!fs.existsSync(eventsDir)) return [];
 
-  const byUser = new Map<string, { totalPoints: number; acceptedPrs: number; labels: Set<string> }>();
+  const byUser = new Map<string, { avatarUrl: string | null; totalPoints: number; acceptedPrs: number; labels: Set<string> }>();
 
   for (const file of fs.readdirSync(eventsDir)) {
     if (!file.endsWith('.json')) continue;
@@ -67,10 +68,15 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
     if (event.postSlug !== postSlug) continue;
 
     const current = byUser.get(event.username) ?? {
+      avatarUrl: null,
       totalPoints: 0,
       acceptedPrs: 0,
       labels: new Set<string>()
     };
+
+    if (event.userAvatarUrl) {
+      current.avatarUrl = event.userAvatarUrl;
+    }
 
     current.totalPoints += event.points;
     current.acceptedPrs += 1;
@@ -81,6 +87,7 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
   return [...byUser.entries()]
     .map(([username, info]) => ({
       username,
+      avatarUrl: info.avatarUrl,
       totalPoints: info.totalPoints,
       acceptedPrs: info.acceptedPrs,
       labels: [...info.labels].sort((a, b) => a.localeCompare(b))
