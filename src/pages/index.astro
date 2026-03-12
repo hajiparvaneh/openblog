@@ -1,0 +1,20 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getPosts } from '../lib/game';
+
+const posts = getPosts();
+---
+<BaseLayout title="Git Blog Play">
+  <h1>Git Blog Play</h1>
+  <p class="meta">Improve posts with PRs, earn points, and get public credit.</p>
+
+  <section class="list">
+    {posts.map((post) => (
+      <article class="card">
+        <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
+        <p>{post.description}</p>
+        <p class="meta">Published: {post.date}</p>
+      </article>
+    ))}
+  </section>
+</BaseLayout>

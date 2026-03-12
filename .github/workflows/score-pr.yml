@@ -1,0 +1,65 @@
+name: Score merged pull requests
+
+on:
+  pull_request:
+    types: [closed]
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'PR number to process manually'
+        required: false
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  score:
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Create score event from PR labels
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
+          PR_USERNAME: ${{ github.event.pull_request.user.login }}
+          PR_MERGED_AT: ${{ github.event.pull_request.merged_at }}
+          PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+          PR_POST_SLUG: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref || '' }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "Manual dispatch: set PR_* env vars in workflow if needed."
+          fi
+          npm run game:add-event
+
+      - name: Regenerate leaderboard and users
+        run: npm run game:generate
+
+      - name: Detect generated game-data changes
+        id: game_changes
+        run: |
+          if git diff --quiet -- game/events game/generated; then
+            echo "has_changes=false" >> "$GITHUB_OUTPUT"
+            echo "No generated game-data changes detected."
+          else
+            echo "has_changes=true" >> "$GITHUB_OUTPUT"
+            echo "Generated game-data changes detected."
+          fi
+
+      - name: Commit generated game data
+        if: steps.game_changes.outputs.has_changes == 'true'
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(game): update events and leaderboard from merged PR"
+          file_pattern: game/events/*.json game/generated/**/*.json

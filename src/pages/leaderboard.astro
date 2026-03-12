@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { getLeaderboard, getRecentEvents } from '../lib/game';
+
+const leaderboard = getLeaderboard();
+const recentEvents = getRecentEvents(10);
+---
+<BaseLayout title="Leaderboard | Git Blog Play">
+  <h1>Leaderboard</h1>
+  <table class="table card">
+    <thead>
+      <tr><th>Rank</th><th>User</th><th>Points</th><th>Merged PRs</th></tr>
+    </thead>
+    <tbody>
+      {leaderboard.map((user, index) => (
+        <tr>
+          <td>#{index + 1}</td>
+          <td>@{user.username}</td>
+          <td>{user.totalPoints}</td>
+          <td>{user.acceptedPrs}</td>
+        </tr>
+      ))}
+    </tbody>
+  </table>
+
+  <section class="card" style="margin-top:1rem;">
+    <h2>Recent accepted contributions</h2>
+    <ul>
+      {recentEvents.map((event) => (
+        <li>
+          PR #{event.prNumber} by @{event.username} on <a href={`/posts/${event.postSlug}`}>{event.postSlug}</a> — <span class="badge">+{event.points}</span>
+        </li>
+      ))}
+    </ul>
+  </section>
+</BaseLayout>

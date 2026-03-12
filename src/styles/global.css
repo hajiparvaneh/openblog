@@ -1,0 +1,31 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+  line-height: 1.6;
+  --bg: #f8fafc;
+  --surface: #ffffff;
+  --text: #0f172a;
+  --muted: #475569;
+  --primary: #2563eb;
+  --border: #e2e8f0;
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+a { color: var(--primary); text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+.container { max-width: 960px; margin: 0 auto; padding: 1rem; }
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 1rem;
+}
+.nav { display: flex; gap: 1rem; align-items: center; padding: 1rem 0; }
+.nav a { font-weight: 600; }
+.meta { color: var(--muted); font-size: 0.9rem; }
+.list { display: grid; gap: 1rem; }
+.table { width: 100%; border-collapse: collapse; }
+.table th, .table td { padding: 0.75rem; border-bottom: 1px solid var(--border); text-align: left; }
+.badge { display: inline-block; background: #dbeafe; color: #1e40af; border-radius: 999px; padding: 0.2rem 0.6rem; font-size: 0.8rem; }
