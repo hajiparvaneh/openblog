@@ -6,6 +6,7 @@ A minimal Git-based collaborative blog game built with Astro.
 
 - `content/posts/*.md`: blog posts
 - `game/events/*.json`: immutable merged-PR score events
+- `game/enums/scoring-labels.json`: scoring label enum (label -> points)
 - `game/generated/users/*.json`: generated user aggregates
 - `game/generated/leaderboard.json`: generated leaderboard
 - `scripts/add-event-from-pr.mjs`: converts merged PR metadata into score events
@@ -29,7 +30,7 @@ npm run game:generate
 ## Scoring logic
 
 - Each merged PR can create one immutable event file in `game/events/pr-<number>.json`.
-- Points are computed from labels and summed per PR:
+- Points are computed from labels in `game/enums/scoring-labels.json` and summed per PR.
   - `typo`: 5
   - `source-added`: 10
   - `fact-check`: 15

@@ -1,31 +1,34 @@
 ---
+import fs from 'node:fs';
+import path from 'node:path';
 import BaseLayout from '../layouts/BaseLayout.astro';
+
+const scoreByLabelPath = path.join(process.cwd(), 'game/enums/scoring-labels.json');
+const scoreByLabel = JSON.parse(fs.readFileSync(scoreByLabelPath, 'utf8')) as Record<string, number>;
+const sortedScoringRules = Object.entries(scoreByLabel).sort(([, pointsA], [, pointsB]) => pointsA - pointsB);
 ---
-<BaseLayout title="How to play | Git Blog Play">
-  <h1>How to play</h1>
+<BaseLayout title="How to contribute | Git Blog Play">
+  <h1>How to contribute</h1>
   <ol class="card">
-    <li>Fork the repository.</li>
-    <li>Improve any markdown post in <code>/content/posts</code>.</li>
-    <li>Open a pull request.</li>
-    <li>Maintainers review, apply scoring labels, and merge.</li>
-    <li>Run the game scripts to create score events and rebuild leaderboard files.</li>
+    <li>Choose a post from <code>/content/posts</code> and improve it (fix typo, add source, fact-check, add examples, translation, or new post).</li>
+    <li>Open a pull request that clearly explains the improvement and references the changed post slug.</li>
+    <li>Maintainers review your PR, apply one or more scoring labels, and merge if accepted.</li>
+    <li>After merge, the score workflow creates a game event and regenerates leaderboard files.</li>
+    <li>Your points are added automatically based on the labels on the merged PR.</li>
   </ol>
 
-  <h2>Scoring labels</h2>
+  <h2>Scoring labels (enum)</h2>
   <ul class="card">
-    <li><code>typo</code>: +5 points</li>
-    <li><code>source-added</code>: +10 points</li>
-    <li><code>fact-check</code>: +15 points</li>
-    <li><code>new-example</code>: +20 points</li>
-    <li><code>translation</code>: +30 points</li>
-    <li><code>new-post</code>: +50 points</li>
+    {sortedScoringRules.map(([label, points]) => (
+      <li><code>{label}</code>: +{points} points</li>
+    ))}
   </ul>
 
-  <h2>Important rules</h2>
+  <h2>Rules</h2>
   <ul class="card">
-    <li>Only merged PRs are eligible.</li>
-    <li>A PR needs at least one scoring label to create an event.</li>
-    <li>If multiple scoring labels are added, points are summed.</li>
-    <li>The leaderboard ranks by total points, then by accepted PR count.</li>
+    <li>Only merged PRs are eligible for points.</li>
+    <li>At least one scoring label is required to generate an event.</li>
+    <li>If a PR has multiple scoring labels, all label points are summed.</li>
+    <li>Leaderboard rank is sorted by total points (desc), then accepted PR count (desc).</li>
   </ul>
 </BaseLayout>
