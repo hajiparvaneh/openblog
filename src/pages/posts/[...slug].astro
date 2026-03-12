@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { marked } from 'marked';
-import { getPosts, getPostBySlug, getContributorsForPost } from '../../lib/game';
+import { getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/game';
 
 export function getStaticPaths() {
   return getPosts().map((post) => ({ params: { slug: post.slug } }));
@@ -16,17 +16,17 @@ const html = marked.parse(post.body);
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const getProfileUrl = (username: string) => `https://github.com/${username}`;
-const categoryPath = `/categories/${encodeURIComponent(post.category)}`;
+const categoryPath = getCategoryPath(post.category);
 const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
 const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
 ---
 <BaseLayout title={`${post.title} | OpenBlog`}>
   <article class="card">
-    <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.category}</a></p>
+    <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.categoryLabel}</a></p>
     <h1>{post.title}</h1>
     <p class="meta meta-inline">
       <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{post.date}</span>
-      <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.category}</a></span>
+      <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.categoryLabel}</a></span>
     </p>
     <div class="article-content" set:html={html} />
     <section class="post-contribute meta">

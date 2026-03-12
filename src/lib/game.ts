@@ -5,6 +5,7 @@ import matter from 'gray-matter';
 export type Post = {
   slug: string;
   category: string;
+  categoryLabel: string;
   title: string;
   description: string;
   date: string;
@@ -27,6 +28,22 @@ type PostContributorRecord = UserRecord & { labels: string[] };
 
 const ROOT = process.cwd();
 const POSTS_DIR = path.join(ROOT, 'content/posts');
+
+export function normalizeCategoryKey(category: string): string {
+  return category.trim().toLowerCase().replace(/[\s_]+/g, '-');
+}
+
+export function formatCategoryLabel(category: string): string {
+  return normalizeCategoryKey(category)
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+export function getCategoryPath(category: string): string {
+  return `/categories/${encodeURIComponent(normalizeCategoryKey(category))}`;
+}
 
 function resolvePostSlug(postSlug: string, availableSlugs: Set<string>): string | null {
   if (availableSlugs.has(postSlug)) return postSlug;
@@ -51,12 +68,14 @@ export function getPosts(): Post[] {
   for (const categoryEntry of entries) {
     if (!categoryEntry.isDirectory()) continue;
 
-    const category = categoryEntry.name;
-    const categoryDir = path.join(POSTS_DIR, category);
+    const rawCategory = categoryEntry.name;
+    const category = normalizeCategoryKey(rawCategory);
+    const categoryLabel = formatCategoryLabel(rawCategory);
+    const categoryDir = path.join(POSTS_DIR, rawCategory);
     for (const postEntry of fs.readdirSync(categoryDir, { withFileTypes: true })) {
       if (postEntry.isDirectory()) {
         throw new Error(
-          `Nested folders are not supported in content/posts. Found: ${category}/${postEntry.name}`
+          `Nested folders are not supported in content/posts. Found: ${rawCategory}/${postEntry.name}`
         );
       }
 
@@ -67,8 +86,9 @@ export function getPosts(): Post[] {
       const { data, content } = matter(raw);
       const postName = postEntry.name.replace(/\.md$/, '');
       posts.push({
-        slug: `${category}/${postName}`,
+        slug: `${rawCategory}/${postName}`,
         category,
+        categoryLabel,
         title: data.title ?? postName,
         description: data.description ?? '',
         date: data.date ?? '',

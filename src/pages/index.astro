@@ -1,9 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getPosts } from '../lib/game';
+import { getCategoryPath, getPosts } from '../lib/game';
 
 const posts = getPosts();
-const categoryPath = (category: string) => `/categories/${encodeURIComponent(category)}`;
 const latestPost = posts[0];
 const remainingPosts = posts.slice(1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
@@ -36,7 +35,7 @@ const categoryCount = new Set(posts.map((post) => post.category)).size;
       <p>{latestPost.description}</p>
       <p class="meta meta-inline">
         <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{latestPost.date}</span>
-        <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath(latestPost.category)}>{latestPost.category}</a></span>
+        <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={getCategoryPath(latestPost.category)}>{latestPost.categoryLabel}</a></span>
       </p>
     </section>
   ) : null}
@@ -51,7 +50,7 @@ const categoryCount = new Set(posts.map((post) => post.category)).size;
             <p>{post.description}</p>
             <p class="meta meta-inline">
               <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{post.date}</span>
-              <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath(post.category)}>{post.category}</a></span>
+              <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={getCategoryPath(post.category)}>{post.categoryLabel}</a></span>
             </p>
           </article>
         ))}

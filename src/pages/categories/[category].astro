@@ -1,26 +1,34 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPosts } from '../../lib/game';
+import { getPosts, normalizeCategoryKey } from '../../lib/game';
 
 export function getStaticPaths() {
-  const categories = [...new Set(getPosts().map((post) => post.category))];
-  return categories.map((category) => ({
-    params: { category: encodeURIComponent(category) }
+  const categoryMap = new Map<string, string>();
+  for (const post of getPosts()) {
+    if (!categoryMap.has(post.category)) {
+      categoryMap.set(post.category, post.categoryLabel);
+    }
+  }
+
+  return [...categoryMap.entries()].map(([category, categoryLabel]) => ({
+    params: { category: encodeURIComponent(category) },
+    props: { categoryLabel }
   }));
 }
 
 const categoryParam = Astro.params.category ?? '';
-const category = decodeURIComponent(categoryParam);
+const category = normalizeCategoryKey(decodeURIComponent(categoryParam));
 const posts = getPosts().filter((post) => post.category === category);
+const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
 
 if (posts.length === 0) {
   throw new Error(`Category not found: ${category}`);
 }
 ---
-<BaseLayout title={`${category} | Categories | OpenBlog`}>
+<BaseLayout title={`${categoryLabel} | Categories | OpenBlog`}>
   <section class="card">
     <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Category</p>
-    <h1>{category}</h1>
+    <h1>{categoryLabel}</h1>
     <p class="meta icon-label">
       <i class="ti ti-notes icon-sm" aria-hidden="true"></i>
       {posts.length} post{posts.length > 1 ? 's' : ''} available in this topic.
