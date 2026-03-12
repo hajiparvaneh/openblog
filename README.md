@@ -1,71 +1,126 @@
-# OpenBlog (MVP)
+# OpenBlog
 
-OpenBlog is a minimal Git-based collaborative blog game built with Astro.
+OpenBlog is a collaborative blog where contributors improve content through pull requests.  
+When a PR is merged and labeled, points are added to the public leaderboard.
 
-## Architecture
+## First contribution in 5 steps
 
-- `content/posts/<category>/*.md`: blog posts grouped by category folder
-- `game/events/*.json`: immutable merged-PR score events
-- `game/enums/scoring-labels.json`: scoring label enum (label -> points)
-- `game/generated/users/*.json`: generated user aggregates
-- `game/generated/leaderboard.json`: generated leaderboard
-- `scripts/add-event-from-pr.mjs`: converts merged PR metadata into score events
-- `scripts/generate-game-state.mjs`: aggregates events into user files + leaderboard
-
-Each event can optionally include `userAvatarUrl` from the GitHub PR author profile.
+1. Fork this repo and clone your fork.
+2. Create a branch: `git checkout -b my-post-update`.
+3. Add or edit a post in `content/posts/<category>/<post>.md`.
+4. Run locally and verify your change.
+5. Open a PR and mention the post slug you changed (example: `networking/how-dns-works`).
 
 ## Local development
+
+### Requirements
+
+- Node.js 18+ (or newer LTS)
+- npm
+
+### Commands
 
 ```bash
 npm install
 npm run dev
 ```
 
-## Game data scripts
+Open the local URL shown in the terminal.
+
+To validate production output:
+
+```bash
+npm run build
+npm run preview
+```
+
+## Add a new blog post
+
+Create a new file in:
+
+`content/posts/<category>/<post>.md`
+
+Example:
+
+`content/posts/networking/how-http-works.md`
+
+Use this template:
+
+```md
+---
+title: How HTTP Works
+description: A beginner-friendly explanation of the HTTP request/response model.
+date: 2026-03-12
+---
+
+Start with a short intro.
+
+## Main section
+
+Add clear examples, references, and practical notes.
+```
+
+Guidelines:
+
+- Keep category and filename lowercase and hyphenated.
+- Write clear, factual content with practical examples.
+- Keep changes focused (one post/topic per PR when possible).
+
+## Improve an existing post
+
+Good contribution types:
+
+- Fix typos or wording
+- Add trusted sources
+- Fact-check outdated statements
+- Add examples/diagrams/explanations
+- Add translations
+
+## PR checklist
+
+- Changes are in `content/posts/<category>/<post>.md`
+- PR description explains what improved and why
+- PR mentions changed slug(s)
+- No manual edits to `game/generated/*`
+
+## Scoring labels
+
+Points are based on PR labels in `game/enums/scoring-labels.json`:
+
+- `typo`: +5
+- `source-added`: +10
+- `fact-check`: +15
+- `new-example`: +20
+- `translation`: +30
+- `new-post`: +50
+
+Notes:
+
+- Only merged PRs are eligible.
+- At least one scoring label is required to generate an event.
+- If multiple scoring labels are applied, points are summed.
+
+## Project structure
+
+- `content/posts/<category>/*.md`: blog content
+- `game/events/*.json`: immutable merged-PR score events
+- `game/enums/scoring-labels.json`: score label enum
+- `game/generated/users/*.json`: generated user stats
+- `game/generated/leaderboard.json`: generated leaderboard
+- `scripts/add-event-from-pr.mjs`: create event from merged PR metadata
+- `scripts/generate-game-state.mjs`: regenerate users + leaderboard
+
+## Maintainer notes
+
+These commands are mainly for maintainers/automation:
 
 ```bash
 npm run game:add-event
 npm run game:generate
 ```
 
+Recommended guardrails:
 
-## Scoring logic
-
-- Each merged PR can create one immutable event file in `game/events/pr-<number>.json`.
-- The scoring workflow is triggered for merged PRs only when at least one changed file matches `content/posts/<category>/<post>.md`.
-- Points are computed from labels in `game/enums/scoring-labels.json` and summed per PR.
-  - `typo`: 5
-  - `source-added`: 10
-  - `fact-check`: 15
-  - `new-example`: 20
-  - `translation`: 30
-  - `new-post`: 50
-- A PR with no scoring labels gets 0 and is skipped (no event file).
-- The generator aggregates all events by `username` into:
-  - `game/generated/users/<username>.json`
-  - `game/generated/leaderboard.json`
-  - user and leaderboard entries include `avatarUrl` when available
-  - user files include public metadata like:
-    - `profileUrl`
-    - `joinedAt`
-    - `lastUpdatedAt`
-    - `totalPostsContributed`
-    - `contributedPostSlugs`
-    - `labelsUsed`
-    - `lastContribution`
-- Leaderboard sorting: highest `totalPoints`, then highest `acceptedPrs`.
-
-## Owner checklist
-
-- Define and enforce a consistent PR-label policy using only supported scoring labels.
-- Require the `Validate post file changes` GitHub check in branch protection so non-owner PRs can only add/edit `content/posts/<category>/<post>.md` (new categories are allowed by creating a new folder under `content/posts/`).
-- Ensure merged PR metadata is passed to `npm run game:add-event` (PR number, username, avatar URL, post slug, merged time, labels).
-- Run `npm run game:generate` after adding events and commit generated files.
-- Protect `main` so only reviewed + labeled PRs are merged.
-- Keep `game/generated/*` bot/maintainer-managed only to avoid manual tampering.
-
-## Notes
-
-- Protect `main` branch.
-- Keep `game/generated/*` bot-managed only.
-- If you later add database/EF-backed services, remember to create EF migrations manually.
+- Protect `main` branch
+- Keep `game/generated/*` maintainer/bot-managed
+- Enforce scoring-label policy
