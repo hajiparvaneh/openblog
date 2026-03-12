@@ -1,0 +1,22 @@
+---
+import '../styles/global.css';
+const { title = 'Git Blog Play' } = Astro.props;
+---
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content="A Git-based collaborative blog game where accepted pull requests earn points." />
+  </head>
+  <body>
+    <div class="container">
+      <nav class="nav">
+        <a href="/">Home</a>
+        <a href="/leaderboard">Leaderboard</a>
+        <a href="/how-to-play">How to play</a>
+      </nav>
+      <slot />
+    </div>
+  </body>
+</html>

@@ -1,0 +1,38 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { marked } from 'marked';
+import { getPosts, getPostBySlug, getContributorsForPost } from '../../lib/game';
+
+export function getStaticPaths() {
+  return getPosts().map((post) => ({ params: { slug: post.slug } }));
+}
+
+const slug = Astro.params.slug ?? '';
+const post = getPostBySlug(slug);
+if (!post) throw new Error('Post not found');
+const contributors = getContributorsForPost(slug);
+const html = marked.parse(post.body);
+---
+<BaseLayout title={`${post.title} | Git Blog Play`}>
+  <article class="card">
+    <h1>{post.title}</h1>
+    <p class="meta">{post.date}</p>
+    <div set:html={html} />
+  </article>
+
+  <section class="card" style="margin-top:1rem;">
+    <h2>Contributors</h2>
+    {contributors.length === 0 ? (
+      <p class="meta">No accepted contributions yet.</p>
+    ) : (
+      <ul>
+        {contributors.map((contributor) => (
+          <li>
+            <strong>@{contributor.username}</strong> — {contributor.totalPoints} points
+            <div class="meta">{contributor.labels.join(', ')}</div>
+          </li>
+        ))}
+      </ul>
+    )}
+  </section>
+</BaseLayout>
