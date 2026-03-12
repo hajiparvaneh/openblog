@@ -14,15 +14,15 @@ const categoryCount = new Set(posts.map((post) => post.category)).size;
     <p class="meta">Every accepted pull request improves the content and awards points on the public leaderboard.</p>
     <div class="stats">
       <div class="stat">
-        <span class="stat-value icon-label"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>{posts.length}</span>
+        <span class="stat-value stat-head"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>{posts.length}</span>
         <span class="stat-label">Published posts</span>
       </div>
       <div class="stat">
-        <span class="stat-value icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>{categoryCount}</span>
+        <span class="stat-value stat-head"><i class="ti ti-category icon-sm" aria-hidden="true"></i>{categoryCount}</span>
         <span class="stat-label">Active categories</span>
       </div>
       <div class="stat">
-        <span class="stat-value icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>PR-based</span>
+        <span class="stat-value stat-head"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>PR-based</span>
         <span class="stat-label">Contribution model</span>
       </div>
     </div>
@@ -30,7 +30,7 @@ const categoryCount = new Set(posts.map((post) => post.category)).size;
 
   {latestPost ? (
     <section class="card post-card">
-      <p class="kicker icon-label"><i class="ti ti-sparkles icon-sm" aria-hidden="true"></i>Latest post</p>
+      <p class="kicker icon-label"><i class="ti ti-clock-hour-4 icon-sm" aria-hidden="true"></i>Latest post</p>
       <h2><a href={`/posts/${latestPost.slug}`}>{latestPost.title}</a></h2>
       <p>{latestPost.description}</p>
       <p class="meta meta-inline">

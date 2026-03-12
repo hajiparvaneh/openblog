@@ -97,7 +97,10 @@ const repoUrl = 'https://github.com/hajiparvaneh/openblog';
                 <i class={`ti ti-${rule.icon} icon-sm score-icon`} aria-hidden="true"></i>
                 <code>{rule.label}</code>
               </span>
-              <span class="badge score-points">+{rule.points}</span>
+              <span class="badge score-points points-badge">
+                <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
+                +{rule.points}
+              </span>
             </li>
           ))}
         </ul>
@@ -110,7 +113,7 @@ const repoUrl = 'https://github.com/hajiparvaneh/openblog';
               <code>{topScoringRule.label}</code>
             </span>
             {' '}
-            (+{topScoringRule.points} points)
+            (<span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{topScoringRule.points}</span> points)
           </p>
         )}
       </section>

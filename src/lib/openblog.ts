@@ -24,7 +24,17 @@ type EventRecord = {
 
 type UserRecord = { username: string; avatarUrl?: string | null; totalPoints: number; acceptedPrs: number };
 
-type PostContributorRecord = UserRecord & { labels: string[] };
+type PostContributorPrRecord = {
+  prNumber: number;
+  points: number;
+  labels: string[];
+  mergedAt: string;
+};
+
+type PostContributorRecord = UserRecord & {
+  labels: string[];
+  pullRequests: PostContributorPrRecord[];
+};
 
 const ROOT = process.cwd();
 const POSTS_DIR = path.join(ROOT, 'content/posts');
@@ -116,7 +126,13 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
   if (!fs.existsSync(eventsDir)) return [];
   const knownSlugs = new Set(getPosts().map((post) => post.slug));
 
-  const byUser = new Map<string, { avatarUrl: string | null; totalPoints: number; acceptedPrs: number; labels: Set<string> }>();
+  const byUser = new Map<string, {
+    avatarUrl: string | null;
+    totalPoints: number;
+    acceptedPrs: number;
+    labels: Set<string>;
+    pullRequests: PostContributorPrRecord[];
+  }>();
 
   for (const file of fs.readdirSync(eventsDir)) {
     if (!file.endsWith('.json')) continue;
@@ -128,7 +144,8 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
       avatarUrl: null,
       totalPoints: 0,
       acceptedPrs: 0,
-      labels: new Set<string>()
+      labels: new Set<string>(),
+      pullRequests: []
     };
 
     if (event.userAvatarUrl) {
@@ -138,6 +155,12 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
     current.totalPoints += event.points;
     current.acceptedPrs += 1;
     event.labels.forEach((label) => current.labels.add(label));
+    current.pullRequests.push({
+      prNumber: event.prNumber,
+      points: event.points,
+      labels: [...event.labels].sort((a, b) => a.localeCompare(b)),
+      mergedAt: event.mergedAt
+    });
     byUser.set(event.username, current);
   }
 
@@ -147,7 +170,8 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
       avatarUrl: info.avatarUrl,
       totalPoints: info.totalPoints,
       acceptedPrs: info.acceptedPrs,
-      labels: [...info.labels].sort((a, b) => a.localeCompare(b))
+      labels: [...info.labels].sort((a, b) => a.localeCompare(b)),
+      pullRequests: info.pullRequests.sort((a, b) => b.mergedAt.localeCompare(a.mergedAt))
     }))
     .sort((a, b) => b.totalPoints - a.totalPoints || b.acceptedPrs - a.acceptedPrs || a.username.localeCompare(b.username));
 }

@@ -34,7 +34,12 @@ const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${po
                   <span class="user-handle">@{user.username}</span>
                 </a>
               </td>
-              <td>{user.totalPoints}</td>
+              <td>
+                <span class="points-inline">
+                  <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
+                  {user.totalPoints}
+                </span>
+              </td>
               <td>{user.acceptedPrs}</td>
             </tr>
           ))}
@@ -56,7 +61,7 @@ const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${po
                 <span class="user-handle">@{event.username}</span>
               </a>
               <span>
-                <span class="icon-label"><i class="ti ti-article icon-sm" aria-hidden="true"></i>{postUrl ? <a href={postUrl}>{event.postSlug}</a> : <span>unknown post</span>}</span> <span class="badge">+{event.points}</span>
+                <span class="icon-label"><i class="ti ti-article icon-sm" aria-hidden="true"></i>{postUrl ? <a href={postUrl}>{event.postSlug}</a> : <span>unknown post</span>}</span> <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{event.points}</span>
               </span>
             </li>
           );
