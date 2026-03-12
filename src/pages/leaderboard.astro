@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getLeaderboard, getPosts, getRecentEvents } from '../lib/game';
+import { getLeaderboard, getPosts, getRecentEvents } from '../lib/openblog';
 
 const leaderboard = getLeaderboard();
 const recentEvents = getRecentEvents(10);

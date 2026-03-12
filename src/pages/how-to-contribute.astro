@@ -9,7 +9,7 @@ type ScoringLabelConfig = {
   color: string;
 };
 
-const scoreByLabelPath = path.join(process.cwd(), 'game/enums/scoring-labels.json');
+const scoreByLabelPath = path.join(process.cwd(), 'openblog/enums/scoring-labels.json');
 const parsedScoreByLabel = JSON.parse(fs.readFileSync(scoreByLabelPath, 'utf8')) as Record<string, number | ScoringLabelConfig>;
 const sortedScoringRules = Object.entries(parsedScoreByLabel)
   .map(([label, config]) => {
@@ -83,7 +83,7 @@ const repoUrl = 'https://github.com/hajiparvaneh/openblog';
           <li>Your change is in <code>content/posts/&lt;category&gt;/&lt;post&gt;.md</code>.</li>
           <li>The PR description explains what improved and why.</li>
           <li>You mention the changed slug(s) in the PR body.</li>
-          <li>You do not manually edit files in <code>game/generated/</code>.</li>
+          <li>You do not manually edit files in <code>openblog/generated/</code>.</li>
         </ul>
       </section>
 

@@ -28,6 +28,6 @@ const event = {
   points
 };
 
-const eventPath = path.join(process.cwd(), 'game/events', `pr-${payload.prNumber}.json`);
+const eventPath = path.join(process.cwd(), 'openblog/events', `pr-${payload.prNumber}.json`);
 fs.writeFileSync(eventPath, `${JSON.stringify(event, null, 2)}\n`);
 console.log(`Created ${eventPath}`);

@@ -1,7 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { marked } from 'marked';
-import { getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/game';
+import { getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/openblog';
 
 export function getStaticPaths() {
   return getPosts().map((post) => ({ params: { slug: post.slug } }));

@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { getCategoryPath, getPosts } from '../lib/game';
+import { getCategoryPath, getPosts } from '../lib/openblog';
 const { title = 'OpenBlog' } = Astro.props;
 const categories = [...new Map(getPosts().map((post) => [post.category, post.categoryLabel])).entries()]
   .sort((a, b) => a[1].localeCompare(b[1]));
@@ -12,7 +12,7 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    <meta name="description" content="OpenBlog is a Git-based collaborative blog game where accepted pull requests earn points." />
+    <meta name="description" content="OpenBlog is a Git-based collaborative blog where accepted pull requests earn points." />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
     <script is:inline>
       (function () {

@@ -105,14 +105,14 @@ export function getPostBySlug(slug: string): Post | undefined {
 }
 
 export function getLeaderboard(): UserRecord[] {
-  const p = path.join(ROOT, 'game/generated/leaderboard.json');
+  const p = path.join(ROOT, 'openblog/generated/leaderboard.json');
   if (!fs.existsSync(p)) return [];
   const data = JSON.parse(fs.readFileSync(p, 'utf8'));
   return data.leaderboard ?? [];
 }
 
 export function getContributorsForPost(postSlug: string): PostContributorRecord[] {
-  const eventsDir = path.join(ROOT, 'game/events');
+  const eventsDir = path.join(ROOT, 'openblog/events');
   if (!fs.existsSync(eventsDir)) return [];
   const knownSlugs = new Set(getPosts().map((post) => post.slug));
 
@@ -153,7 +153,7 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
 }
 
 export function getRecentEvents(limit = 10): EventRecord[] {
-  const eventsDir = path.join(ROOT, 'game/events');
+  const eventsDir = path.join(ROOT, 'openblog/events');
   if (!fs.existsSync(eventsDir)) return [];
   const knownSlugs = new Set(getPosts().map((post) => post.slug));
 

@@ -93,11 +93,11 @@ Common contribution types:
 - Changes are in `content/posts/<category>/<post>.md`
 - PR description explains what improved and why
 - Changed slug(s) are mentioned in the PR
-- `game/generated/*` is not manually edited
+- `openblog/generated/*` is not manually edited
 
 ## 🏷️ Scoring Labels
 
-Points are determined by labels in `game/enums/scoring-labels.json`:
+Points are determined by labels in `openblog/enums/scoring-labels.json`:
 
 - `typo`: +5
 - `source-added`: +10
@@ -121,24 +121,24 @@ Rules:
 ## 📁 Project Structure
 
 - `content/posts/<category>/*.md`: blog content
-- `game/events/*.json`: immutable merged-PR score events
-- `game/enums/scoring-labels.json`: score labels metadata (points, icon, color)
-- `game/generated/users/*.json`: generated user stats
-- `game/generated/leaderboard.json`: generated leaderboard
+- `openblog/events/*.json`: immutable merged-PR score events
+- `openblog/enums/scoring-labels.json`: score labels metadata (points, icon, color)
+- `openblog/generated/users/*.json`: generated user stats
+- `openblog/generated/leaderboard.json`: generated leaderboard
 - `scripts/add-event-from-pr.mjs`: create event from merged PR metadata
-- `scripts/generate-game-state.mjs`: regenerate users and leaderboard
+- `scripts/generate-openblog-state.mjs`: regenerate users and leaderboard
 
 ## 🔧 Maintainer Notes
 
 These commands are primarily for maintainers/automation:
 
 ```bash
-npm run game:add-event
-npm run game:generate
+npm run openblog:add-event
+npm run openblog:generate
 ```
 
 Recommended guardrails:
 
 - Protect `main` branch
-- Keep `game/generated/*` maintainer/bot-managed
+- Keep `openblog/generated/*` maintainer/bot-managed
 - Enforce scoring-label policy

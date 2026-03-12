@@ -8,8 +8,8 @@
     "build": "astro build",
     "preview": "astro preview",
     "check": "astro check",
-    "game:generate": "node scripts/generate-game-state.mjs",
-    "game:add-event": "node scripts/add-event-from-pr.mjs"
+    "openblog:generate": "node scripts/generate-openblog-state.mjs",
+    "openblog:add-event": "node scripts/add-event-from-pr.mjs"
   },
   "dependencies": {
     "astro": "^4.16.18",

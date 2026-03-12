@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 
-const scoreByLabelPath = path.join(process.cwd(), 'game/enums/scoring-labels.json');
+const scoreByLabelPath = path.join(process.cwd(), 'openblog/enums/scoring-labels.json');
 const parsedScoreByLabel = JSON.parse(fs.readFileSync(scoreByLabelPath, 'utf8'));
 
 const getPoints = (config) => {

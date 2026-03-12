@@ -2,9 +2,9 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
-const eventsDir = path.join(root, 'game/events');
-const generatedUsersDir = path.join(root, 'game/generated/users');
-const leaderboardFile = path.join(root, 'game/generated/leaderboard.json');
+const eventsDir = path.join(root, 'openblog/events');
+const generatedUsersDir = path.join(root, 'openblog/generated/users');
+const leaderboardFile = path.join(root, 'openblog/generated/leaderboard.json');
 
 fs.mkdirSync(generatedUsersDir, { recursive: true });
 

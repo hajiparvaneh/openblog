@@ -84,28 +84,28 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual dispatch: set all PR_* values (especially PR_POST_SLUG) via inputs/env."
           fi
-          npm run game:add-event
+          npm run openblog:add-event
 
       - name: Regenerate leaderboard and users
         if: github.event_name == 'workflow_dispatch' || steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
-        run: npm run game:generate
+        run: npm run openblog:generate
 
-      - name: Detect generated game-data changes
+      - name: Detect generated openblog-data changes
         if: github.event_name == 'workflow_dispatch' || steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
-        id: game_changes
+        id: openblog_changes
         run: |
-          if git diff --quiet -- game/events game/generated; then
+          if git diff --quiet -- openblog/events openblog/generated; then
             echo "has_changes=false" >> "$GITHUB_OUTPUT"
-            echo "No generated game-data changes detected."
+            echo "No generated openblog-data changes detected."
           else
             echo "has_changes=true" >> "$GITHUB_OUTPUT"
-            echo "Generated game-data changes detected."
+            echo "Generated openblog-data changes detected."
           fi
 
-      - name: Commit generated game data
-        if: steps.game_changes.outputs.has_changes == 'true'
+      - name: Commit generated openblog data
+        if: steps.openblog_changes.outputs.has_changes == 'true'
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref_name }}
-          commit_message: "chore(game): update events and leaderboard from merged PR"
-          file_pattern: game/events/*.json game/generated/*.json game/generated/**/*.json
+          commit_message: "chore(openblog): update events and leaderboard from merged PR"
+          file_pattern: openblog/events/*.json openblog/generated/*.json openblog/generated/**/*.json

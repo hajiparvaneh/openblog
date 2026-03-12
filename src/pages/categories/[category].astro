@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getPosts, normalizeCategoryKey } from '../../lib/game';
+import { getPosts, normalizeCategoryKey } from '../../lib/openblog';
 
 export function getStaticPaths() {
   const categoryMap = new Map<string, string>();
