@@ -22,6 +22,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
   pull-requests: read
 
 jobs:
@@ -124,3 +125,79 @@ jobs:
           branch: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.ref || github.ref_name }}
           commit_message: "chore(openblog): update events and leaderboard from merged PR"
           file_pattern: openblog/events/*.json openblog/generated/*.json openblog/generated/**/*.json
+
+      - name: Comment contributed post links on PR
+        if: github.event_name == 'pull_request' && steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
+        uses: actions/github-script@v7
+        env:
+          POST_SLUGS: ${{ steps.resolve_post_slug.outputs.post_slugs }}
+          WEBSITE_BASE_URL: ${{ vars.OPENBLOG_BASE_URL || vars.SITE_URL || 'https://example.com' }}
+        with:
+          script: |
+            const prNumber = context.payload.pull_request?.number;
+            if (!prNumber) {
+              core.info('No PR number found. Skipping contribution comment.');
+              return;
+            }
+            const contributor = context.payload.pull_request?.user?.login;
+            const greeting = contributor ? `Hi @${contributor}` : 'Hi there';
+
+            const marker = '<!-- openblog-contribution-summary -->';
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+            const websiteBaseUrl = (process.env.WEBSITE_BASE_URL || 'https://example.com').trim().replace(/\/+$/, '');
+            const postSlugs = (process.env.POST_SLUGS || '')
+              .split(',')
+              .map((value) => value.trim())
+              .filter(Boolean);
+
+            if (postSlugs.length === 0) {
+              core.info('No post slugs found. Skipping contribution comment.');
+              return;
+            }
+
+            const postLines = postSlugs.map((slug) => {
+              const encodedPath = slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+              const postUrl = `${websiteBaseUrl}/posts/${encodedPath}/`;
+              return `- \`${slug}\`: ${postUrl}`;
+            });
+
+            const body = [
+              marker,
+              `${greeting}, thank you for your contribution to OpenBlog.`,
+              'Your contribution has been recorded and scoring has been updated.',
+              '',
+              '**Contributed post(s):**',
+              ...postLines
+            ].join('\n');
+
+            // Delay comment publishing to allow downstream systems to settle.
+            await new Promise((resolve) => setTimeout(resolve, 10_000));
+
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number: prNumber,
+              per_page: 100
+            });
+
+            const existing = comments.find((comment) => comment.body?.includes(marker));
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existing.id,
+                body
+              });
+              core.info(`Updated existing contribution comment (${existing.id}).`);
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              owner,
+              repo,
+              issue_number: prNumber,
+              body
+            });
+            core.info('Created contribution summary comment.');
