@@ -1,17 +1,17 @@
 {
-  "updatedAt": "2026-03-12T17:22:53Z",
+  "updatedAt": "2026-03-12T20:47:55Z",
   "leaderboard": [
+    {
+      "username": "hajiparvaneh",
+      "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
+      "totalPoints": 65,
+      "acceptedPrs": 4
+    },
     {
       "username": "hamidhp",
       "avatarUrl": null,
       "totalPoints": 25,
       "acceptedPrs": 1
-    },
-    {
-      "username": "hajiparvaneh",
-      "avatarUrl": null,
-      "totalPoints": 15,
-      "acceptedPrs": 3
     }
   ]
 }

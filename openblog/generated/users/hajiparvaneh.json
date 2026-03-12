@@ -1,29 +1,32 @@
 {
   "username": "hajiparvaneh",
   "profileUrl": "https://github.com/hajiparvaneh",
-  "avatarUrl": null,
+  "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
   "joinedAt": "2026-03-12T15:00:09Z",
-  "lastUpdatedAt": "2026-03-12T17:22:53Z",
-  "totalPoints": 15,
-  "acceptedPrs": 3,
-  "totalContributions": 3,
-  "totalPostsContributed": 1,
+  "lastUpdatedAt": "2026-03-12T20:47:55Z",
+  "totalPoints": 65,
+  "acceptedPrs": 4,
+  "totalContributions": 4,
+  "totalPostsContributed": 2,
   "contributedPostSlugs": [
-    "codex/define-game-logic-and-scoring-system"
+    "codex/define-game-logic-and-scoring-system",
+    "database/postgresql-indexing-basics"
   ],
   "labelsUsed": [
     "codex",
+    "new-post",
     "typo"
   ],
   "events": [
     5,
     6,
-    7
+    7,
+    9
   ],
   "lastContribution": {
-    "prNumber": 7,
-    "postSlug": "codex/define-game-logic-and-scoring-system",
-    "mergedAt": "2026-03-12T17:22:53Z",
-    "points": 5
+    "prNumber": 9,
+    "postSlug": "database/postgresql-indexing-basics",
+    "mergedAt": "2026-03-12T20:47:55Z",
+    "points": 50
   }
 }

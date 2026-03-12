@@ -1,0 +1,12 @@
+{
+  "eventType": "pr_merged",
+  "prNumber": 9,
+  "username": "hajiparvaneh",
+  "userAvatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
+  "postSlug": "database/postgresql-indexing-basics",
+  "mergedAt": "2026-03-12T20:47:55Z",
+  "labels": [
+    "new-post"
+  ],
+  "points": 50
+}
