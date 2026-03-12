@@ -1,0 +1,16 @@
+{
+  "eventType": "pr_merged",
+  "prNumber": 13,
+  "username": "hajiparvaneh",
+  "userAvatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
+  "mergedAt": "2026-03-12T22:11:44Z",
+  "contributions": [
+    {
+      "postSlug": "csharp/csharp-performance-techniques-for-clean-scalable-apps",
+      "labels": [
+        "typo"
+      ],
+      "points": 5
+    }
+  ]
+}
