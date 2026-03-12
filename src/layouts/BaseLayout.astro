@@ -1,6 +1,9 @@
 ---
 import '../styles/global.css';
+import { getPosts } from '../lib/game';
 const { title = 'OpenBlog' } = Astro.props;
+const categories = [...new Set(getPosts().map((post) => post.category))].sort((a, b) => a.localeCompare(b));
+const categoryPath = (category: string) => `/categories/${encodeURIComponent(category)}`;
 ---
 <html lang="en">
   <head>
@@ -16,6 +19,16 @@ const { title = 'OpenBlog' } = Astro.props;
         <a href="/leaderboard">Leaderboard</a>
         <a href="/how-to-contribute">How to contribute</a>
       </nav>
+      {categories.length > 0 && (
+        <nav class="category-nav card" aria-label="Post categories">
+          <span class="meta">Categories</span>
+          <div class="category-links">
+            {categories.map((category) => (
+              <a class="category-link" href={categoryPath(category)}>{category}</a>
+            ))}
+          </div>
+        </nav>
+      )}
       <slot />
     </div>
   </body>

@@ -1,0 +1,33 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import { getPosts } from '../../lib/game';
+
+export function getStaticPaths() {
+  const categories = [...new Set(getPosts().map((post) => post.category))];
+  return categories.map((category) => ({
+    params: { category: encodeURIComponent(category) }
+  }));
+}
+
+const categoryParam = Astro.params.category ?? '';
+const category = decodeURIComponent(categoryParam);
+const posts = getPosts().filter((post) => post.category === category);
+
+if (posts.length === 0) {
+  throw new Error(`Category not found: ${category}`);
+}
+---
+<BaseLayout title={`${category} | Categories | OpenBlog`}>
+  <h1>Category: {category}</h1>
+  <p class="meta">{posts.length} post{posts.length > 1 ? 's' : ''}</p>
+
+  <section class="list">
+    {posts.map((post) => (
+      <article class="card">
+        <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
+        <p>{post.description}</p>
+        <p class="meta">Published: {post.date}</p>
+      </article>
+    ))}
+  </section>
+</BaseLayout>

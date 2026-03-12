@@ -3,6 +3,7 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import { getPosts } from '../lib/game';
 
 const posts = getPosts();
+const categoryPath = (category: string) => `/categories/${encodeURIComponent(category)}`;
 ---
 <BaseLayout title="OpenBlog">
   <h1>OpenBlog</h1>
@@ -13,7 +14,7 @@ const posts = getPosts();
       <article class="card">
         <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
         <p>{post.description}</p>
-        <p class="meta">Published: {post.date}</p>
+        <p class="meta">Published: {post.date} · Category: <a href={categoryPath(post.category)}>{post.category}</a></p>
       </article>
     ))}
   </section>

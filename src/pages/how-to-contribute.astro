@@ -10,8 +10,8 @@ const sortedScoringRules = Object.entries(scoreByLabel).sort(([, pointsA], [, po
 <BaseLayout title="How to contribute | OpenBlog">
   <h1>How to contribute</h1>
   <ol class="card">
-    <li>Choose a post from <code>/content/posts</code> and improve it (fix typo, add source, fact-check, add examples, translation, or new post).</li>
-    <li>Open a pull request that clearly explains the improvement and references the changed post slug.</li>
+    <li>Choose a post from <code>/content/posts/&lt;category&gt;/&lt;post&gt;.md</code> and improve it (fix typo, add source, fact-check, add examples, translation, or new post).</li>
+    <li>Open a pull request that clearly explains the improvement and references the changed post slug (for example <code>networking/how-dns-works</code>).</li>
     <li>Maintainers review your PR, apply one or more scoring labels, and merge if accepted.</li>
     <li>After merge, the score workflow creates a game event and regenerates leaderboard files.</li>
     <li>Your points are added automatically based on the labels on the merged PR.</li>

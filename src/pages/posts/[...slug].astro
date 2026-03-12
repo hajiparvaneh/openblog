@@ -7,7 +7,8 @@ export function getStaticPaths() {
   return getPosts().map((post) => ({ params: { slug: post.slug } }));
 }
 
-const slug = Astro.params.slug ?? '';
+const slugParam = Astro.params.slug;
+const slug = Array.isArray(slugParam) ? slugParam.join('/') : slugParam ?? '';
 const post = getPostBySlug(slug);
 if (!post) throw new Error('Post not found');
 const contributors = getContributorsForPost(slug);
@@ -15,11 +16,13 @@ const html = marked.parse(post.body);
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const getProfileUrl = (username: string) => `https://github.com/${username}`;
+const categoryPath = `/categories/${encodeURIComponent(post.category)}`;
 ---
 <BaseLayout title={`${post.title} | OpenBlog`}>
   <article class="card">
+    <p class="meta"><a href="/">Home</a> / <a href={categoryPath}>{post.category}</a></p>
     <h1>{post.title}</h1>
-    <p class="meta">{post.date}</p>
+    <p class="meta">Published: {post.date} · Category: <a href={categoryPath}>{post.category}</a></p>
     <div set:html={html} />
   </article>
 

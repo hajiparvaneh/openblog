@@ -4,7 +4,7 @@ OpenBlog is a minimal Git-based collaborative blog game built with Astro.
 
 ## Architecture
 
-- `content/posts/*.md`: blog posts
+- `content/posts/<category>/*.md`: blog posts grouped by category folder
 - `game/events/*.json`: immutable merged-PR score events
 - `game/enums/scoring-labels.json`: scoring label enum (label -> points)
 - `game/generated/users/*.json`: generated user aggregates

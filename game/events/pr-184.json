@@ -2,7 +2,7 @@
   "eventType": "pr_merged",
   "prNumber": 184,
   "username": "hamidhp",
-  "postSlug": "how-dns-works",
+  "postSlug": "networking/how-dns-works",
   "labels": ["source-added", "fact-check"],
   "points": 25,
   "mergedAt": "2026-03-11T09:30:00Z"

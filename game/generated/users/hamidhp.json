@@ -9,7 +9,7 @@
   "totalContributions": 1,
   "totalPostsContributed": 1,
   "contributedPostSlugs": [
-    "how-dns-works"
+    "networking/how-dns-works"
   ],
   "labelsUsed": [
     "fact-check",
@@ -20,7 +20,7 @@
   ],
   "lastContribution": {
     "prNumber": 184,
-    "postSlug": "how-dns-works",
+    "postSlug": "networking/how-dns-works",
     "mergedAt": "2026-03-11T09:30:00Z",
     "points": 25
   }

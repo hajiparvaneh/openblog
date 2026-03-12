@@ -4,6 +4,7 @@ import matter from 'gray-matter';
 
 export type Post = {
   slug: string;
+  category: string;
   title: string;
   description: string;
   date: string;
@@ -25,24 +26,58 @@ type UserRecord = { username: string; avatarUrl?: string | null; totalPoints: nu
 type PostContributorRecord = UserRecord & { labels: string[] };
 
 const ROOT = process.cwd();
+const POSTS_DIR = path.join(ROOT, 'content/posts');
+
+function resolvePostSlug(postSlug: string, availableSlugs: Set<string>): string | null {
+  if (availableSlugs.has(postSlug)) return postSlug;
+  if (postSlug.includes('/')) return null;
+
+  const matches = [...availableSlugs].filter((slug) => slug.endsWith(`/${postSlug}`));
+  return matches.length === 1 ? matches[0] : null;
+}
 
 export function getPosts(): Post[] {
-  const postsDir = path.join(ROOT, 'content/posts');
-  return fs
-    .readdirSync(postsDir)
-    .filter((file) => file.endsWith('.md'))
-    .map((file) => {
-      const raw = fs.readFileSync(path.join(postsDir, file), 'utf8');
+  if (!fs.existsSync(POSTS_DIR)) return [];
+
+  const entries = fs.readdirSync(POSTS_DIR, { withFileTypes: true });
+  const rootMarkdownFiles = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md'));
+  if (rootMarkdownFiles.length > 0) {
+    const fileList = rootMarkdownFiles.map((file) => file.name).join(', ');
+    throw new Error(`Posts must be stored under content/posts/<category>/<post>.md. Move: ${fileList}`);
+  }
+
+  const posts: Post[] = [];
+
+  for (const categoryEntry of entries) {
+    if (!categoryEntry.isDirectory()) continue;
+
+    const category = categoryEntry.name;
+    const categoryDir = path.join(POSTS_DIR, category);
+    for (const postEntry of fs.readdirSync(categoryDir, { withFileTypes: true })) {
+      if (postEntry.isDirectory()) {
+        throw new Error(
+          `Nested folders are not supported in content/posts. Found: ${category}/${postEntry.name}`
+        );
+      }
+
+      if (!postEntry.isFile() || !postEntry.name.endsWith('.md')) continue;
+
+      const postPath = path.join(categoryDir, postEntry.name);
+      const raw = fs.readFileSync(postPath, 'utf8');
       const { data, content } = matter(raw);
-      return {
-        slug: file.replace(/\.md$/, ''),
-        title: data.title ?? file,
+      const postName = postEntry.name.replace(/\.md$/, '');
+      posts.push({
+        slug: `${category}/${postName}`,
+        category,
+        title: data.title ?? postName,
         description: data.description ?? '',
         date: data.date ?? '',
         body: content.trim()
-      };
-    })
-    .sort((a, b) => b.date.localeCompare(a.date));
+      });
+    }
+  }
+
+  return posts.sort((a, b) => b.date.localeCompare(a.date));
 }
 
 export function getPostBySlug(slug: string): Post | undefined {
@@ -59,13 +94,15 @@ export function getLeaderboard(): UserRecord[] {
 export function getContributorsForPost(postSlug: string): PostContributorRecord[] {
   const eventsDir = path.join(ROOT, 'game/events');
   if (!fs.existsSync(eventsDir)) return [];
+  const knownSlugs = new Set(getPosts().map((post) => post.slug));
 
   const byUser = new Map<string, { avatarUrl: string | null; totalPoints: number; acceptedPrs: number; labels: Set<string> }>();
 
   for (const file of fs.readdirSync(eventsDir)) {
     if (!file.endsWith('.json')) continue;
     const event: EventRecord = JSON.parse(fs.readFileSync(path.join(eventsDir, file), 'utf8'));
-    if (event.postSlug !== postSlug) continue;
+    const resolvedPostSlug = resolvePostSlug(event.postSlug, knownSlugs);
+    if (resolvedPostSlug !== postSlug) continue;
 
     const current = byUser.get(event.username) ?? {
       avatarUrl: null,
@@ -98,11 +135,17 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
 export function getRecentEvents(limit = 10): EventRecord[] {
   const eventsDir = path.join(ROOT, 'game/events');
   if (!fs.existsSync(eventsDir)) return [];
+  const knownSlugs = new Set(getPosts().map((post) => post.slug));
 
   return fs
     .readdirSync(eventsDir)
     .filter((file) => file.endsWith('.json'))
     .map((file) => JSON.parse(fs.readFileSync(path.join(eventsDir, file), 'utf8')) as EventRecord)
+    .map((event) => {
+      const resolvedPostSlug = resolvePostSlug(event.postSlug, knownSlugs);
+      if (!resolvedPostSlug) return event;
+      return { ...event, postSlug: resolvedPostSlug };
+    })
     .sort((a, b) => b.mergedAt.localeCompare(a.mergedAt))
     .slice(0, limit);
 }
