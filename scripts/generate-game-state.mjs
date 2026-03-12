@@ -39,9 +39,11 @@ const leaderboard = [...users.values()]
   .map(({ events: _events, ...item }) => item)
   .sort((a, b) => b.totalPoints - a.totalPoints || b.acceptedPrs - a.acceptedPrs);
 
+const updatedAt = events.length > 0 ? events[events.length - 1].mergedAt : null;
+
 fs.writeFileSync(
   leaderboardFile,
-  `${JSON.stringify({ updatedAt: new Date().toISOString(), leaderboard }, null, 2)}\n`
+  `${JSON.stringify({ updatedAt, leaderboard }, null, 2)}\n`
 );
 
 console.log(`Generated leaderboard for ${leaderboard.length} users.`);
