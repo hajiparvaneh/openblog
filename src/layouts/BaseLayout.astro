@@ -58,12 +58,13 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
 
           <aside class="category-sidebar card">
             <section class="sidebar-block">
-              <p class="kicker icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>New blog</p>
+              <p class="kicker icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>New Post</p>
               <p class="meta">Want to contribute? Clone the repo, add a new <code>.md</code> file, and open a PR.</p>
               <a class="sidebar-link" href={repoUrl} target="_blank" rel="noopener noreferrer">
                 <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
                 Open GitHub repo
               </a>
+              <a class="sidebar-sub-link" href="/how-to-contribute">How to contribute</a>
             </section>
 
             <hr class="sidebar-sep" />

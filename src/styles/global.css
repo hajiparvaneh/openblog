@@ -46,7 +46,7 @@ a {
 
 a:hover {
   color: var(--primary-strong);
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .ti {
@@ -213,6 +213,18 @@ p {
   font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
   font-size: 0.86rem;
   font-weight: 700;
+}
+
+.sidebar-sub-link {
+  display: block;
+  margin-top: 0.15rem;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.sidebar-sub-link:hover {
+  color: var(--text);
 }
 
 .sidebar-sep {
@@ -447,7 +459,7 @@ p {
 }
 
 .user-link:hover {
-  text-decoration: underline;
+  text-decoration: none;
 }
 
 .user-handle {
