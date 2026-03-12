@@ -100,6 +100,13 @@ p {
   gap: 1rem;
 }
 
+.content-layout {
+  display: grid;
+  grid-template-columns: minmax(180px, 220px) minmax(0, 1fr);
+  gap: 1rem;
+  align-items: start;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -156,9 +163,11 @@ p {
   font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
   font-size: 0.9rem;
   font-weight: 700;
+  line-height: 1;
+  min-height: 2rem;
   border: 1px solid var(--border);
   border-radius: 0;
-  padding: 0.35rem 0.6rem;
+  padding: 0.45rem 0.6rem;
   text-decoration: none;
 }
 
@@ -175,9 +184,11 @@ p {
   background: var(--surface-soft);
   color: var(--text);
   font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
-  font-size: 0.85rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  padding: 0.35rem 0.6rem;
+  line-height: 1;
+  min-height: 2rem;
+  padding: 0.45rem 0.6rem;
   cursor: pointer;
 }
 
@@ -185,16 +196,9 @@ p {
   background: var(--surface);
 }
 
-.category-nav {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1rem;
-  border: 1px solid var(--border);
-  border-radius: 0;
-  background: var(--surface);
-  padding: 0.7rem 0.85rem;
+.category-sidebar {
+  position: sticky;
+  top: 1rem;
 }
 
 .category-links {
@@ -203,7 +207,13 @@ p {
   gap: 0.45rem;
 }
 
+.category-links-sidebar {
+  display: grid;
+  gap: 0.45rem;
+}
+
 .category-link {
+  display: inline-block;
   border: 1px solid var(--border);
   border-radius: 0;
   background: var(--surface-soft);
@@ -212,6 +222,12 @@ p {
   font-size: 0.78rem;
   font-weight: 700;
   padding: 0.25rem 0.55rem;
+}
+
+.category-links-sidebar .category-link {
+  display: block;
+  font-size: 0.83rem;
+  padding: 0.35rem 0.55rem;
 }
 
 .category-link:hover {
@@ -461,6 +477,14 @@ p {
 @media (max-width: 860px) {
   .page-shell {
     padding: 0.85rem;
+  }
+
+  .content-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .category-sidebar {
+    position: static;
   }
 
   .post-grid {

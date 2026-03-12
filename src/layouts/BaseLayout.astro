@@ -48,20 +48,28 @@ const categoryPath = (category: string) => `/categories/${encodeURIComponent(cat
         </div>
       </header>
 
-      {categories.length > 0 && (
-        <nav class="category-nav" aria-label="Post categories">
-          <span class="meta icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Explore categories</span>
-          <div class="category-links">
-            {categories.map((category) => (
-              <a class="category-link" href={categoryPath(category)}>{category}</a>
-            ))}
-          </div>
-        </nav>
-      )}
+      {categories.length > 0 ? (
+        <div class="content-layout">
+          <aside class="category-sidebar card">
+            <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Categories</p>
+            <nav aria-label="Post categories">
+              <div class="category-links category-links-sidebar">
+                {categories.map((category) => (
+                  <a class="category-link" href={categoryPath(category)}>{category}</a>
+                ))}
+              </div>
+            </nav>
+          </aside>
 
-      <main class="container">
-        <slot />
-      </main>
+          <main class="container">
+            <slot />
+          </main>
+        </div>
+      ) : (
+        <main class="container">
+          <slot />
+        </main>
+      )}
 
       <footer class="site-footer meta">
         <span class="icon-label">
