@@ -97,10 +97,22 @@ export function formatPostDate(value: unknown): string {
 }
 
 function resolvePostSlug(postSlug: string, availableSlugs: Set<string>): string | null {
-  if (availableSlugs.has(postSlug)) return postSlug;
-  if (postSlug.includes('/')) return null;
+  const raw = postSlug.trim().replace(/\\/g, '/');
+  if (!raw) return null;
 
-  const matches = [...availableSlugs].filter((slug) => slug.endsWith(`/${postSlug}`));
+  const candidates = new Set<string>([raw]);
+  const withoutMd = raw.replace(/\.md$/i, '');
+  candidates.add(withoutMd);
+  candidates.add(withoutMd.replace(/^content\/posts\//i, ''));
+  candidates.add(withoutMd.replace(/^\/+/, ''));
+
+  for (const candidate of candidates) {
+    if (availableSlugs.has(candidate)) return candidate;
+  }
+
+  const leaf = withoutMd.split('/').filter(Boolean).at(-1);
+  if (!leaf) return null;
+  const matches = [...availableSlugs].filter((slug) => slug.endsWith(`/${leaf}`));
   return matches.length === 1 ? matches[0] : null;
 }
 
