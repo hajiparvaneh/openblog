@@ -32,6 +32,7 @@ npm run game:generate
 ## Scoring logic
 
 - Each merged PR can create one immutable event file in `game/events/pr-<number>.json`.
+- The scoring workflow is triggered for merged PRs only when at least one changed file matches `content/posts/<category>/<post>.md`.
 - Points are computed from labels in `game/enums/scoring-labels.json` and summed per PR.
   - `typo`: 5
   - `source-added`: 10

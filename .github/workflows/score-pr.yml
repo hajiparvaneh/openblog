@@ -3,6 +3,8 @@ name: Score merged pull requests
 on:
   pull_request:
     types: [closed]
+    paths:
+      - 'content/posts/*/*.md'
   workflow_dispatch:
     inputs:
       pr_number:
@@ -36,7 +38,7 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Resolve post slug from PR files
+      - name: Resolve post slug from eligible PR file changes
         if: github.event_name == 'pull_request'
         id: resolve_post_slug
         uses: actions/github-script@v7
@@ -53,14 +55,24 @@ jobs:
               per_page: 100
             });
 
-            const postFile = files
-              .map((file) => file.filename)
-              .find((filename) => filename.startsWith('content/posts/') && filename.endsWith('.md'));
+            const allowedPath = /^content\/posts\/[^/]+\/[^/]+\.md$/;
+            const allowedStatuses = new Set(['added', 'modified', 'removed']);
+            const eligibleFiles = files.filter((file) =>
+              allowedPath.test(file.filename) && allowedStatuses.has(file.status)
+            );
 
-            if (!postFile) return '';
+            core.setOutput('has_eligible_changes', eligibleFiles.length > 0 ? 'true' : 'false');
+
+            if (eligibleFiles.length === 0) {
+              core.info('No eligible post-file changes found. Scoring steps will be skipped.');
+              return '';
+            }
+
+            const postFile = eligibleFiles[0].filename;
             return postFile.replace(/^content\/posts\//, '').replace(/\.md$/, '');
 
       - name: Create score event from PR labels
+        if: github.event_name == 'workflow_dispatch' || steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
         env:
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
           PR_USERNAME: ${{ github.event.pull_request.user.login }}
@@ -75,9 +87,11 @@ jobs:
           npm run game:add-event
 
       - name: Regenerate leaderboard and users
+        if: github.event_name == 'workflow_dispatch' || steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
         run: npm run game:generate
 
       - name: Detect generated game-data changes
+        if: github.event_name == 'workflow_dispatch' || steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
         id: game_changes
         run: |
           if git diff --quiet -- game/events game/generated; then
