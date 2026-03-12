@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-03-12T15:13:59Z",
+  "updatedAt": "2026-03-12T17:22:53Z",
   "leaderboard": [
     {
       "username": "hamidhp",
@@ -8,8 +8,8 @@
     },
     {
       "username": "hajiparvaneh",
-      "totalPoints": 10,
-      "acceptedPrs": 2
+      "totalPoints": 15,
+      "acceptedPrs": 3
     }
   ]
 }

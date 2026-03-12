@@ -1,0 +1,12 @@
+{
+  "eventType": "pr_merged",
+  "prNumber": 7,
+  "username": "hajiparvaneh",
+  "postSlug": "codex/define-game-logic-and-scoring-system",
+  "mergedAt": "2026-03-12T17:22:53Z",
+  "labels": [
+    "codex",
+    "typo"
+  ],
+  "points": 5
+}
