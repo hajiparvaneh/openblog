@@ -115,7 +115,8 @@ Each label entry stores:
 Rules:
 
 - Only merged PRs are eligible.
-- At least one scoring label is required to generate an event.
+- At least one scoring label is required unless the PR adds a new post file.
+- New files under `content/posts/<category>/<post>.md` automatically receive `new-post` scoring in automation (even if the label was not applied manually).
 - If multiple scoring labels are applied, points are summed.
 
 Event schema:

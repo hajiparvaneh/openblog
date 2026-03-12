@@ -10,8 +10,14 @@ on:
       pr_number:
         description: 'PR number to process manually'
         required: false
+      post_slugs:
+        description: 'Comma-separated post slugs (preferred for manual scoring)'
+        required: false
       post_slug:
-        description: 'Post slug (required for manual scoring if no PR payload exists)'
+        description: 'Single post slug (legacy manual input)'
+        required: false
+      new_post_slugs:
+        description: 'Comma-separated slugs that were newly added posts'
         required: false
 
 permissions:
@@ -38,7 +44,7 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
-      - name: Resolve post slug from eligible PR file changes
+      - name: Resolve post slugs from eligible PR file changes
         if: github.event_name == 'pull_request'
         id: resolve_post_slug
         uses: actions/github-script@v7
@@ -68,8 +74,16 @@ jobs:
               return '';
             }
 
-            const postFile = eligibleFiles[0].filename;
-            return postFile.replace(/^content\/posts\//, '').replace(/\.md$/, '');
+            const allSlugs = eligibleFiles
+              .map((file) => file.filename.replace(/^content\/posts\//, '').replace(/\.md$/, ''));
+            const newPostSlugs = eligibleFiles
+              .filter((file) => file.status === 'added')
+              .map((file) => file.filename.replace(/^content\/posts\//, '').replace(/\.md$/, ''));
+
+            core.setOutput('post_slugs', allSlugs.join(','));
+            core.setOutput('new_post_slugs', newPostSlugs.join(','));
+
+            return allSlugs[0];
 
       - name: Create score event from PR labels
         if: github.event_name == 'workflow_dispatch' || steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
@@ -79,10 +93,11 @@ jobs:
           PR_USER_AVATAR_URL: ${{ github.event.pull_request.user.avatar_url }}
           PR_MERGED_AT: ${{ github.event.pull_request.merged_at }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-          PR_POST_SLUG: ${{ github.event_name == 'pull_request' && steps.resolve_post_slug.outputs.result || github.event.inputs.post_slug || '' }}
+          PR_POST_SLUGS: ${{ github.event_name == 'pull_request' && steps.resolve_post_slug.outputs.post_slugs || github.event.inputs.post_slugs || github.event.inputs.post_slug || '' }}
+          PR_NEW_POST_SLUGS: ${{ github.event_name == 'pull_request' && steps.resolve_post_slug.outputs.new_post_slugs || github.event.inputs.new_post_slugs || '' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual dispatch: set all PR_* values (especially PR_POST_SLUG) via inputs/env."
+            echo "Manual dispatch: set all PR_* values (especially PR_POST_SLUGS and optional PR_NEW_POST_SLUGS) via inputs/env."
           fi
           npm run openblog:add-event
 

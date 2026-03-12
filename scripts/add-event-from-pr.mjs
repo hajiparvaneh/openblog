@@ -2,9 +2,24 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { calculatePoints } from './scoring.mjs';
 
-function parseSlugList() {
-  const raw = process.env.PR_POST_SLUGS ?? process.env.PR_POST_SLUG ?? '';
-  return raw.split(',').map((item) => item.trim()).filter(Boolean);
+function parseCsvList(raw) {
+  const seen = new Set();
+  const values = [];
+  for (const item of (raw ?? '').split(',')) {
+    const value = item.trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    values.push(value);
+  }
+  return values;
+}
+
+function parsePostSlugList() {
+  return parseCsvList(process.env.PR_POST_SLUGS ?? process.env.PR_POST_SLUG ?? '');
+}
+
+function parseNewPostSlugList() {
+  return parseCsvList(process.env.PR_NEW_POST_SLUGS ?? '');
 }
 
 function normalizeContribution(raw) {
@@ -39,19 +54,15 @@ const payload = {
   prNumber: Number(process.env.PR_NUMBER),
   username: process.env.PR_USERNAME,
   userAvatarUrl: process.env.PR_USER_AVATAR_URL || undefined,
-  postSlugs: parseSlugList(),
+  postSlugs: parsePostSlugList(),
+  newPostSlugs: parseNewPostSlugList(),
   mergedAt: process.env.PR_MERGED_AT,
-  labels: (process.env.PR_LABELS ?? '').split(',').map((s) => s.trim()).filter(Boolean)
+  labels: parseCsvList(process.env.PR_LABELS ?? '')
 };
 
-if (!payload.prNumber || !payload.username || payload.postSlugs.length === 0 || !payload.mergedAt) {
+const allTargetSlugs = parseCsvList([...payload.postSlugs, ...payload.newPostSlugs].join(','));
+if (!payload.prNumber || !payload.username || allTargetSlugs.length === 0 || !payload.mergedAt) {
   console.log('Missing required PR metadata; no event generated.');
-  process.exit(0);
-}
-
-const points = calculatePoints(payload.labels);
-if (points <= 0) {
-  console.log('No scoring labels found; skipping event generation.');
   process.exit(0);
 }
 
@@ -62,8 +73,28 @@ const existingEvent = fs.existsSync(eventPath)
 const contributionsBySlug = new Map(
   getEventContributions(existingEvent ?? {}).map((contribution) => [contribution.postSlug, contribution])
 );
-for (const postSlug of payload.postSlugs) {
-  contributionsBySlug.set(postSlug, { postSlug, labels: payload.labels, points });
+
+const newPostSlugSet = new Set(payload.newPostSlugs);
+let scoredContributionCount = 0;
+
+for (const postSlug of allTargetSlugs) {
+  const labels = [...payload.labels];
+  if (newPostSlugSet.has(postSlug) && !labels.includes('new-post')) {
+    labels.push('new-post');
+  }
+
+  const points = calculatePoints(labels);
+  if (points <= 0) {
+    continue;
+  }
+
+  contributionsBySlug.set(postSlug, { postSlug, labels, points });
+  scoredContributionCount += 1;
+}
+
+if (scoredContributionCount === 0) {
+  console.log('No scoring labels found for eligible post changes; skipping event generation.');
+  process.exit(0);
 }
 
 const event = {
