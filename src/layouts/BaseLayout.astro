@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { getCategoryPath, getLatestContributors, getPosts } from '../lib/openblog';
+import { getCategoryPath, getLatestContributors, getPosts, getProfilePath } from '../lib/openblog';
 const { title = 'OpenBlog' } = Astro.props;
 const categories = [...new Map(getPosts().map((post) => [post.category, post.categoryLabel])).entries()]
   .sort((a, b) => a[1].localeCompare(b[1]));
@@ -97,9 +97,7 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
                     <li>
                       <a
                         class="sidebar-contributor-link"
-                        href={contributor.profileUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                        href={getProfilePath(contributor.username)}
                         aria-label={`@${contributor.username}`}
                         title={`@${contributor.username}`}
                       >

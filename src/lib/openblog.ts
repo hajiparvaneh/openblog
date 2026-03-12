@@ -41,6 +41,31 @@ type EventRecord = {
 
 type UserRecord = { username: string; avatarUrl?: string | null; totalPoints: number; acceptedPrs: number };
 
+export type UserContributedPostRecord = {
+  postSlug: string;
+  postTitle: string;
+  postExists: boolean;
+  totalPoints: number;
+  contributions: number;
+  acceptedPrNumbers: number[];
+  firstContributedAt: string;
+  lastContributedAt: string;
+};
+
+export type UserProfileRecord = {
+  username: string;
+  profileUrl: string;
+  avatarUrl?: string | null;
+  totalPoints: number;
+  acceptedPrs: number;
+  acceptedPrNumbers: number[];
+  postsContributed: number;
+  totalContributions: number;
+  joinedAt: string | null;
+  lastContributionAt: string | null;
+  contributedPosts: UserContributedPostRecord[];
+};
+
 export type LatestContributorRecord = {
   username: string;
   profileUrl: string;
@@ -79,6 +104,14 @@ export function formatCategoryLabel(category: string): string {
 
 export function getCategoryPath(category: string): string {
   return `/categories/${encodeURIComponent(normalizeCategoryKey(category))}`;
+}
+
+function normalizeUsernameHandle(username: string): string {
+  return username.trim().replace(/^@+/, '');
+}
+
+export function getProfilePath(username: string): string {
+  return `/profile/@${normalizeUsernameHandle(username)}`;
 }
 
 function toDateString(value: unknown): string {
@@ -218,6 +251,168 @@ export function getLeaderboard(): UserRecord[] {
   if (!fs.existsSync(p)) return [];
   const data = JSON.parse(fs.readFileSync(p, 'utf8'));
   return data.leaderboard ?? [];
+}
+
+export function getUserPostContributionCounts(): Record<string, number> {
+  if (!fs.existsSync(EVENTS_DIR)) return {};
+
+  const counts: Record<string, number> = {};
+
+  for (const file of fs.readdirSync(EVENTS_DIR)) {
+    if (!file.endsWith('.json')) continue;
+
+    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+    if (!event.username) continue;
+
+    const contributions = getEventContributions(event);
+    if (contributions.length === 0) continue;
+
+    counts[event.username] = (counts[event.username] ?? 0) + contributions.length;
+  }
+
+  return counts;
+}
+
+export function getKnownContributors(): string[] {
+  const byLowercase = new Map<string, string>();
+
+  for (const user of getLeaderboard()) {
+    byLowercase.set(user.username.toLowerCase(), user.username);
+  }
+
+  if (fs.existsSync(EVENTS_DIR)) {
+    for (const file of fs.readdirSync(EVENTS_DIR)) {
+      if (!file.endsWith('.json')) continue;
+      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+      if (!event.username) continue;
+      const key = event.username.toLowerCase();
+      if (!byLowercase.has(key)) {
+        byLowercase.set(key, event.username);
+      }
+    }
+  }
+
+  return [...byLowercase.values()].sort((a, b) => a.localeCompare(b));
+}
+
+export function getUserProfile(usernameOrHandle: string): UserProfileRecord | null {
+  const normalizedInput = normalizeUsernameHandle(usernameOrHandle);
+  if (!normalizedInput) return null;
+
+  const normalizedLookup = normalizedInput.toLowerCase();
+  const leaderboardEntry = getLeaderboard().find((entry) => entry.username.toLowerCase() === normalizedLookup);
+
+  const posts = getPosts();
+  const postBySlug = new Map(posts.map((post) => [post.slug, post]));
+  const knownSlugs = new Set(posts.map((post) => post.slug));
+
+  if (!fs.existsSync(EVENTS_DIR) && !leaderboardEntry) return null;
+
+  let canonicalUsername = leaderboardEntry?.username ?? normalizedInput;
+  let avatarUrl = leaderboardEntry?.avatarUrl ?? null;
+  let joinedAt: string | null = null;
+  let lastContributionAt: string | null = null;
+  let calculatedTotalPoints = 0;
+  let totalContributions = 0;
+  const acceptedPrNumbers = new Set<number>();
+  const contributionsByPost = new Map<string, {
+    postSlug: string;
+    totalPoints: number;
+    contributions: number;
+    acceptedPrNumbers: Set<number>;
+    firstContributedAt: string;
+    lastContributedAt: string;
+  }>();
+
+  if (fs.existsSync(EVENTS_DIR)) {
+    for (const file of fs.readdirSync(EVENTS_DIR)) {
+      if (!file.endsWith('.json')) continue;
+
+      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+      if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) continue;
+      if (event.username.toLowerCase() !== normalizedLookup) continue;
+
+      canonicalUsername = event.username;
+      if (event.userAvatarUrl) {
+        avatarUrl = event.userAvatarUrl;
+      }
+
+      const contributions = getEventContributions(event);
+      if (contributions.length === 0) continue;
+
+      if (!joinedAt || event.mergedAt < joinedAt) {
+        joinedAt = event.mergedAt;
+      }
+      if (!lastContributionAt || event.mergedAt > lastContributionAt) {
+        lastContributionAt = event.mergedAt;
+      }
+
+      acceptedPrNumbers.add(event.prNumber);
+      for (const contribution of contributions) {
+        const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
+        const current = contributionsByPost.get(resolvedPostSlug) ?? {
+          postSlug: resolvedPostSlug,
+          totalPoints: 0,
+          contributions: 0,
+          acceptedPrNumbers: new Set<number>(),
+          firstContributedAt: event.mergedAt,
+          lastContributedAt: event.mergedAt
+        };
+
+        current.totalPoints += contribution.points;
+        current.contributions += 1;
+        current.acceptedPrNumbers.add(event.prNumber);
+        if (event.mergedAt < current.firstContributedAt) {
+          current.firstContributedAt = event.mergedAt;
+        }
+        if (event.mergedAt > current.lastContributedAt) {
+          current.lastContributedAt = event.mergedAt;
+        }
+
+        contributionsByPost.set(resolvedPostSlug, current);
+        calculatedTotalPoints += contribution.points;
+        totalContributions += 1;
+      }
+    }
+  }
+
+  const hasEventData = acceptedPrNumbers.size > 0 || totalContributions > 0;
+  const contributedPosts = [...contributionsByPost.values()]
+    .map((entry) => {
+      const post = postBySlug.get(entry.postSlug);
+      return {
+        postSlug: entry.postSlug,
+        postTitle: post?.title ?? entry.postSlug,
+        postExists: Boolean(post),
+        totalPoints: entry.totalPoints,
+        contributions: entry.contributions,
+        acceptedPrNumbers: [...entry.acceptedPrNumbers].sort((a, b) => b - a),
+        firstContributedAt: entry.firstContributedAt,
+        lastContributedAt: entry.lastContributedAt
+      } satisfies UserContributedPostRecord;
+    })
+    .sort(
+      (a, b) =>
+        b.lastContributedAt.localeCompare(a.lastContributedAt) ||
+        b.totalPoints - a.totalPoints ||
+        a.postSlug.localeCompare(b.postSlug)
+    );
+
+  if (!hasEventData && !leaderboardEntry) return null;
+
+  return {
+    username: canonicalUsername,
+    profileUrl: `https://github.com/${canonicalUsername}`,
+    avatarUrl,
+    totalPoints: hasEventData ? calculatedTotalPoints : (leaderboardEntry?.totalPoints ?? 0),
+    acceptedPrs: hasEventData ? acceptedPrNumbers.size : (leaderboardEntry?.acceptedPrs ?? 0),
+    acceptedPrNumbers: [...acceptedPrNumbers].sort((a, b) => b - a),
+    postsContributed: contributedPosts.length,
+    totalContributions,
+    joinedAt,
+    lastContributionAt,
+    contributedPosts
+  };
 }
 
 export function getContributorsForPost(postSlug: string): PostContributorRecord[] {

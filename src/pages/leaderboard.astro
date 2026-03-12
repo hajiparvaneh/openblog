@@ -1,17 +1,18 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getLeaderboard, getPosts, getRecentEvents } from '../lib/openblog';
+import { getLeaderboard, getPosts, getRecentEvents, getUserPostContributionCounts } from '../lib/openblog';
 
 const leaderboard = getLeaderboard();
 const recentEvents = getRecentEvents(10);
 const postSlugs = new Set(getPosts().map((post) => post.slug));
+const postContributionCounts = getUserPostContributionCounts();
 const rowsPerPage = 10;
 const totalPages = Math.max(1, Math.ceil(leaderboard.length / rowsPerPage));
 const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
 
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
-const getProfileUrl = (username: string) => `https://github.com/${username}`;
+const getProfileUrl = (username: string) => `/profile/@${username}`;
 const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${postSlug}` : null);
 ---
@@ -47,26 +48,29 @@ const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${po
               <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
             </button>
           </th>
-          <th scope="col" data-sort-column="prs">
-            <button class="table-sort-button" data-sort-key="prs" type="button">
-              Merged PRs
+          <th scope="col" data-sort-column="posts">
+            <button class="table-sort-button" data-sort-key="posts" type="button">
+              Posts contributed
               <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
             </button>
           </th>
         </tr>
       </thead>
       <tbody>
-        {leaderboard.map((user, index) => (
+        {leaderboard.map((user, index) => {
+          const postsContributed = postContributionCounts[user.username] ?? 0;
+
+          return (
           <tr
             data-leaderboard-row
             data-rank={index + 1}
             data-user={user.username.toLowerCase()}
             data-points={user.totalPoints}
-            data-prs={user.acceptedPrs}
+            data-posts={postsContributed}
           >
             <td>#{index + 1}</td>
             <td>
-              <a class="user-chip user-link" href={getProfileUrl(user.username)} target="_blank" rel="noopener noreferrer">
+              <a class="user-chip user-link" href={getProfileUrl(user.username)}>
                 <img class="avatar" src={getAvatarUrl(user.username, user.avatarUrl)} alt={`@${user.username} avatar`} loading="lazy" />
                 <span class="user-handle">@{user.username}</span>
               </a>
@@ -77,9 +81,10 @@ const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${po
                 {user.totalPoints}
               </span>
             </td>
-            <td>{user.acceptedPrs}</td>
+            <td>{postsContributed}</td>
           </tr>
-        ))}
+          );
+        })}
       </tbody>
     </table>
 
@@ -107,7 +112,7 @@ const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${po
         return (
           <li class="recent-item">
             <span class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i><a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a> by</span>
-            <a class="user-chip user-link" href={getProfileUrl(event.username)} target="_blank" rel="noopener noreferrer">
+            <a class="user-chip user-link" href={getProfileUrl(event.username)}>
               <img class="avatar avatar-sm" src={getAvatarUrl(event.username, event.userAvatarUrl)} alt={`@${event.username} avatar`} loading="lazy" />
               <span class="user-handle">@{event.username}</span>
             </a>
@@ -153,7 +158,7 @@ const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${po
       var getRowValue = function (row, key) {
         if (key === 'user') return row.getAttribute('data-user') || '';
         if (key === 'points') return Number(row.getAttribute('data-points') || '0');
-        if (key === 'prs') return Number(row.getAttribute('data-prs') || '0');
+        if (key === 'posts') return Number(row.getAttribute('data-posts') || '0');
         return Number(row.getAttribute('data-rank') || '0');
       };
 

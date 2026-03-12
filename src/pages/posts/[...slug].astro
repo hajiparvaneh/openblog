@@ -23,7 +23,7 @@ const contributors = getContributorsForPost(slug);
 const html = marked.parse(post.body);
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
-const getProfileUrl = (username: string) => `https://github.com/${username}`;
+const getProfileUrl = (username: string) => `/profile/@${username}`;
 const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 const formatMergedDate = (isoDate: string) => {
   const parsed = new Date(isoDate);
@@ -77,7 +77,7 @@ const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/conten
         {contributors.map((contributor) => (
           <li class="contributor-card contributor-card-enhanced">
             <div class="contributor-header">
-              <a class="user-chip user-link" href={getProfileUrl(contributor.username)} target="_blank" rel="noopener noreferrer">
+              <a class="user-chip user-link" href={getProfileUrl(contributor.username)}>
                 <img class="avatar" src={getAvatarUrl(contributor.username, contributor.avatarUrl)} alt={`@${contributor.username} avatar`} loading="lazy" />
                 <strong class="user-handle">@{contributor.username}</strong>
               </a>

@@ -1,6 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { formatPostDate, getCategoryPath, getLatestContributorsForPost, getPosts } from '../lib/openblog';
+import { formatPostDate, getCategoryPath, getLatestContributorsForPost, getPosts, getProfilePath } from '../lib/openblog';
 
 const posts = getPosts();
 const latestPost = posts[0];
@@ -47,9 +47,7 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
               {latestContributors.map((contributor) => (
                 <a
                   class="user-chip user-link latest-post-contributor-inline"
-                  href={contributor.profileUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  href={getProfilePath(contributor.username)}
                   aria-label={`@${contributor.username}`}
                   title={`@${contributor.username}`}
                 >
