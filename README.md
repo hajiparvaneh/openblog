@@ -58,6 +58,7 @@ npm run game:generate
 ## Owner checklist
 
 - Define and enforce a consistent PR-label policy using only supported scoring labels.
+- Require the `Validate post file changes` GitHub check in branch protection so non-owner PRs can only add/edit `content/posts/<category>/<post>.md` (new categories are allowed by creating a new folder under `content/posts/`).
 - Ensure merged PR metadata is passed to `npm run game:add-event` (PR number, username, avatar URL, post slug, merged time, labels).
 - Run `npm run game:generate` after adding events and commit generated files.
 - Protect `main` so only reviewed + labeled PRs are merged.
