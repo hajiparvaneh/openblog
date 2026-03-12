@@ -24,6 +24,13 @@ type EventRecord = {
 
 type UserRecord = { username: string; avatarUrl?: string | null; totalPoints: number; acceptedPrs: number };
 
+export type LatestContributorRecord = {
+  username: string;
+  profileUrl: string;
+  avatarUrl?: string | null;
+  lastContributionAt: string;
+};
+
 type PostContributorPrRecord = {
   prNumber: number;
   points: number;
@@ -38,6 +45,8 @@ type PostContributorRecord = UserRecord & {
 
 const ROOT = process.cwd();
 const POSTS_DIR = path.join(ROOT, 'content/posts');
+const GENERATED_USERS_DIR = path.join(ROOT, 'openblog/generated/users');
+const EVENTS_DIR = path.join(ROOT, 'openblog/events');
 
 export function normalizeCategoryKey(category: string): string {
   return category.trim().toLowerCase().replace(/[\s_]+/g, '-');
@@ -122,8 +131,7 @@ export function getLeaderboard(): UserRecord[] {
 }
 
 export function getContributorsForPost(postSlug: string): PostContributorRecord[] {
-  const eventsDir = path.join(ROOT, 'openblog/events');
-  if (!fs.existsSync(eventsDir)) return [];
+  if (!fs.existsSync(EVENTS_DIR)) return [];
   const knownSlugs = new Set(getPosts().map((post) => post.slug));
 
   const byUser = new Map<string, {
@@ -134,9 +142,9 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
     pullRequests: PostContributorPrRecord[];
   }>();
 
-  for (const file of fs.readdirSync(eventsDir)) {
+  for (const file of fs.readdirSync(EVENTS_DIR)) {
     if (!file.endsWith('.json')) continue;
-    const event: EventRecord = JSON.parse(fs.readFileSync(path.join(eventsDir, file), 'utf8'));
+    const event: EventRecord = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8'));
     const resolvedPostSlug = resolvePostSlug(event.postSlug, knownSlugs);
     if (resolvedPostSlug !== postSlug) continue;
 
@@ -177,19 +185,70 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
 }
 
 export function getRecentEvents(limit = 10): EventRecord[] {
-  const eventsDir = path.join(ROOT, 'openblog/events');
-  if (!fs.existsSync(eventsDir)) return [];
+  if (!fs.existsSync(EVENTS_DIR)) return [];
   const knownSlugs = new Set(getPosts().map((post) => post.slug));
 
   return fs
-    .readdirSync(eventsDir)
+    .readdirSync(EVENTS_DIR)
     .filter((file) => file.endsWith('.json'))
-    .map((file) => JSON.parse(fs.readFileSync(path.join(eventsDir, file), 'utf8')) as EventRecord)
+    .map((file) => JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as EventRecord)
     .map((event) => {
       const resolvedPostSlug = resolvePostSlug(event.postSlug, knownSlugs);
       if (!resolvedPostSlug) return event;
       return { ...event, postSlug: resolvedPostSlug };
     })
     .sort((a, b) => b.mergedAt.localeCompare(a.mergedAt))
+    .slice(0, limit);
+}
+
+type GeneratedUserRecord = {
+  username: string;
+  profileUrl?: string;
+  avatarUrl?: string | null;
+  lastUpdatedAt?: string;
+  lastContribution?: { mergedAt?: string } | null;
+};
+
+export function getLatestContributors(limit = 8): LatestContributorRecord[] {
+  const users: LatestContributorRecord[] = [];
+  if (fs.existsSync(GENERATED_USERS_DIR)) {
+    for (const file of fs.readdirSync(GENERATED_USERS_DIR)) {
+      if (!file.endsWith('.json')) continue;
+
+      const raw = JSON.parse(fs.readFileSync(path.join(GENERATED_USERS_DIR, file), 'utf8')) as GeneratedUserRecord;
+      if (!raw.username) continue;
+
+      const lastContributionAt = raw.lastContribution?.mergedAt ?? raw.lastUpdatedAt;
+      if (!lastContributionAt) continue;
+
+      users.push({
+        username: raw.username,
+        profileUrl: raw.profileUrl ?? `https://github.com/${raw.username}`,
+        avatarUrl: raw.avatarUrl ?? null,
+        lastContributionAt
+      });
+    }
+  } else if (fs.existsSync(EVENTS_DIR)) {
+    const latestByUser = new Map<string, LatestContributorRecord>();
+    for (const file of fs.readdirSync(EVENTS_DIR)) {
+      if (!file.endsWith('.json')) continue;
+      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as EventRecord;
+      if (!event.username || !event.mergedAt) continue;
+
+      const current = latestByUser.get(event.username);
+      if (!current || event.mergedAt > current.lastContributionAt) {
+        latestByUser.set(event.username, {
+          username: event.username,
+          profileUrl: `https://github.com/${event.username}`,
+          avatarUrl: event.userAvatarUrl ?? null,
+          lastContributionAt: event.mergedAt
+        });
+      }
+    }
+    users.push(...latestByUser.values());
+  }
+
+  return users
+    .sort((a, b) => b.lastContributionAt.localeCompare(a.lastContributionAt) || a.username.localeCompare(b.username))
     .slice(0, limit);
 }

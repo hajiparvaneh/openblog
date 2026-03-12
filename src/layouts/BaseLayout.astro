@@ -1,11 +1,14 @@
 ---
 import '../styles/global.css';
-import { getCategoryPath, getPosts } from '../lib/openblog';
+import { getCategoryPath, getLatestContributors, getPosts } from '../lib/openblog';
 const { title = 'OpenBlog' } = Astro.props;
 const categories = [...new Map(getPosts().map((post) => [post.category, post.categoryLabel])).entries()]
   .sort((a, b) => a[1].localeCompare(b[1]));
+const latestContributors = getLatestContributors(10);
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
+const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
+  avatarUrl ?? `https://github.com/${username}.png?size=64`;
 ---
 <html lang="en">
   <head>
@@ -84,6 +87,37 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
                 ))}
               </div>
             </nav>
+
+            {latestContributors.length > 0 && (
+              <>
+                <hr class="sidebar-sep" />
+                <p class="kicker icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Latest contributors</p>
+                <ul class="sidebar-contributors" aria-label="Latest contributors">
+                  {latestContributors.map((contributor) => (
+                    <li>
+                      <a
+                        class="sidebar-contributor-link"
+                        href={contributor.profileUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        aria-label={`@${contributor.username}`}
+                        title={`@${contributor.username}`}
+                      >
+                        <img
+                          class="avatar sidebar-avatar"
+                          src={getAvatarUrl(contributor.username, contributor.avatarUrl)}
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          width="28"
+                          height="28"
+                        />
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </>
+            )}
           </aside>
         </div>
       ) : (

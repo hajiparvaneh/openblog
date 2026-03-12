@@ -252,6 +252,34 @@ p {
   margin: 0.8rem 0;
 }
 
+.sidebar-contributors {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.sidebar-contributor-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.sidebar-contributor-link:hover {
+  background: var(--surface);
+}
+
+.sidebar-avatar {
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 0;
+}
+
 .category-links {
   display: flex;
   flex-wrap: wrap;
