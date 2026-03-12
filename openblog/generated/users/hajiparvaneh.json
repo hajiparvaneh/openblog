@@ -3,13 +3,14 @@
   "profileUrl": "https://github.com/hajiparvaneh",
   "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
   "joinedAt": "2026-03-12T15:00:09Z",
-  "lastUpdatedAt": "2026-03-12T20:47:55Z",
-  "totalPoints": 265,
-  "acceptedPrs": 4,
-  "totalContributions": 8,
-  "totalPostsContributed": 6,
+  "lastUpdatedAt": "2026-03-12T21:46:26Z",
+  "totalPoints": 315,
+  "acceptedPrs": 5,
+  "totalContributions": 9,
+  "totalPostsContributed": 7,
   "contributedPostSlugs": [
     "codex/define-game-logic-and-scoring-system",
+    "csharp/csharp-performance-techniques-for-clean-scalable-apps",
     "database/postgresql-indexing-basics",
     "devops/dockerfile-best-practices-nodejs",
     "javascript/async-await-error-handling",
@@ -25,12 +26,13 @@
     5,
     6,
     7,
-    9
+    9,
+    10
   ],
   "lastContribution": {
-    "prNumber": 9,
-    "postSlug": "database/postgresql-indexing-basics",
-    "mergedAt": "2026-03-12T20:47:55Z",
+    "prNumber": 10,
+    "postSlug": "csharp/csharp-performance-techniques-for-clean-scalable-apps",
+    "mergedAt": "2026-03-12T21:46:26Z",
     "points": 50
   }
 }
