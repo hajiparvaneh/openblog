@@ -12,47 +12,56 @@ const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh
 const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${postSlug}` : null);
 ---
 <BaseLayout title="Leaderboard | OpenBlog">
-  <h1>Leaderboard</h1>
-  <table class="table card">
-    <thead>
-      <tr><th>Rank</th><th>User</th><th>Points</th><th>Merged PRs</th></tr>
-    </thead>
-    <tbody>
-      {leaderboard.map((user, index) => (
-        <tr>
-          <td>#{index + 1}</td>
-          <td>
-            <a class="user-chip user-link" href={getProfileUrl(user.username)} target="_blank" rel="noopener noreferrer">
-              <img class="avatar" src={getAvatarUrl(user.username, user.avatarUrl)} alt={`@${user.username} avatar`} loading="lazy" />
-              <span class="user-handle">@{user.username}</span>
-            </a>
-          </td>
-          <td>{user.totalPoints}</td>
-          <td>{user.acceptedPrs}</td>
-        </tr>
-      ))}
-    </tbody>
-  </table>
-
-  <section class="card" style="margin-top:1rem;">
-    <h2>Recent contributions</h2>
-    <ul>
-      {recentEvents.map((event) => {
-        const postUrl = getPostUrl(event.postSlug);
-
-        return (
-          <li class="recent-item">
-            <span><a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a> by</span>
-            <a class="user-chip user-link" href={getProfileUrl(event.username)} target="_blank" rel="noopener noreferrer">
-              <img class="avatar avatar-sm" src={getAvatarUrl(event.username, event.userAvatarUrl)} alt={`@${event.username} avatar`} loading="lazy" />
-              <span class="user-handle">@{event.username}</span>
-            </a>
-            <span>
-              on {postUrl ? <a href={postUrl}>{event.postSlug}</a> : <span>unknown post</span>} — <span class="badge">+{event.points}</span>
-            </span>
-          </li>
-        );
-      })}
-    </ul>
+  <section class="card">
+    <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Community scoreboard</p>
+    <h1>Leaderboard</h1>
+    <p class="meta">Ranks are sorted by total points, then merged PR count.</p>
   </section>
+
+  <div class="two-column">
+    <section class="card table-wrap">
+      <table class="table">
+        <thead>
+          <tr><th>Rank</th><th>User</th><th>Points</th><th>Merged PRs</th></tr>
+        </thead>
+        <tbody>
+          {leaderboard.map((user, index) => (
+            <tr>
+              <td>#{index + 1}</td>
+              <td>
+                <a class="user-chip user-link" href={getProfileUrl(user.username)} target="_blank" rel="noopener noreferrer">
+                  <img class="avatar" src={getAvatarUrl(user.username, user.avatarUrl)} alt={`@${user.username} avatar`} loading="lazy" />
+                  <span class="user-handle">@{user.username}</span>
+                </a>
+              </td>
+              <td>{user.totalPoints}</td>
+              <td>{user.acceptedPrs}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>Recent contributions</h2>
+      <ul class="recent-list">
+        {recentEvents.map((event) => {
+          const postUrl = getPostUrl(event.postSlug);
+
+          return (
+            <li class="recent-item">
+              <span class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i><a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a> by</span>
+              <a class="user-chip user-link" href={getProfileUrl(event.username)} target="_blank" rel="noopener noreferrer">
+                <img class="avatar avatar-sm" src={getAvatarUrl(event.username, event.userAvatarUrl)} alt={`@${event.username} avatar`} loading="lazy" />
+                <span class="user-handle">@{event.username}</span>
+              </a>
+              <span>
+                <span class="icon-label"><i class="ti ti-article icon-sm" aria-hidden="true"></i>{postUrl ? <a href={postUrl}>{event.postSlug}</a> : <span>unknown post</span>}</span> <span class="badge">+{event.points}</span>
+              </span>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
+  </div>
 </BaseLayout>

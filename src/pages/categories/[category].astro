@@ -18,16 +18,26 @@ if (posts.length === 0) {
 }
 ---
 <BaseLayout title={`${category} | Categories | OpenBlog`}>
-  <h1>Category: {category}</h1>
-  <p class="meta">{posts.length} post{posts.length > 1 ? 's' : ''}</p>
+  <section class="card">
+    <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Category</p>
+    <h1>{category}</h1>
+    <p class="meta icon-label">
+      <i class="ti ti-notes icon-sm" aria-hidden="true"></i>
+      {posts.length} post{posts.length > 1 ? 's' : ''} available in this topic.
+    </p>
+  </section>
 
   <section class="list">
-    {posts.map((post) => (
-      <article class="card">
-        <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
-        <p>{post.description}</p>
-        <p class="meta">Published: {post.date}</p>
-      </article>
-    ))}
+    <div class="post-grid">
+      {posts.map((post) => (
+        <article class="card post-card">
+          <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
+          <p>{post.description}</p>
+          <p class="meta meta-inline">
+            <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{post.date}</span>
+          </p>
+        </article>
+      ))}
+    </div>
   </section>
 </BaseLayout>

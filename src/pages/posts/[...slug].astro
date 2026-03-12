@@ -19,35 +19,40 @@ const getProfileUrl = (username: string) => `https://github.com/${username}`;
 const categoryPath = `/categories/${encodeURIComponent(post.category)}`;
 ---
 <BaseLayout title={`${post.title} | OpenBlog`}>
-  <article class="card">
-    <p class="meta"><a href="/">Home</a> / <a href={categoryPath}>{post.category}</a></p>
-    <h1>{post.title}</h1>
-    <p class="meta">Published: {post.date} · Category: <a href={categoryPath}>{post.category}</a></p>
-    <div set:html={html} />
-  </article>
+  <div class="two-column">
+    <article class="card">
+      <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.category}</a></p>
+      <h1>{post.title}</h1>
+      <p class="meta meta-inline">
+        <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{post.date}</span>
+        <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.category}</a></span>
+      </p>
+      <div class="article-content" set:html={html} />
+    </article>
 
-  <section class="card" style="margin-top:1rem;">
-    <h2>Contributors</h2>
-    {contributors.length === 0 ? (
-      <p class="meta">No accepted contributions yet.</p>
-    ) : (
-      <ul>
-        {contributors.map((contributor) => (
-          <li>
-            <a class="user-chip user-link" href={getProfileUrl(contributor.username)} target="_blank" rel="noopener noreferrer">
-              <img class="avatar" src={getAvatarUrl(contributor.username, contributor.avatarUrl)} alt={`@${contributor.username} avatar`} loading="lazy" />
-              <strong class="user-handle">@{contributor.username}</strong>
-            </a>
-            <div style="margin-top:0.25rem;">{contributor.totalPoints} points</div>
-            <div class="meta">{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''} on this post</div>
-            <div style="margin-top:0.35rem; display:flex; flex-wrap:wrap; gap:0.35rem;">
-              {contributor.labels.map((label) => (
-                <span class="badge">{label}</span>
-              ))}
-            </div>
-          </li>
-        ))}
-      </ul>
-    )}
-  </section>
+    <aside class="card">
+      <h2 class="icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Contributors</h2>
+      {contributors.length === 0 ? (
+        <p class="meta">No accepted contributions yet.</p>
+      ) : (
+        <ul class="contributors">
+          {contributors.map((contributor) => (
+            <li class="contributor-card">
+              <a class="user-chip user-link" href={getProfileUrl(contributor.username)} target="_blank" rel="noopener noreferrer">
+                <img class="avatar" src={getAvatarUrl(contributor.username, contributor.avatarUrl)} alt={`@${contributor.username} avatar`} loading="lazy" />
+                <strong class="user-handle">@{contributor.username}</strong>
+              </a>
+              <div class="icon-label"><i class="ti ti-award icon-sm" aria-hidden="true"></i>{contributor.totalPoints} points</div>
+              <div class="meta icon-label"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i>{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''} on this post</div>
+              <div class="label-row">
+                {contributor.labels.map((label) => (
+                  <span class="badge">{label}</span>
+                ))}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </aside>
+  </div>
 </BaseLayout>
