@@ -47,7 +47,7 @@ For EF Core workloads:
 - Use `AsNoTracking` for read-only queries.
 - Prevent N+1 queries by loading related data deliberately.
 
-## Measure before and after
+## Measure before and after 
 
 Do not optimize blindly. Use profiling and benchmarks to find real bottlenecks.
 
