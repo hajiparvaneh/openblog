@@ -31,6 +31,12 @@ npm run game:generate
 
 - Each merged PR can create one immutable event file in `game/events/pr-<number>.json`.
 - Points are computed from labels in `game/enums/scoring-labels.json` and summed per PR.
+  - `typo`: 5
+  - `source-added`: 10
+  - `fact-check`: 15
+  - `new-example`: 20
+  - `translation`: 30
+  - `new-post`: 50
 - A PR with no scoring labels gets 0 and is skipped (no event file).
 - The generator aggregates all events by `username` into:
   - `game/generated/users/<username>.json`
