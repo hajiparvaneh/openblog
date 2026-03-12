@@ -1,8 +1,32 @@
 {
-  "typo": 5,
-  "source-added": 10,
-  "fact-check": 15,
-  "new-example": 20,
-  "translation": 30,
-  "new-post": 50
+  "typo": {
+    "points": 5,
+    "icon": "pencil",
+    "color": "#32127a"
+  },
+  "source-added": {
+    "points": 10,
+    "icon": "link",
+    "color": "#1c39bb"
+  },
+  "fact-check": {
+    "points": 15,
+    "icon": "shield-check",
+    "color": "#00a693"
+  },
+  "new-example": {
+    "points": 20,
+    "icon": "bulb",
+    "color": "#d99058"
+  },
+  "translation": {
+    "points": 30,
+    "icon": "world",
+    "color": "#cc3333"
+  },
+  "new-post": {
+    "points": 50,
+    "icon": "file-plus",
+    "color": "#fe28a2"
+  }
 }

@@ -106,6 +106,12 @@ Points are determined by labels in `game/enums/scoring-labels.json`:
 - `translation`: +30
 - `new-post`: +50
 
+Each label entry stores:
+
+- `points`: numeric score value
+- `icon`: Tabler icon name (for example `file-plus`)
+- `color`: display color used in the UI
+
 Rules:
 
 - Only merged PRs are eligible.
@@ -116,7 +122,7 @@ Rules:
 
 - `content/posts/<category>/*.md`: blog content
 - `game/events/*.json`: immutable merged-PR score events
-- `game/enums/scoring-labels.json`: score label enum
+- `game/enums/scoring-labels.json`: score labels metadata (points, icon, color)
 - `game/generated/users/*.json`: generated user stats
 - `game/generated/leaderboard.json`: generated leaderboard
 - `scripts/add-event-from-pr.mjs`: create event from merged PR metadata

@@ -3,46 +3,127 @@ import fs from 'node:fs';
 import path from 'node:path';
 import BaseLayout from '../layouts/BaseLayout.astro';
 
+type ScoringLabelConfig = {
+  points: number;
+  icon: string;
+  color: string;
+};
+
 const scoreByLabelPath = path.join(process.cwd(), 'game/enums/scoring-labels.json');
-const scoreByLabel = JSON.parse(fs.readFileSync(scoreByLabelPath, 'utf8')) as Record<string, number>;
-const sortedScoringRules = Object.entries(scoreByLabel).sort(([, pointsA], [, pointsB]) => pointsA - pointsB);
+const parsedScoreByLabel = JSON.parse(fs.readFileSync(scoreByLabelPath, 'utf8')) as Record<string, number | ScoringLabelConfig>;
+const sortedScoringRules = Object.entries(parsedScoreByLabel)
+  .map(([label, config]) => {
+    if (typeof config === 'number') {
+      return {
+        label,
+        points: config,
+        icon: 'tag',
+        color: '#64748b'
+      };
+    }
+
+    return {
+      label,
+      points: config.points,
+      icon: config.icon,
+      color: config.color
+    };
+  })
+  .sort((a, b) => b.points - a.points);
+const topScoringRule = sortedScoringRules[0];
+const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 ---
 <BaseLayout title="How to contribute | OpenBlog">
-  <section class="card">
-    <p class="kicker icon-label"><i class="ti ti-book icon-sm" aria-hidden="true"></i>Contributor guide</p>
-    <h1>How to contribute</h1>
-    <p class="meta">All contributions are handled through pull requests and scored automatically after merge.</p>
-  </section>
+  <div class="contribute-page">
+    <section class="card contribute-hero">
+      <p class="kicker icon-label"><i class="ti ti-book icon-sm" aria-hidden="true"></i>Contributor guide</p>
+      <h1>Contribute in one focused PR</h1>
+      <p>OpenBlog grows through merged pull requests. Pick a post, improve one clear thing, and submit your update.</p>
+      <p class="meta">Small improvements count. Fixes, sources, examples, translations, and new posts are all eligible for points.</p>
+      <div class="contribute-actions">
+        <a class="contribute-action" href={repoUrl} target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+          Open repository
+        </a>
+        <a class="contribute-action" href="/">
+          <i class="ti ti-article icon-sm" aria-hidden="true"></i>
+          Browse posts
+        </a>
+        <a class="contribute-action" href="/leaderboard">
+          <i class="ti ti-trophy icon-sm" aria-hidden="true"></i>
+          See leaderboard
+        </a>
+      </div>
+    </section>
 
-  <div class="two-column">
     <section class="card">
-      <h2 class="icon-label"><i class="ti ti-list-check icon-sm" aria-hidden="true"></i>Contribution flow</h2>
-      <ol>
-        <li>Choose a post from <code>/content/posts/&lt;category&gt;/&lt;post&gt;.md</code> and improve it (fix typo, add source, fact-check, add examples, translation, or new post).</li>
-        <li>Open a pull request that clearly explains the improvement and references the changed post slug (for example <code>networking/how-dns-works</code>).</li>
-        <li>Maintainers review your PR, apply one or more scoring labels, and merge if accepted.</li>
-        <li>After merge, the score workflow creates a game event and regenerates leaderboard files.</li>
-        <li>Your points are added automatically based on the labels on the merged PR.</li>
+      <h2 class="icon-label"><i class="ti ti-rocket icon-sm" aria-hidden="true"></i>First PR in 5 steps</h2>
+      <ol class="contribute-flow">
+        <li>Pick one post slug to improve (for example <code>networking/how-dns-works</code>).</li>
+        <li>Edit or create <code>/content/posts/&lt;category&gt;/&lt;post&gt;.md</code>.</li>
+        <li>Run the site locally and verify your changes render correctly.</li>
+        <li>Open a PR with a short summary of what changed and why it is better.</li>
+        <li>Maintainers review, apply scoring label(s), merge, and points are added automatically.</li>
       </ol>
     </section>
 
+    <div class="two-column contribute-columns">
+      <section class="card">
+        <h2 class="icon-label"><i class="ti ti-bulb icon-sm" aria-hidden="true"></i>Good contribution ideas</h2>
+        <ul class="contribute-ideas">
+          <li><strong>Improve correctness:</strong> fact-check claims and remove outdated or incorrect details.</li>
+          <li><strong>Add references:</strong> back key statements with trustworthy sources.</li>
+          <li><strong>Make it clearer:</strong> rewrite confusing paragraphs and tighten explanations.</li>
+          <li><strong>Add practical examples:</strong> include commands, diagrams, or concrete use cases.</li>
+          <li><strong>Create new content:</strong> add a complete new post when the topic is missing.</li>
+        </ul>
+
+        <h3 class="icon-label"><i class="ti ti-checklist icon-sm" aria-hidden="true"></i>PR checklist</h3>
+        <ul class="contribute-checklist">
+          <li>Your change is in <code>content/posts/&lt;category&gt;/&lt;post&gt;.md</code>.</li>
+          <li>The PR description explains what improved and why.</li>
+          <li>You mention the changed slug(s) in the PR body.</li>
+          <li>You do not manually edit files in <code>game/generated/</code>.</li>
+        </ul>
+      </section>
+
+      <section class="card">
+        <h2 class="icon-label"><i class="ti ti-award icon-sm" aria-hidden="true"></i>Scoring labels</h2>
+        <p class="meta">Points are taken from labels applied to merged PRs. If multiple labels are applied, points are summed.</p>
+        <ul class="score-list">
+          {sortedScoringRules.map((rule) => (
+            <li class="score-item" style={`--score-color: ${rule.color};`}>
+              <span class="score-label-meta">
+                <i class={`ti ti-${rule.icon} icon-sm score-icon`} aria-hidden="true"></i>
+                <code>{rule.label}</code>
+              </span>
+              <span class="badge score-points">+{rule.points}</span>
+            </li>
+          ))}
+        </ul>
+        {topScoringRule && (
+          <p class="meta">
+            Highest value label right now:
+            {' '}
+            <span class="score-top-inline">
+              <i class={`ti ti-${topScoringRule.icon} icon-sm`} aria-hidden="true"></i>
+              <code>{topScoringRule.label}</code>
+            </span>
+            {' '}
+            (+{topScoringRule.points} points)
+          </p>
+        )}
+      </section>
+    </div>
+
     <section class="card">
-      <h2 class="icon-label"><i class="ti ti-award icon-sm" aria-hidden="true"></i>Scoring labels</h2>
-      <ul>
-        {sortedScoringRules.map(([label, points]) => (
-          <li><code>{label}</code>: +{points} points</li>
-        ))}
+      <h2 class="icon-label"><i class="ti ti-scale icon-sm" aria-hidden="true"></i>Scoring rules</h2>
+      <ul class="contribute-rules">
+        <li>Only merged PRs are eligible for points.</li>
+        <li>At least one scoring label is required to generate an event.</li>
+        <li>If a PR has multiple scoring labels, all label points are summed.</li>
+        <li>Leaderboard rank is sorted by total points (desc), then accepted PR count (desc).</li>
       </ul>
     </section>
   </div>
-
-  <section class="card">
-    <h2 class="icon-label"><i class="ti ti-help-circle icon-sm" aria-hidden="true"></i>Rules</h2>
-    <ul>
-      <li>Only merged PRs are eligible for points.</li>
-      <li>At least one scoring label is required to generate an event.</li>
-      <li>If a PR has multiple scoring labels, all label points are summed.</li>
-      <li>Leaderboard rank is sorted by total points (desc), then accepted PR count (desc).</li>
-    </ul>
-  </section>
 </BaseLayout>
