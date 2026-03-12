@@ -1,12 +1,15 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { getLeaderboard, getRecentEvents } from '../lib/game';
+import { getLeaderboard, getPosts, getRecentEvents } from '../lib/game';
 
 const leaderboard = getLeaderboard();
 const recentEvents = getRecentEvents(10);
+const postSlugs = new Set(getPosts().map((post) => post.slug));
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const getProfileUrl = (username: string) => `https://github.com/${username}`;
+const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
+const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${postSlug}` : null);
 ---
 <BaseLayout title="Leaderboard | OpenBlog">
   <h1>Leaderboard</h1>
@@ -32,18 +35,24 @@ const getProfileUrl = (username: string) => `https://github.com/${username}`;
   </table>
 
   <section class="card" style="margin-top:1rem;">
-    <h2>Recent accepted contributions</h2>
+    <h2>Recent contributions</h2>
     <ul>
-      {recentEvents.map((event) => (
-        <li class="recent-item">
-          <span>PR #{event.prNumber} by</span>
-          <a class="user-chip user-link" href={getProfileUrl(event.username)} target="_blank" rel="noopener noreferrer">
-            <img class="avatar avatar-sm" src={getAvatarUrl(event.username, event.userAvatarUrl)} alt={`@${event.username} avatar`} loading="lazy" />
-            <span class="user-handle">@{event.username}</span>
-          </a>
-          <span>on <a href={`/posts/${event.postSlug}`}>{event.postSlug}</a> — <span class="badge">+{event.points}</span></span>
-        </li>
-      ))}
+      {recentEvents.map((event) => {
+        const postUrl = getPostUrl(event.postSlug);
+
+        return (
+          <li class="recent-item">
+            <span><a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a> by</span>
+            <a class="user-chip user-link" href={getProfileUrl(event.username)} target="_blank" rel="noopener noreferrer">
+              <img class="avatar avatar-sm" src={getAvatarUrl(event.username, event.userAvatarUrl)} alt={`@${event.username} avatar`} loading="lazy" />
+              <span class="user-handle">@{event.username}</span>
+            </a>
+            <span>
+              on {postUrl ? <a href={postUrl}>{event.postSlug}</a> : <span>unknown post</span>} — <span class="badge">+{event.points}</span>
+            </span>
+          </li>
+        );
+      })}
     </ul>
   </section>
 </BaseLayout>

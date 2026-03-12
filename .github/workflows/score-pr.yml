@@ -8,6 +8,9 @@ on:
       pr_number:
         description: 'PR number to process manually'
         required: false
+      post_slug:
+        description: 'Post slug (required for manual scoring if no PR payload exists)'
+        required: false
 
 permissions:
   contents: write
@@ -33,6 +36,30 @@ jobs:
       - name: Install dependencies
         run: npm install --no-audit --no-fund
 
+      - name: Resolve post slug from PR files
+        if: github.event_name == 'pull_request'
+        id: resolve_post_slug
+        uses: actions/github-script@v7
+        with:
+          result-encoding: string
+          script: |
+            const pullNumber = context.payload.pull_request?.number;
+            if (!pullNumber) return '';
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pullNumber,
+              per_page: 100
+            });
+
+            const postFile = files
+              .map((file) => file.filename)
+              .find((filename) => filename.startsWith('content/posts/') && filename.endsWith('.md'));
+
+            if (!postFile) return '';
+            return postFile.replace(/^content\/posts\//, '').replace(/\.md$/, '');
+
       - name: Create score event from PR labels
         env:
           PR_NUMBER: ${{ github.event.pull_request.number || github.event.inputs.pr_number }}
@@ -40,10 +67,10 @@ jobs:
           PR_USER_AVATAR_URL: ${{ github.event.pull_request.user.avatar_url }}
           PR_MERGED_AT: ${{ github.event.pull_request.merged_at }}
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
-          PR_POST_SLUG: ${{ github.event.pull_request.base.ref == 'main' && github.event.pull_request.head.ref || '' }}
+          PR_POST_SLUG: ${{ github.event_name == 'pull_request' && steps.resolve_post_slug.outputs.result || github.event.inputs.post_slug || '' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "Manual dispatch: set PR_* env vars in workflow if needed."
+            echo "Manual dispatch: set all PR_* values (especially PR_POST_SLUG) via inputs/env."
           fi
           npm run game:add-event
 
