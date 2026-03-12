@@ -1,42 +1,47 @@
 # OpenBlog
 
-OpenBlog is a collaborative blog where contributors improve content through pull requests.  
+[![Status](https://img.shields.io/badge/status-active-2ea44f)](https://github.com/hajiparvaneh/openblog)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-0a7f5a)](https://github.com/hajiparvaneh/openblog/pulls)
+[![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01)](https://astro.build/)
+[![Node](https://img.shields.io/badge/Node-%3E%3D18-43853d)](https://nodejs.org/)
+
+OpenBlog is a collaborative technical blog where contributors improve content through pull requests.  
 When a PR is merged and labeled, points are added to the public leaderboard.
 
-## First contribution in 5 steps
+## 🚀 First Contribution In 5 Steps
 
-1. Fork this repo and clone your fork.
+1. Fork this repository and clone your fork.
 2. Create a branch: `git checkout -b my-post-update`.
 3. Add or edit a post in `content/posts/<category>/<post>.md`.
-4. Run locally and verify your change.
-5. Open a PR and mention the post slug you changed (example: `networking/how-dns-works`).
+4. Run locally and verify your changes.
+5. Open a PR and mention the changed slug (example: `networking/how-dns-works`).
 
-## Local development
+## 🧰 Local Development
 
 ### Requirements
 
 - Node.js 18+ (or newer LTS)
 - npm
 
-### Commands
+### Run locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local URL shown in the terminal.
+Open the local URL shown in your terminal.
 
-To validate production output:
+### Production preview
 
 ```bash
 npm run build
 npm run preview
 ```
 
-## Add a new blog post
+## ✍️ Add A New Blog Post
 
-Create a new file in:
+Create a file at:
 
 `content/posts/<category>/<post>.md`
 
@@ -60,32 +65,32 @@ Start with a short intro.
 Add clear examples, references, and practical notes.
 ```
 
-Guidelines:
+Content guidelines:
 
 - Keep category and filename lowercase and hyphenated.
-- Write clear, factual content with practical examples.
-- Keep changes focused (one post/topic per PR when possible).
+- Prefer clear, factual writing with practical examples.
+- Keep PR scope focused on one post/topic where possible.
 
-## Improve an existing post
+## 🛠️ Improve Existing Posts
 
-Good contribution types:
+Common contribution types:
 
-- Fix typos or wording
+- Fix typos and wording
 - Add trusted sources
 - Fact-check outdated statements
-- Add examples/diagrams/explanations
+- Add examples and clearer explanations
 - Add translations
 
-## PR checklist
+## ✅ PR Checklist
 
 - Changes are in `content/posts/<category>/<post>.md`
 - PR description explains what improved and why
-- PR mentions changed slug(s)
-- No manual edits to `game/generated/*`
+- Changed slug(s) are mentioned in the PR
+- `game/generated/*` is not manually edited
 
-## Scoring labels
+## 🏷️ Scoring Labels
 
-Points are based on PR labels in `game/enums/scoring-labels.json`:
+Points are determined by labels in `game/enums/scoring-labels.json`:
 
 - `typo`: +5
 - `source-added`: +10
@@ -94,13 +99,13 @@ Points are based on PR labels in `game/enums/scoring-labels.json`:
 - `translation`: +30
 - `new-post`: +50
 
-Notes:
+Rules:
 
 - Only merged PRs are eligible.
 - At least one scoring label is required to generate an event.
 - If multiple scoring labels are applied, points are summed.
 
-## Project structure
+## 📁 Project Structure
 
 - `content/posts/<category>/*.md`: blog content
 - `game/events/*.json`: immutable merged-PR score events
@@ -108,11 +113,11 @@ Notes:
 - `game/generated/users/*.json`: generated user stats
 - `game/generated/leaderboard.json`: generated leaderboard
 - `scripts/add-event-from-pr.mjs`: create event from merged PR metadata
-- `scripts/generate-game-state.mjs`: regenerate users + leaderboard
+- `scripts/generate-game-state.mjs`: regenerate users and leaderboard
 
-## Maintainer notes
+## 🔧 Maintainer Notes
 
-These commands are mainly for maintainers/automation:
+These commands are primarily for maintainers/automation:
 
 ```bash
 npm run game:add-event
