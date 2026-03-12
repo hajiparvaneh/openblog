@@ -201,6 +201,26 @@ p {
   top: 1rem;
 }
 
+.sidebar-block p:last-child {
+  margin-bottom: 0;
+}
+
+.sidebar-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-size: 0.86rem;
+  font-weight: 700;
+}
+
+.sidebar-sep {
+  border: 0;
+  border-top: 1px solid var(--border);
+  margin: 0.8rem 0;
+}
+
 .category-links {
   display: flex;
   flex-wrap: wrap;

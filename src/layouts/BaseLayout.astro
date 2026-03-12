@@ -4,6 +4,7 @@ import { getPosts } from '../lib/game';
 const { title = 'OpenBlog' } = Astro.props;
 const categories = [...new Set(getPosts().map((post) => post.category))].sort((a, b) => a.localeCompare(b));
 const categoryPath = (category: string) => `/categories/${encodeURIComponent(category)}`;
+const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 ---
 <html lang="en">
   <head>
@@ -51,6 +52,17 @@ const categoryPath = (category: string) => `/categories/${encodeURIComponent(cat
       {categories.length > 0 ? (
         <div class="content-layout">
           <aside class="category-sidebar card">
+            <section class="sidebar-block">
+              <p class="kicker icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>New blog</p>
+              <p class="meta">Want to contribute? Clone the repo, add a new <code>.md</code> file, and open a PR.</p>
+              <a class="sidebar-link" href={repoUrl} target="_blank" rel="noopener noreferrer">
+                <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+                Open GitHub repo
+              </a>
+            </section>
+
+            <hr class="sidebar-sep" />
+
             <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Categories</p>
             <nav aria-label="Post categories">
               <div class="category-links category-links-sidebar">
