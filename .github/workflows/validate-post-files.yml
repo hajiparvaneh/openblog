@@ -1,0 +1,71 @@
+name: Validate post file changes
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  validate-post-files:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate changed files
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const actor = context.payload.pull_request?.user?.login;
+            if (actor === 'hajiparvaneh') {
+              core.info('Validation skipped for repository owner @hajiparvaneh.');
+              return;
+            }
+
+            const prNumber = context.payload.pull_request?.number;
+            if (!prNumber) {
+              core.setFailed('Missing pull request number in event payload.');
+              return;
+            }
+
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: prNumber,
+              per_page: 100
+            });
+
+            const allowedPath = /^content\/posts\/[^/]+\/[^/]+\.md$/;
+            const allowedStatuses = new Set(['added', 'modified']);
+
+            const invalidPathFiles = files
+              .filter((file) => !allowedPath.test(file.filename))
+              .map((file) => file.filename);
+            const invalidStatusFiles = files
+              .filter((file) => !allowedStatuses.has(file.status))
+              .map((file) => `${file.filename} (${file.status})`);
+
+            if (files.length === 0) {
+              core.setFailed('PR has no changed files.');
+              return;
+            }
+
+            if (invalidPathFiles.length > 0 || invalidStatusFiles.length > 0) {
+              const messages = [
+                'This repository only allows adding or editing markdown posts in category folders.',
+                'Allowed pattern: content/posts/<category>/<post>.md'
+              ];
+
+              if (invalidPathFiles.length > 0) {
+                messages.push(`Invalid paths:\n- ${invalidPathFiles.join('\n- ')}`);
+              }
+
+              if (invalidStatusFiles.length > 0) {
+                messages.push(`Invalid file operations (only added/modified allowed):\n- ${invalidStatusFiles.join('\n- ')}`);
+              }
+
+              core.setFailed(messages.join('\n\n'));
+              return;
+            }
+
+            core.info(`Validated ${files.length} file(s). All changes follow post-folder policy.`);
