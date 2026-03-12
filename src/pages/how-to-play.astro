@@ -7,7 +7,25 @@ import BaseLayout from '../layouts/BaseLayout.astro';
     <li>Fork the repository.</li>
     <li>Improve any markdown post in <code>/content/posts</code>.</li>
     <li>Open a pull request.</li>
-    <li>Maintainers review, label, and merge.</li>
-    <li>GitHub Action creates a score event and updates leaderboard files.</li>
+    <li>Maintainers review, apply scoring labels, and merge.</li>
+    <li>Run the game scripts to create score events and rebuild leaderboard files.</li>
   </ol>
+
+  <h2>Scoring labels</h2>
+  <ul class="card">
+    <li><code>typo</code>: +5 points</li>
+    <li><code>source-added</code>: +10 points</li>
+    <li><code>fact-check</code>: +15 points</li>
+    <li><code>new-example</code>: +20 points</li>
+    <li><code>translation</code>: +30 points</li>
+    <li><code>new-post</code>: +50 points</li>
+  </ul>
+
+  <h2>Important rules</h2>
+  <ul class="card">
+    <li>Only merged PRs are eligible.</li>
+    <li>A PR needs at least one scoring label to create an event.</li>
+    <li>If multiple scoring labels are added, points are summed.</li>
+    <li>The leaderboard ranks by total points, then by accepted PR count.</li>
+  </ul>
 </BaseLayout>
