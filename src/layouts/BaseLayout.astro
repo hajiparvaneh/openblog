@@ -35,7 +35,11 @@ const {
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const ogImageUrl = toAbsoluteUrl(ogImagePath, siteUrl);
-const faviconHref = '/openblog-favicon.ico';
+const faviconIcoHref = '/favicon.ico';
+const favicon16Href = '/favicon-16x16.png';
+const favicon32Href = '/favicon-32x32.png';
+const appleTouchIconHref = '/apple-touch-icon.png';
+const manifestHref = '/site.webmanifest';
 const logoDarkSrc = '/openblog-logo-dark.png';
 const logoLightSrc = '/openblog-logo-light.png';
 const jsonLdEntries = Array.isArray(structuredData) ? structuredData : structuredData ? [structuredData] : [];
@@ -54,9 +58,18 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <meta name="theme-color" content="#f6f7fa" />
+    <meta name="application-name" content="OpenBlog" />
+    <meta name="apple-mobile-web-app-title" content="OpenBlog" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#f6f7fa" />
     <link rel="canonical" href={canonicalUrl} />
-    <link rel="icon" type="image/x-icon" href={faviconHref} />
-    <link rel="shortcut icon" href={faviconHref} />
+    <link rel="icon" href={faviconIcoHref} sizes="any" />
+    <link rel="icon" type="image/png" sizes="32x32" href={favicon32Href} />
+    <link rel="icon" type="image/png" sizes="16x16" href={favicon16Href} />
+    <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconHref} />
+    <link rel="manifest" href={manifestHref} />
+    <link rel="shortcut icon" href={faviconIcoHref} />
 
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content="OpenBlog" />
