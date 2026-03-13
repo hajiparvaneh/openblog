@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { getCategoryPath, getKnownContributors, getPosts, getProfilePath } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
+import { getSiteUrl } from '../lib/site';
 
 type SitemapEntry = {
   path: string;
@@ -26,7 +27,7 @@ function postPath(slug: string): string {
 }
 
 export const GET: APIRoute = ({ site }) => {
-  const baseUrl = site ?? new URL('https://hajiparvaneh.github.io/');
+  const baseUrl = getSiteUrl(site);
   const posts = getPosts();
   const staticEntries: SitemapEntry[] = [
     { path: '/', changefreq: 'daily', priority: 1 },

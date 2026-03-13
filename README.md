@@ -7,6 +7,8 @@
 [![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01)](https://astro.build/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D18-43853d)](https://nodejs.org/)
 
+Main website: [https://openblog.cc](https://openblog.cc)
+
 OpenBlog is a collaborative technical blog where contributors improve content through pull requests.  
 When a PR is merged and labeled, points are added to the public leaderboard.
 

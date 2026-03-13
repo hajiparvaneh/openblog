@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { getKnownContributors, getProfilePath, getUserProfile } from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
+import { getSiteUrl } from '../../lib/site';
 
 export function getStaticPaths() {
   return getKnownContributors().map((username) => ({ params: { username: `@${username}` } }));
@@ -28,7 +29,7 @@ const formatDate = (isoDate: string | null) => {
 };
 const canonicalPath = getProfilePath(profile.username);
 const pageDescription = `View @${profile.username}'s OpenBlog profile, including contribution stats, accepted PRs, and contributed posts.`;
-const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = {
   '@context': 'https://schema.org',

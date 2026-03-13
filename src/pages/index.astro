@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { formatPostDate, getCategoryPath, getLatestContributorsForPost, getPosts, getProfilePath } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
+import { getSiteUrl } from '../lib/site';
 
 const posts = getPosts();
 const latestPost = posts[0];
@@ -16,7 +17,7 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
 const pageDescription =
   'OpenBlog is a collaborative technical blog where merged pull requests improve articles and contributors earn points on a public leaderboard.';
 const canonicalPath = '/';
-const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = [
   {

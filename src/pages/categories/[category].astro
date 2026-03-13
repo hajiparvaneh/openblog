@@ -2,6 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { formatPostDate, getCategoryLeaderboard, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
+import { getSiteUrl } from '../../lib/site';
 
 export function getStaticPaths() {
   const categoryMap = new Map<string, string>();
@@ -29,7 +30,7 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const canonicalPath = getCategoryPath(category);
 const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on OpenBlog and see the top contributors for this category.`;
-const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = [
   {

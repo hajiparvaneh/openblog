@@ -2,6 +2,7 @@
 import '../styles/global.css';
 import { getCategoryPath, getLatestContributors, getPosts, getProfilePath } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
+import { getSiteUrl } from '../lib/site';
 type JsonLd = Record<string, unknown>;
 
 type BaseLayoutProps = {
@@ -30,7 +31,7 @@ const {
   structuredData
 } = Astro.props as BaseLayoutProps;
 
-const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const ogImageUrl = toAbsoluteUrl(ogImagePath, siteUrl);
 const faviconHref = '/openblog-favicon.ico';

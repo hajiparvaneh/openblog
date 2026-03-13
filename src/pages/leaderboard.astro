@@ -2,6 +2,7 @@
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLeaderboard, getPosts, getRecentEvents, getUserPostContributionCounts } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
+import { getSiteUrl } from '../lib/site';
 
 const leaderboard = getLeaderboard();
 const recentEvents = getRecentEvents(10);
@@ -19,7 +20,7 @@ const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${po
 const pageDescription =
   'See the OpenBlog contributor leaderboard ranked by points and merged pull requests, plus the latest accepted contributions.';
 const canonicalPath = '/leaderboard';
-const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const topContributors = leaderboard.slice(0, 10);
 const structuredData = [

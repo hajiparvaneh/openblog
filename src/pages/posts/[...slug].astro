@@ -5,6 +5,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import { marked } from 'marked';
 import { formatPostDate, getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
+import { getSiteUrl } from '../../lib/site';
 
 type ScoringLabelConfig = {
   points: number;
@@ -52,7 +53,7 @@ const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(
 const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
 const canonicalPath = `/posts/${postSourcePath}`;
 const pageDescription = post.description || `Read ${post.title} on OpenBlog.`;
-const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const latestContributionAt = contributors
   .flatMap((contributor) => contributor.pullRequests.map((pullRequest) => pullRequest.mergedAt))

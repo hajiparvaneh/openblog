@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { toAbsoluteUrl } from '../lib/seo';
+import { getSiteUrl } from '../lib/site';
 
 type ScoringLabelConfig = {
   points: number;
@@ -36,7 +37,7 @@ const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const pageDescription =
   'Learn how to contribute to OpenBlog in one focused pull request, including the contribution flow, checklist, and scoring rules.';
 const canonicalPath = '/how-to-contribute';
-const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = {
   '@context': 'https://schema.org',
