@@ -48,6 +48,10 @@ body {
   font-family: var(--font-main);
 }
 
+[hidden] {
+  display: none !important;
+}
+
 a {
   color: var(--primary);
   text-decoration: none;

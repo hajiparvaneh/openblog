@@ -189,6 +189,21 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
                 </ul>
               </>
             )}
+
+            <hr class="sidebar-sep" />
+            <section class="sidebar-block">
+              <p class="kicker icon-label"><i class="ti ti-alert-circle icon-sm" aria-hidden="true"></i>Seeing an issue?</p>
+              <p class="meta">Found a bug or typo? Let us know by opening an issue.</p>
+              <a
+                class="sidebar-link"
+                href="https://github.com/hajiparvaneh/openblog/issues/new"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <i class="ti ti-bug icon-sm" aria-hidden="true"></i>
+                Open an issue
+              </a>
+            </section>
           </aside>
         </div>
       ) : (

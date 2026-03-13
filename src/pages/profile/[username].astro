@@ -245,16 +245,23 @@ const structuredData = {
       };
 
       var goToPage = function (page) {
-        if (page < 1 || page > pages || page === currentPage) return;
+        if (page < 1 || page > pages || page === currentPage) return false;
         currentPage = page;
         render();
         syncUrl();
+        return true;
       };
 
       pageLinks.forEach(function (link) {
         link.addEventListener('click', function (event) {
-          event.preventDefault();
-          goToPage(Number(link.getAttribute('data-profile-latest-page-link')) || 1);
+          var targetPage = Number(link.getAttribute('data-profile-latest-page-link')) || 1;
+          if (targetPage === currentPage) {
+            event.preventDefault();
+            return;
+          }
+          if (goToPage(targetPage)) {
+            event.preventDefault();
+          }
         });
       });
 
@@ -264,8 +271,9 @@ const structuredData = {
             event.preventDefault();
             return;
           }
-          event.preventDefault();
-          goToPage(currentPage - 1);
+          if (goToPage(currentPage - 1)) {
+            event.preventDefault();
+          }
         });
       }
 
@@ -275,8 +283,9 @@ const structuredData = {
             event.preventDefault();
             return;
           }
-          event.preventDefault();
-          goToPage(currentPage + 1);
+          if (goToPage(currentPage + 1)) {
+            event.preventDefault();
+          }
         });
       }
 
