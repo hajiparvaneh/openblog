@@ -1,0 +1,58 @@
+---
+import { formatPostDate, getCategoryPath, getProfilePath } from '../lib/openblog';
+import type { LatestContributorRecord, Post } from '../lib/openblog';
+
+type Props = {
+  post: Post;
+  author?: LatestContributorRecord | null;
+  showCategory?: boolean;
+  dataAttribute?: string;
+  dateSortValue?: string;
+};
+
+const { post, author = null, showCategory = true, dataAttribute, dateSortValue } = Astro.props as Props;
+const cardAttributes = {
+  ...(dataAttribute ? { [dataAttribute]: '' } : {}),
+  ...(dateSortValue ? { 'data-post-date': dateSortValue } : {})
+};
+---
+
+<article class="card post-card" {...cardAttributes}>
+  <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
+  <p>{post.description}</p>
+  <p class="meta meta-inline">
+    <span class="meta-item">
+      {author ? (
+        <a class="user-chip user-link post-card-author-link" href={getProfilePath(author.username)}>
+          <img
+            class="avatar avatar-sm"
+            src={author.avatarUrl ?? `https://github.com/${author.username}.png?size=64`}
+            alt={`@${author.username} avatar`}
+            loading="lazy"
+            decoding="async"
+            width="24"
+            height="24"
+          />
+          <span class="user-handle">@{author.username}</span>
+        </a>
+      ) : (
+        <span class="user-chip post-card-author-link">
+          <span class="avatar avatar-sm post-card-avatar-fallback" aria-hidden="true">
+            <i class="ti ti-user icon-sm" aria-hidden="true"></i>
+          </span>
+          <span class="user-handle">OpenBlog</span>
+        </span>
+      )}
+    </span>
+    <span class="meta-item">
+      <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
+      {formatPostDate(post.date)}
+    </span>
+    {showCategory ? (
+      <span class="meta-item">
+        <i class="ti ti-category icon-sm" aria-hidden="true"></i>
+        <a href={getCategoryPath(post.category)}>{post.categoryLabel}</a>
+      </span>
+    ) : null}
+  </p>
+</article>

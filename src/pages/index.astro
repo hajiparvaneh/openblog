@@ -1,16 +1,20 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
-import { formatPostDate, getCategoryPath, getLatestContributorsForPost, getPosts, getProfilePath } from '../lib/openblog';
+import PostCard from '../components/PostCard.astro';
+import { formatPostDate, getCategoryPath, getLatestContributorByPost, getLatestContributorsForPost, getPosts, getProfilePath } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
 
 const posts = getPosts();
 const latestPost = posts[0];
-const remainingPosts = posts.slice(1);
+const remainingPosts = posts
+  .slice(1)
+  .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
 const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(remainingPosts.length / postsPerPage));
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
+const latestContributorByPost = getLatestContributorByPost();
 const latestContributors = latestPost ? getLatestContributorsForPost(latestPost.slug, 5) : [];
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=64`;
@@ -103,14 +107,12 @@ const structuredData = [
       <p id="home-posts-page-info" class="meta">Showing {postsPerPage} posts per page</p>
       <div class="post-grid">
         {remainingPosts.map((post) => (
-          <article class="card post-card" data-home-post-card>
-            <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
-            <p>{post.description}</p>
-            <p class="meta meta-inline">
-              <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
-              <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={getCategoryPath(post.category)}>{post.categoryLabel}</a></span>
-            </p>
-          </article>
+          <PostCard
+            post={post}
+            author={latestContributorByPost.get(post.slug)}
+            dataAttribute="data-home-post-card"
+            dateSortValue={post.date}
+          />
         ))}
       </div>
 
@@ -142,6 +144,23 @@ const structuredData = [
     (function () {
       var cards = Array.from(document.querySelectorAll('[data-home-post-card]'));
       if (cards.length === 0) return;
+      var grid = document.querySelector('.post-grid');
+
+      cards.sort(function (a, b) {
+        var aDate = a.getAttribute('data-post-date') || '';
+        var bDate = b.getAttribute('data-post-date') || '';
+        if (aDate !== bDate) return bDate.localeCompare(aDate);
+
+        var aHref = (a.querySelector('h2 a') && a.querySelector('h2 a').getAttribute('href')) || '';
+        var bHref = (b.querySelector('h2 a') && b.querySelector('h2 a').getAttribute('href')) || '';
+        return aHref.localeCompare(bHref);
+      });
+
+      if (grid) {
+        cards.forEach(function (card) {
+          grid.appendChild(card);
+        });
+      }
 
       var perPage = {postsPerPage};
       var pages = Math.max(1, Math.ceil(cards.length / perPage));

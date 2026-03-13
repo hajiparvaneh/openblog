@@ -1,6 +1,15 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getKnownContributors, getProfilePath, getUserProfile } from '../../lib/openblog';
+import PostCard from '../../components/PostCard.astro';
+import {
+  getContributedPostSlugsByUser,
+  getKnownContributors,
+  getLatestContributorByPost,
+  getPostBySlug,
+  getProfileContributionsPath,
+  getProfilePath,
+  getUserProfile
+} from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { getSiteUrl } from '../../lib/site';
 
@@ -17,10 +26,13 @@ if (!profile) {
 
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=112`;
-const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
-const getPostUrl = (postSlug: string) => `/posts/${postSlug}`;
-const postsPerPage = 8;
-const postsTotalPages = Math.max(1, Math.ceil(profile.contributedPosts.length / postsPerPage));
+const latestContributorByPost = getLatestContributorByPost();
+const latestPosts = getContributedPostSlugsByUser(profile.username)
+  .map((postSlug) => getPostBySlug(postSlug))
+  .filter((post): post is NonNullable<ReturnType<typeof getPostBySlug>> => Boolean(post));
+
+const postsPerPage = 6;
+const postsTotalPages = Math.max(1, Math.ceil(latestPosts.length / postsPerPage));
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const formatDate = (isoDate: string | null) => {
   if (!isoDate) return 'N/A';
@@ -28,7 +40,7 @@ const formatDate = (isoDate: string | null) => {
   return Number.isNaN(parsed.getTime()) ? isoDate : parsed.toISOString().slice(0, 10);
 };
 const canonicalPath = getProfilePath(profile.username);
-const pageDescription = `View @${profile.username}'s OpenBlog profile, including contribution stats, accepted PRs, and contributed posts.`;
+const pageDescription = `View @${profile.username}'s OpenBlog profile, including contribution stats and latest posts.`;
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = {
@@ -75,6 +87,10 @@ const structuredData = {
             <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
             GitHub profile
           </a>
+          <a class="sidebar-link" href={getProfileContributionsPath(profile.username)}>
+            <i class="ti ti-list-details icon-sm" aria-hidden="true"></i>
+            Contribution details
+          </a>
           <a class="sidebar-link" href="/leaderboard">
             <i class="ti ti-trophy icon-sm" aria-hidden="true"></i>
             Back to leaderboard
@@ -106,96 +122,53 @@ const structuredData = {
     </div>
   </section>
 
-  <section class="card table-wrap">
-    <h2 class="icon-label"><i class="ti ti-article icon-sm" aria-hidden="true"></i>Posts contributed</h2>
-    <p id="profile-posts-info" class="meta">Sorted by latest contribution (newest first).</p>
+  <section class="list">
+    <p class="kicker icon-label"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>Latest posts</p>
+    <p id="profile-latest-posts-page-info" class="meta">Showing {postsPerPage} posts per page</p>
 
-    {profile.contributedPosts.length === 0 ? (
-      <p class="meta">No post contributions yet.</p>
+    {latestPosts.length === 0 ? (
+      <article class="card">
+        <h2>No latest posts yet</h2>
+        <p class="meta">No published post links are available for this contributor yet.</p>
+      </article>
     ) : (
-      <table class="table profile-posts-table" id="profile-posts-table" data-per-page={postsPerPage}>
-        <thead>
-          <tr>
-            <th>Post</th>
-            <th scope="col" aria-sort="descending">
-              <button class="table-sort-button" id="profile-posts-sort-last" type="button">
-                Last contribution
-                <span class="sort-indicator" id="profile-posts-sort-indicator" aria-hidden="true">↓</span>
-              </button>
-            </th>
-            <th>Points</th>
-            <th>Contributions</th>
-            <th>PR numbers</th>
-          </tr>
-        </thead>
-        <tbody>
-          {profile.contributedPosts.map((post) => (
-            <tr data-profile-post-row data-last-contributed={post.lastContributedAt}>
-              <td>
-                {post.postExists ? (
-                  <a href={getPostUrl(post.postSlug)}>{post.postTitle}</a>
-                ) : (
-                  <span>{post.postTitle}</span>
-                )}
-                <div class="meta profile-post-slug">{post.postSlug}</div>
-              </td>
-              <td>{formatDate(post.lastContributedAt)}</td>
-              <td>
-                <span class="points-inline">
-                  <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
-                  {post.totalPoints}
-                </span>
-              </td>
-              <td>{post.contributions}</td>
-              <td>
-                <div class="profile-pr-inline">
-                  {post.acceptedPrNumbers.map((prNumber) => (
-                    <a class="badge profile-pr-link" href={getPullRequestUrl(prNumber)} target="_blank" rel="noopener noreferrer">
-                      #{prNumber}
-                    </a>
-                  ))}
-                </div>
-              </td>
-            </tr>
+      <>
+        <div class="post-grid">
+          {latestPosts.map((post) => (
+            <PostCard
+              post={post}
+              author={latestContributorByPost.get(post.slug)}
+              dataAttribute="data-profile-latest-post-card"
+            />
           ))}
-        </tbody>
-      </table>
-    )}
+        </div>
 
-    {profile.contributedPosts.length > postsPerPage && (
-      <nav class="leaderboard-pagination" aria-label="Posts contributed pages">
-        <a id="profile-posts-prev" class="page-control" href={`?page=1`}>Previous</a>
-        <ul class="page-links" aria-label="Page numbers">
-          {postPageNumbers.map((page) => (
-            <li>
-              <a data-profile-page-link={page} class="page-link" href={`?page=${page}`}>{page}</a>
-            </li>
-          ))}
-        </ul>
-        <a id="profile-posts-next" class="page-control" href={`?page=${postsTotalPages > 1 ? 2 : 1}`}>Next</a>
-      </nav>
+        <nav class="leaderboard-pagination" aria-label="Profile latest posts pages">
+          <a id="profile-latest-posts-prev" class="page-control" href="?page=1">Previous</a>
+          <ul class="page-links" aria-label="Page numbers">
+            {postPageNumbers.map((page) => (
+              <li>
+                <a data-profile-latest-page-link={page} class="page-link" href={`?page=${page}`}>{page}</a>
+              </li>
+            ))}
+          </ul>
+          <a id="profile-latest-posts-next" class="page-control" href={`?page=${postsTotalPages > 1 ? 2 : 1}`}>Next</a>
+        </nav>
+      </>
     )}
   </section>
 
   <script is:inline>
     (function () {
-      var table = document.getElementById('profile-posts-table');
-      if (!table) return;
+      var cards = Array.from(document.querySelectorAll('[data-profile-latest-post-card]'));
+      if (cards.length === 0) return;
 
-      var tbody = table.querySelector('tbody');
-      if (!tbody) return;
-
-      var rows = Array.from(tbody.querySelectorAll('[data-profile-post-row]'));
-      var perPage = Number(table.getAttribute('data-per-page') || '8');
-      var pages = Math.max(1, Math.ceil(rows.length / perPage));
-      var pageInfo = document.getElementById('profile-posts-info');
-      var prev = document.getElementById('profile-posts-prev');
-      var next = document.getElementById('profile-posts-next');
-      var pageLinks = Array.from(document.querySelectorAll('[data-profile-page-link]'));
-      var sortButton = document.getElementById('profile-posts-sort-last');
-      var sortIndicator = document.getElementById('profile-posts-sort-indicator');
-      var sortHeader = table.querySelector('th[aria-sort]');
-      var sortDirection = 'desc';
+      var perPage = {postsPerPage};
+      var pages = Math.max(1, Math.ceil(cards.length / perPage));
+      var pageInfo = document.getElementById('profile-latest-posts-page-info');
+      var prev = document.getElementById('profile-latest-posts-prev');
+      var next = document.getElementById('profile-latest-posts-next');
+      var pageLinks = Array.from(document.querySelectorAll('[data-profile-latest-page-link]'));
 
       var parsePage = function () {
         var params = new URLSearchParams(window.location.search);
@@ -206,16 +179,6 @@ const structuredData = {
       };
 
       var currentPage = parsePage();
-
-      var syncUrl = function () {
-        var url = new URL(window.location.href);
-        if (currentPage === 1) {
-          url.searchParams.delete('page');
-        } else {
-          url.searchParams.set('page', String(currentPage));
-        }
-        window.history.replaceState({}, '', url);
-      };
 
       var setPageState = function (target, disabled) {
         if (!target) return;
@@ -228,50 +191,30 @@ const structuredData = {
         }
       };
 
-      var sortRows = function () {
-        rows.sort(function (a, b) {
-          var aValue = a.getAttribute('data-last-contributed') || '';
-          var bValue = b.getAttribute('data-last-contributed') || '';
-          if (aValue === bValue) return 0;
-          if (sortDirection === 'asc') return aValue < bValue ? -1 : 1;
-          return aValue > bValue ? -1 : 1;
-        });
-
-        rows.forEach(function (row) {
-          tbody.appendChild(row);
-        });
-      };
-
-      var updateSortUi = function () {
-        if (sortIndicator) {
-          sortIndicator.textContent = sortDirection === 'asc' ? '↑' : '↓';
+      var syncUrl = function () {
+        var url = new URL(window.location.href);
+        if (currentPage === 1) {
+          url.searchParams.delete('page');
+        } else {
+          url.searchParams.set('page', String(currentPage));
         }
-        if (sortHeader) {
-          sortHeader.setAttribute('aria-sort', sortDirection === 'asc' ? 'ascending' : 'descending');
-        }
+        window.history.replaceState({}, '', url);
       };
 
       var render = function () {
         var start = (currentPage - 1) * perPage;
         var end = start + perPage;
 
-        rows.forEach(function (row, index) {
-          row.hidden = index < start || index >= end;
+        cards.forEach(function (card, index) {
+          card.hidden = index < start || index >= end;
         });
 
         if (pageInfo) {
-          pageInfo.textContent =
-            'Sorted by latest contribution (' +
-            (sortDirection === 'asc' ? 'oldest first' : 'newest first') +
-            '). Page ' +
-            currentPage +
-            ' of ' +
-            pages +
-            '.';
+          pageInfo.textContent = 'Page ' + currentPage + ' of ' + pages + ' (' + cards.length + ' posts)';
         }
 
         pageLinks.forEach(function (link) {
-          var page = Number(link.getAttribute('data-profile-page-link'));
+          var page = Number(link.getAttribute('data-profile-latest-page-link'));
           var isActive = page === currentPage;
           if (isActive) {
             link.classList.add('is-active');
@@ -300,21 +243,10 @@ const structuredData = {
         syncUrl();
       };
 
-      if (sortButton) {
-        sortButton.addEventListener('click', function () {
-          sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
-          currentPage = 1;
-          sortRows();
-          updateSortUi();
-          render();
-          syncUrl();
-        });
-      }
-
       pageLinks.forEach(function (link) {
         link.addEventListener('click', function (event) {
           event.preventDefault();
-          goToPage(Number(link.getAttribute('data-profile-page-link')) || 1);
+          goToPage(Number(link.getAttribute('data-profile-latest-page-link')) || 1);
         });
       });
 
@@ -340,8 +272,6 @@ const structuredData = {
         });
       }
 
-      sortRows();
-      updateSortUi();
       render();
       syncUrl();
     })();
@@ -388,45 +318,6 @@ const structuredData = {
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
-    .profile-posts-table {
-      min-width: 760px;
-    }
-
-    .profile-pr-inline {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.35rem;
-    }
-
-    .profile-pr-link {
-      text-decoration: none;
-    }
-
-    .profile-pr-link:hover {
-      text-decoration: none;
-    }
-
-    .table-sort-button {
-      display: inline-flex;
-      align-items: center;
-      justify-content: flex-start;
-      gap: 0.25rem;
-      width: 100%;
-      border: 0;
-      background: transparent;
-      color: inherit;
-      font: inherit;
-      letter-spacing: inherit;
-      text-transform: inherit;
-      cursor: pointer;
-      padding: 0;
-    }
-
-    .sort-indicator {
-      font-size: 0.74rem;
-      line-height: 1;
-    }
-
     .leaderboard-pagination {
       margin-top: 0.8rem;
       display: flex;
@@ -471,12 +362,6 @@ const structuredData = {
     .page-control.is-disabled {
       opacity: 0.55;
       pointer-events: none;
-    }
-
-    .profile-post-slug {
-      margin-top: 0.15rem;
-      font-size: 0.76rem;
-      overflow-wrap: anywhere;
     }
 
     @media (max-width: 860px) {

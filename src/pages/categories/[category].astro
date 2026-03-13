@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { formatPostDate, getCategoryLeaderboard, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
+import PostCard from '../../components/PostCard.astro';
+import { getCategoryLeaderboard, getCategoryPath, getLatestContributorByPost, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { getSiteUrl } from '../../lib/site';
 
@@ -25,6 +26,7 @@ const categoryLeaderboard = getCategoryLeaderboard(category);
 const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(posts.length / postsPerPage));
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
+const latestContributorByPost = getLatestContributorByPost();
 const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
@@ -83,13 +85,12 @@ if (posts.length === 0) {
     <p id="category-posts-page-info" class="meta">Showing {postsPerPage} posts per page</p>
     <div class="post-grid">
       {posts.map((post) => (
-        <article class="card post-card" data-category-post-card>
-          <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
-          <p>{post.description}</p>
-          <p class="meta meta-inline">
-            <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
-          </p>
-        </article>
+        <PostCard
+          post={post}
+          author={latestContributorByPost.get(post.slug)}
+          showCategory={false}
+          dataAttribute="data-category-post-card"
+        />
       ))}
     </div>
 

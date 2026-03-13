@@ -119,6 +119,37 @@ export function getProfilePath(username: string): string {
   return `/profile/@${normalizeUsernameHandle(username)}`;
 }
 
+export function getProfileContributionsPath(username: string): string {
+  return `/@${normalizeUsernameHandle(username)}/contributions`;
+}
+
+export function getContributedPostSlugsByUser(usernameOrHandle: string): string[] {
+  const normalizedLookup = normalizeUsernameHandle(usernameOrHandle).toLowerCase();
+  if (!normalizedLookup || !fs.existsSync(EVENTS_DIR)) return [];
+  const knownSlugs = new Set(getPosts().map((post) => post.slug));
+  const latestByPost = new Map<string, string>();
+
+  for (const file of fs.readdirSync(EVENTS_DIR)) {
+    if (!file.endsWith('.json')) continue;
+    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+    if (!event.username || !event.mergedAt) continue;
+    if (event.username.toLowerCase() !== normalizedLookup) continue;
+
+    for (const contribution of getEventContributions(event)) {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs);
+      if (!resolvedPostSlug) continue;
+      const current = latestByPost.get(resolvedPostSlug);
+      if (!current || event.mergedAt > current) {
+        latestByPost.set(resolvedPostSlug, event.mergedAt);
+      }
+    }
+  }
+
+  return [...latestByPost.entries()]
+    .sort((a, b) => b[1].localeCompare(a[1]) || a[0].localeCompare(b[0]))
+    .map(([postSlug]) => postSlug);
+}
+
 function toDateString(value: unknown): string {
   if (value instanceof Date) {
     return Number.isNaN(value.getTime()) ? '' : value.toISOString().slice(0, 10);
@@ -610,6 +641,39 @@ export function getLatestContributors(limit = 8): LatestContributorRecord[] {
   return users
     .sort((a, b) => b.lastContributionAt.localeCompare(a.lastContributionAt) || a.username.localeCompare(b.username))
     .slice(0, limit);
+}
+
+export function getLatestContributorByPost(): Map<string, LatestContributorRecord> {
+  const latestByPost = new Map<string, LatestContributorRecord>();
+  if (!fs.existsSync(EVENTS_DIR)) return latestByPost;
+  const knownSlugs = new Set(getPosts().map((post) => post.slug));
+
+  for (const file of fs.readdirSync(EVENTS_DIR)) {
+    if (!file.endsWith('.json')) continue;
+    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+    if (!event.username || !event.mergedAt) continue;
+
+    for (const contribution of getEventContributions(event)) {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs);
+      if (!resolvedPostSlug) continue;
+
+      const current = latestByPost.get(resolvedPostSlug);
+      if (
+        !current ||
+        event.mergedAt > current.lastContributionAt ||
+        (event.mergedAt === current.lastContributionAt && event.username.localeCompare(current.username) < 0)
+      ) {
+        latestByPost.set(resolvedPostSlug, {
+          username: event.username,
+          profileUrl: `https://github.com/${event.username}`,
+          avatarUrl: event.userAvatarUrl ?? null,
+          lastContributionAt: event.mergedAt
+        });
+      }
+    }
+  }
+
+  return latestByPost;
 }
 
 export function getLatestContributorsForPost(postSlug: string, limit = 5): LatestContributorRecord[] {

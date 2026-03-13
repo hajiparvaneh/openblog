@@ -1,0 +1,435 @@
+---
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import {
+  getKnownContributors,
+  getProfileContributionsPath,
+  getProfilePath,
+  getUserProfile
+} from '../../../lib/openblog';
+import { toAbsoluteUrl } from '../../../lib/seo';
+import { getSiteUrl } from '../../../lib/site';
+
+export function getStaticPaths() {
+  return getKnownContributors().map((username) => ({ params: { username: `@${username}` } }));
+}
+
+const routeUsername = Astro.params.username ?? '';
+const normalizedUsername = routeUsername.replace(/^@+/, '');
+const profile = getUserProfile(normalizedUsername);
+if (!profile) {
+  throw new Error('Profile not found');
+}
+
+const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
+  avatarUrl ?? `https://github.com/${username}.png?size=80`;
+const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
+const getPostUrl = (postSlug: string) => `/posts/${postSlug}`;
+const postsPerPage = 8;
+const postsTotalPages = Math.max(1, Math.ceil(profile.contributedPosts.length / postsPerPage));
+const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
+const formatDate = (isoDate: string | null) => {
+  if (!isoDate) return 'N/A';
+  const parsed = new Date(isoDate);
+  return Number.isNaN(parsed.getTime()) ? isoDate : parsed.toISOString().slice(0, 10);
+};
+const canonicalPath = getProfileContributionsPath(profile.username);
+const pageDescription = `Detailed post contribution history for @${profile.username} on OpenBlog.`;
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: `@${profile.username} contribution details`,
+  description: pageDescription,
+  url: canonicalUrl
+};
+---
+<BaseLayout
+  title={`@${profile.username} Contribution Details | OpenBlog`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  structuredData={structuredData}
+>
+  <section class="card">
+    <div class="contribution-head">
+      <div class="contribution-copy">
+        <p class="kicker icon-label"><i class="ti ti-list-details icon-sm" aria-hidden="true"></i>Contribution details</p>
+        <h1>Posts contributed</h1>
+        <p class="meta">{profile.contributedPosts.length} posts with accepted contributions.</p>
+      </div>
+      <a class="user-chip user-link contribution-user" href={getProfilePath(profile.username)}>
+        <img
+          class="avatar"
+          src={getAvatarUrl(profile.username, profile.avatarUrl)}
+          alt={`@${profile.username} avatar`}
+          loading="lazy"
+          width="64"
+          height="64"
+        />
+        <strong class="user-handle">@{profile.username}</strong>
+      </a>
+    </div>
+  </section>
+
+  <section class="card table-wrap">
+    <p id="profile-posts-info" class="meta">Sorted by latest contribution (newest first).</p>
+
+    {profile.contributedPosts.length === 0 ? (
+      <p class="meta">No post contributions yet.</p>
+    ) : (
+      <table class="table profile-posts-table" id="profile-posts-table" data-per-page={postsPerPage}>
+        <thead>
+          <tr>
+            <th>Post</th>
+            <th scope="col" aria-sort="descending">
+              <button class="table-sort-button" id="profile-posts-sort-last" type="button">
+                Last contribution
+                <span class="sort-indicator" id="profile-posts-sort-indicator" aria-hidden="true">↓</span>
+              </button>
+            </th>
+            <th>Points</th>
+            <th>Contributions</th>
+            <th>PR numbers</th>
+          </tr>
+        </thead>
+        <tbody>
+          {profile.contributedPosts.map((post) => (
+            <tr data-profile-post-row data-last-contributed={post.lastContributedAt}>
+              <td>
+                {post.postExists ? (
+                  <a href={getPostUrl(post.postSlug)}>{post.postTitle}</a>
+                ) : (
+                  <span>{post.postTitle}</span>
+                )}
+                <div class="meta profile-post-slug">{post.postSlug}</div>
+              </td>
+              <td>{formatDate(post.lastContributedAt)}</td>
+              <td>
+                <span class="points-inline">
+                  <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
+                  {post.totalPoints}
+                </span>
+              </td>
+              <td>{post.contributions}</td>
+              <td>
+                <div class="profile-pr-inline">
+                  {post.acceptedPrNumbers.map((prNumber) => (
+                    <a class="badge profile-pr-link" href={getPullRequestUrl(prNumber)} target="_blank" rel="noopener noreferrer">
+                      #{prNumber}
+                    </a>
+                  ))}
+                </div>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    )}
+
+    {profile.contributedPosts.length > 0 && (
+      <nav class="leaderboard-pagination" aria-label="Posts contributed pages">
+        <a id="profile-posts-prev" class="page-control" href={`?page=1`}>Previous</a>
+        <ul class="page-links" aria-label="Page numbers">
+          {postPageNumbers.map((page) => (
+            <li>
+              <a data-profile-page-link={page} class="page-link" href={`?page=${page}`}>{page}</a>
+            </li>
+          ))}
+        </ul>
+        <a id="profile-posts-next" class="page-control" href={`?page=${postsTotalPages > 1 ? 2 : 1}`}>Next</a>
+      </nav>
+    )}
+  </section>
+
+  <script is:inline>
+    (function () {
+      var table = document.getElementById('profile-posts-table');
+      if (!table) return;
+
+      var tbody = table.querySelector('tbody');
+      if (!tbody) return;
+
+      var rows = Array.from(tbody.querySelectorAll('[data-profile-post-row]'));
+      var perPage = Number(table.getAttribute('data-per-page') || '8');
+      var pages = Math.max(1, Math.ceil(rows.length / perPage));
+      var pageInfo = document.getElementById('profile-posts-info');
+      var prev = document.getElementById('profile-posts-prev');
+      var next = document.getElementById('profile-posts-next');
+      var pageLinks = Array.from(document.querySelectorAll('[data-profile-page-link]'));
+      var sortButton = document.getElementById('profile-posts-sort-last');
+      var sortIndicator = document.getElementById('profile-posts-sort-indicator');
+      var sortHeader = table.querySelector('th[aria-sort]');
+      var sortDirection = 'desc';
+
+      var parsePage = function () {
+        var params = new URLSearchParams(window.location.search);
+        var pageParam = Number(params.get('page') || '1');
+        if (!Number.isFinite(pageParam) || pageParam < 1) return 1;
+        if (pageParam > pages) return pages;
+        return Math.floor(pageParam);
+      };
+
+      var currentPage = parsePage();
+
+      var syncUrl = function () {
+        var url = new URL(window.location.href);
+        if (currentPage === 1) {
+          url.searchParams.delete('page');
+        } else {
+          url.searchParams.set('page', String(currentPage));
+        }
+        window.history.replaceState({}, '', url);
+      };
+
+      var setPageState = function (target, disabled) {
+        if (!target) return;
+        if (disabled) {
+          target.setAttribute('aria-disabled', 'true');
+          target.classList.add('is-disabled');
+        } else {
+          target.removeAttribute('aria-disabled');
+          target.classList.remove('is-disabled');
+        }
+      };
+
+      var sortRows = function () {
+        rows.sort(function (a, b) {
+          var aValue = a.getAttribute('data-last-contributed') || '';
+          var bValue = b.getAttribute('data-last-contributed') || '';
+          if (aValue === bValue) return 0;
+          if (sortDirection === 'asc') return aValue < bValue ? -1 : 1;
+          return aValue > bValue ? -1 : 1;
+        });
+
+        rows.forEach(function (row) {
+          tbody.appendChild(row);
+        });
+      };
+
+      var updateSortUi = function () {
+        if (sortIndicator) {
+          sortIndicator.textContent = sortDirection === 'asc' ? '↑' : '↓';
+        }
+        if (sortHeader) {
+          sortHeader.setAttribute('aria-sort', sortDirection === 'asc' ? 'ascending' : 'descending');
+        }
+      };
+
+      var render = function () {
+        var start = (currentPage - 1) * perPage;
+        var end = start + perPage;
+
+        rows.forEach(function (row, index) {
+          row.hidden = index < start || index >= end;
+        });
+
+        if (pageInfo) {
+          pageInfo.textContent =
+            'Sorted by latest contribution (' +
+            (sortDirection === 'asc' ? 'oldest first' : 'newest first') +
+            '). Page ' +
+            currentPage +
+            ' of ' +
+            pages +
+            '.';
+        }
+
+        pageLinks.forEach(function (link) {
+          var page = Number(link.getAttribute('data-profile-page-link'));
+          var isActive = page === currentPage;
+          if (isActive) {
+            link.classList.add('is-active');
+            link.setAttribute('aria-current', 'page');
+          } else {
+            link.classList.remove('is-active');
+            link.removeAttribute('aria-current');
+          }
+        });
+
+        if (prev) {
+          prev.setAttribute('href', '?page=' + Math.max(1, currentPage - 1));
+        }
+        if (next) {
+          next.setAttribute('href', '?page=' + Math.min(pages, currentPage + 1));
+        }
+
+        setPageState(prev, currentPage <= 1);
+        setPageState(next, currentPage >= pages);
+      };
+
+      var goToPage = function (page) {
+        if (page < 1 || page > pages || page === currentPage) return;
+        currentPage = page;
+        render();
+        syncUrl();
+      };
+
+      if (sortButton) {
+        sortButton.addEventListener('click', function () {
+          sortDirection = sortDirection === 'desc' ? 'asc' : 'desc';
+          currentPage = 1;
+          sortRows();
+          updateSortUi();
+          render();
+          syncUrl();
+        });
+      }
+
+      pageLinks.forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
+          goToPage(Number(link.getAttribute('data-profile-page-link')) || 1);
+        });
+      });
+
+      if (prev) {
+        prev.addEventListener('click', function (event) {
+          if (currentPage <= 1) {
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          goToPage(currentPage - 1);
+        });
+      }
+
+      if (next) {
+        next.addEventListener('click', function (event) {
+          if (currentPage >= pages) {
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          goToPage(currentPage + 1);
+        });
+      }
+
+      sortRows();
+      updateSortUi();
+      render();
+      syncUrl();
+    })();
+  </script>
+
+  <style>
+    .contribution-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.8rem;
+    }
+
+    .contribution-copy {
+      display: grid;
+      gap: 0.25rem;
+      min-width: 0;
+    }
+
+    .contribution-copy h1 {
+      margin-bottom: 0;
+    }
+
+    .contribution-user {
+      margin-left: auto;
+      align-self: center;
+    }
+
+    .profile-posts-table {
+      min-width: 760px;
+    }
+
+    .profile-pr-inline {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .profile-pr-link {
+      text-decoration: none;
+    }
+
+    .profile-pr-link:hover {
+      text-decoration: none;
+    }
+
+    .table-sort-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 0.25rem;
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .sort-indicator {
+      font-size: 0.74rem;
+      line-height: 1;
+    }
+
+    .leaderboard-pagination {
+      margin-top: 0.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .page-links {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .page-control,
+    .page-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      min-height: 2rem;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0.35rem 0.55rem;
+      text-decoration: none;
+    }
+
+    .page-link.is-active {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+
+    .page-control.is-disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    .profile-post-slug {
+      margin-top: 0.15rem;
+      font-size: 0.76rem;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 860px) {
+      .leaderboard-pagination {
+        justify-content: center;
+      }
+    }
+  </style>
+</BaseLayout>

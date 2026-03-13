@@ -643,6 +643,22 @@ p {
   margin-top: 0.7rem;
 }
 
+.post-card-author-link {
+  gap: 0.35rem;
+}
+
+.post-card-author-link .user-handle {
+  font-size: 0.84rem;
+  font-weight: 600;
+}
+
+.post-card-avatar-fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+}
+
 .meta {
   color: var(--muted);
   font-family: var(--font-main);

@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getCategoryPath, getKnownContributors, getPosts, getProfilePath } from '../lib/openblog';
+import { getCategoryPath, getKnownContributors, getPosts, getProfileContributionsPath, getProfilePath } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
 
@@ -54,8 +54,14 @@ export const GET: APIRoute = ({ site }) => {
     priority: 0.6
   }));
 
+  const profileContributionEntries: SitemapEntry[] = getKnownContributors().map((username) => ({
+    path: getProfileContributionsPath(username),
+    changefreq: 'weekly',
+    priority: 0.5
+  }));
+
   const mergedByPath = new Map<string, SitemapEntry>();
-  for (const entry of [...staticEntries, ...categoryEntries, ...postEntries, ...profileEntries]) {
+  for (const entry of [...staticEntries, ...categoryEntries, ...postEntries, ...profileEntries, ...profileContributionEntries]) {
     const existing = mergedByPath.get(entry.path);
     if (!existing) {
       mergedByPath.set(entry.path, entry);
