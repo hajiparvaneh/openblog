@@ -40,6 +40,10 @@ type EventRecord = {
 };
 
 type UserRecord = { username: string; avatarUrl?: string | null; totalPoints: number; acceptedPrs: number };
+export type CategoryLeaderboardRecord = UserRecord & {
+  totalContributions: number;
+  totalPostsContributed: number;
+};
 
 export type UserContributedPostRecord = {
   postSlug: string;
@@ -88,6 +92,7 @@ type PostContributorRecord = UserRecord & {
 const ROOT = process.cwd();
 const POSTS_DIR = path.join(ROOT, 'content/posts');
 const GENERATED_USERS_DIR = path.join(ROOT, 'openblog/generated/users');
+const GENERATED_CATEGORIES_DIR = path.join(ROOT, 'openblog/generated/categories');
 const EVENTS_DIR = path.join(ROOT, 'openblog/events');
 
 export function normalizeCategoryKey(category: string): string {
@@ -251,6 +256,26 @@ export function getLeaderboard(): UserRecord[] {
   if (!fs.existsSync(p)) return [];
   const data = JSON.parse(fs.readFileSync(p, 'utf8'));
   return data.leaderboard ?? [];
+}
+
+export function getCategoryLeaderboard(category: string): CategoryLeaderboardRecord[] {
+  const normalizedCategory = normalizeCategoryKey(category);
+  const categoryLeaderboardPath = path.join(GENERATED_CATEGORIES_DIR, `${normalizedCategory}.json`);
+  if (!fs.existsSync(categoryLeaderboardPath)) return [];
+
+  const data = JSON.parse(fs.readFileSync(categoryLeaderboardPath, 'utf8'));
+  if (!Array.isArray(data.leaderboard)) return [];
+
+  return data.leaderboard
+    .filter((entry): entry is CategoryLeaderboardRecord =>
+      Boolean(entry) &&
+      typeof entry === 'object' &&
+      typeof entry.username === 'string' &&
+      typeof entry.totalPoints === 'number' &&
+      typeof entry.acceptedPrs === 'number' &&
+      typeof entry.totalContributions === 'number' &&
+      typeof entry.totalPostsContributed === 'number'
+    );
 }
 
 export function getUserPostContributionCounts(): Record<string, number> {

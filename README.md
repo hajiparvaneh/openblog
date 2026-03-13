@@ -133,8 +133,9 @@ This allows one merged PR (same `prNumber`) to contribute to multiple posts.
 - `openblog/enums/scoring-labels.json`: score labels metadata (points, icon, color)
 - `openblog/generated/users/*.json`: generated user stats
 - `openblog/generated/leaderboard.json`: generated leaderboard
+- `openblog/generated/categories/*.json`: generated per-category leaderboards
 - `scripts/add-event-from-pr.mjs`: create event from merged PR metadata
-- `scripts/generate-openblog-state.mjs`: regenerate users and leaderboard
+- `scripts/generate-openblog-state.mjs`: regenerate users, overall leaderboard, and category leaderboards
 
 ## 🔧 Maintainer Notes
 

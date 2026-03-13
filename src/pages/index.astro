@@ -5,6 +5,9 @@ import { formatPostDate, getCategoryPath, getLatestContributorsForPost, getPosts
 const posts = getPosts();
 const latestPost = posts[0];
 const remainingPosts = posts.slice(1);
+const postsPerPage = 6;
+const postsTotalPages = Math.max(1, Math.ceil(remainingPosts.length / postsPerPage));
+const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
 const latestContributors = latestPost ? getLatestContributorsForPost(latestPost.slug, 5) : [];
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
@@ -74,9 +77,10 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   {remainingPosts.length > 0 ? (
     <section class="list">
       <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
+      <p id="home-posts-page-info" class="meta">Showing {postsPerPage} posts per page</p>
       <div class="post-grid">
         {remainingPosts.map((post) => (
-          <article class="card post-card">
+          <article class="card post-card" data-home-post-card>
             <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
             <p>{post.description}</p>
             <p class="meta meta-inline">
@@ -86,6 +90,20 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
           </article>
         ))}
       </div>
+
+      {postsTotalPages > 1 && (
+        <nav class="leaderboard-pagination" aria-label="Homepage posts pages">
+          <a id="home-posts-prev" class="page-control" href="?page=1">Previous</a>
+          <ul class="page-links" aria-label="Page numbers">
+            {postPageNumbers.map((page) => (
+              <li>
+                <a data-home-page-link={page} class="page-link" href={`?page=${page}`}>{page}</a>
+              </li>
+            ))}
+          </ul>
+          <a id="home-posts-next" class="page-control" href={`?page=${postsTotalPages > 1 ? 2 : 1}`}>Next</a>
+        </nav>
+      )}
     </section>
   ) : (
     <section class="list">
@@ -96,4 +114,177 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
       </article>
     </section>
   )}
+
+  <script is:inline>
+    (function () {
+      var cards = Array.from(document.querySelectorAll('[data-home-post-card]'));
+      if (cards.length === 0) return;
+
+      var perPage = {postsPerPage};
+      var pages = Math.max(1, Math.ceil(cards.length / perPage));
+      var pageInfo = document.getElementById('home-posts-page-info');
+      var prev = document.getElementById('home-posts-prev');
+      var next = document.getElementById('home-posts-next');
+      var pageLinks = Array.from(document.querySelectorAll('[data-home-page-link]'));
+
+      var parsePage = function () {
+        var params = new URLSearchParams(window.location.search);
+        var pageParam = Number(params.get('page') || '1');
+        if (!Number.isFinite(pageParam) || pageParam < 1) return 1;
+        if (pageParam > pages) return pages;
+        return Math.floor(pageParam);
+      };
+
+      var currentPage = parsePage();
+
+      var setPageState = function (target, disabled) {
+        if (!target) return;
+        if (disabled) {
+          target.setAttribute('aria-disabled', 'true');
+          target.classList.add('is-disabled');
+        } else {
+          target.removeAttribute('aria-disabled');
+          target.classList.remove('is-disabled');
+        }
+      };
+
+      var syncUrl = function () {
+        var url = new URL(window.location.href);
+        if (currentPage === 1) {
+          url.searchParams.delete('page');
+        } else {
+          url.searchParams.set('page', String(currentPage));
+        }
+        window.history.replaceState({}, '', url);
+      };
+
+      var render = function () {
+        var start = (currentPage - 1) * perPage;
+        var end = start + perPage;
+
+        cards.forEach(function (card, index) {
+          card.hidden = index < start || index >= end;
+        });
+
+        if (pageInfo) {
+          pageInfo.textContent = 'Page ' + currentPage + ' of ' + pages + ' (' + cards.length + ' posts)';
+        }
+
+        pageLinks.forEach(function (link) {
+          var page = Number(link.getAttribute('data-home-page-link'));
+          var isActive = page === currentPage;
+          if (isActive) {
+            link.classList.add('is-active');
+            link.setAttribute('aria-current', 'page');
+          } else {
+            link.classList.remove('is-active');
+            link.removeAttribute('aria-current');
+          }
+        });
+
+        if (prev) {
+          prev.setAttribute('href', '?page=' + Math.max(1, currentPage - 1));
+        }
+        if (next) {
+          next.setAttribute('href', '?page=' + Math.min(pages, currentPage + 1));
+        }
+
+        setPageState(prev, currentPage <= 1);
+        setPageState(next, currentPage >= pages);
+      };
+
+      var goToPage = function (page) {
+        if (page < 1 || page > pages || page === currentPage) return;
+        currentPage = page;
+        render();
+        syncUrl();
+      };
+
+      pageLinks.forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          event.preventDefault();
+          goToPage(Number(link.getAttribute('data-home-page-link')) || 1);
+        });
+      });
+
+      if (prev) {
+        prev.addEventListener('click', function (event) {
+          if (currentPage <= 1) {
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          goToPage(currentPage - 1);
+        });
+      }
+
+      if (next) {
+        next.addEventListener('click', function (event) {
+          if (currentPage >= pages) {
+            event.preventDefault();
+            return;
+          }
+          event.preventDefault();
+          goToPage(currentPage + 1);
+        });
+      }
+
+      render();
+      syncUrl();
+    })();
+  </script>
+
+  <style>
+    .leaderboard-pagination {
+      margin-top: 0.8rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .page-links {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .page-control,
+    .page-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      min-height: 2rem;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0.35rem 0.55rem;
+      text-decoration: none;
+    }
+
+    .page-link.is-active {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+
+    .page-control.is-disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    @media (max-width: 860px) {
+      .leaderboard-pagination {
+        justify-content: center;
+      }
+    }
+  </style>
 </BaseLayout>
