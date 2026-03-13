@@ -1065,6 +1065,22 @@ p {
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
 }
 
+.contributor-overview {
+  margin: 0 0 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.contributor-overview-item {
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: var(--muted);
+  padding: 0.18rem 0.45rem;
+}
+
 .category-latest-contributors {
   overflow: hidden;
 }
@@ -1152,6 +1168,27 @@ p {
 .contributor-card-enhanced {
   display: grid;
   gap: 0.5rem;
+  transition: border-color 0.16s ease;
+}
+
+.contributor-card-enhanced:hover {
+  border-color: var(--primary);
+}
+
+.contributor-rank-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+.contributor-rank-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--surface);
+  border-color: var(--border);
+  padding: 0.08rem 0.42rem;
 }
 
 .contributor-header {
@@ -1231,6 +1268,12 @@ p {
   font-family: var(--font-main);
   font-size: 0.76rem;
   font-weight: 700;
+}
+
+.contributor-pr-chip-date {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 600;
 }
 
 .contributor-pr-chip .badge {

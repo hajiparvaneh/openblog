@@ -154,6 +154,9 @@ const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const latestContributionAt = contributors
   .flatMap((contributor) => contributor.pullRequests.map((pullRequest) => pullRequest.mergedAt))
   .sort((a, b) => b.localeCompare(a))[0];
+const contributorsTotalPoints = contributors.reduce((sum, contributor) => sum + contributor.totalPoints, 0);
+const contributorsTotalAcceptedPrs = contributors.reduce((sum, contributor) => sum + contributor.acceptedPrs, 0);
+const contributorsTotalLabelKinds = new Set(contributors.flatMap((contributor) => contributor.labels)).size;
 const publishedTime = post.date ? `${post.date}T00:00:00Z` : undefined;
 const modifiedTime = latestContributionAt ?? publishedTime;
 const articleAuthors =
@@ -340,9 +343,27 @@ const structuredData = [
     {contributors.length === 0 ? (
       <p class="meta">No accepted contributions yet.</p>
     ) : (
-      <ul class="contributors">
-        {contributors.map((contributor) => (
+      <>
+        <div class="contributor-overview" aria-label="Contributors summary">
+          <span class="contributor-overview-item icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{contributors.length} contributor{contributors.length > 1 ? 's' : ''}</span>
+          <span class="contributor-overview-item icon-label"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i>{contributorsTotalAcceptedPrs} accepted PR{contributorsTotalAcceptedPrs > 1 ? 's' : ''}</span>
+          <span class="contributor-overview-item icon-label"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>{contributorsTotalPoints} points awarded</span>
+          <span class="contributor-overview-item icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>{contributorsTotalLabelKinds} label type{contributorsTotalLabelKinds > 1 ? 's' : ''}</span>
+        </div>
+        <ul class="contributors">
+        {contributors.map((contributor, index) => {
+          const latestPullRequest = contributor.pullRequests[0];
+          return (
           <li class="contributor-card contributor-card-enhanced">
+            <div class="contributor-rank-row">
+              <span class="badge contributor-rank-badge">#{index + 1}</span>
+              {latestPullRequest ? (
+                <span class="meta icon-label">
+                  <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
+                  Last merged: {formatMergedDate(latestPullRequest.mergedAt)}
+                </span>
+              ) : null}
+            </div>
             <div class="contributor-header">
               <a class="user-chip user-link" href={getProfileUrl(contributor.username)}>
                 <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={80} />
@@ -356,6 +377,13 @@ const structuredData = [
 
             <div class="contributor-meta-row meta">
               <span class="icon-label"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i>{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''}</span>
+              <span class="icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>{contributor.labels.length} label type{contributor.labels.length > 1 ? 's' : ''}</span>
+              {latestPullRequest ? (
+                <span class="icon-label">
+                  <i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>
+                  <a href={getPullRequestUrl(latestPullRequest.prNumber)} target="_blank" rel="noopener noreferrer">Latest PR #{latestPullRequest.prNumber}</a>
+                </span>
+              ) : null}
             </div>
 
             <div class="label-row contributor-label-row">
@@ -383,14 +411,17 @@ const structuredData = [
                     title={`Merged on ${formatMergedDate(pullRequest.mergedAt)}`}
                   >
                     <span>PR #{pullRequest.prNumber}</span>
+                    <span class="contributor-pr-chip-date">{formatMergedDate(pullRequest.mergedAt)}</span>
                     <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{pullRequest.points}</span>
                   </a>
                 ))}
               </div>
             </div>
           </li>
-        ))}
-      </ul>
+          );
+        })}
+        </ul>
+      </>
     )}
   </section>
 
