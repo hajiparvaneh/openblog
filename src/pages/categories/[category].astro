@@ -79,8 +79,8 @@ if (posts.length === 0) {
     </p>
   </section>
 
-  <section class="list">
-    <p id="category-posts-page-info" class="meta">Showing {postsPerPage} posts per page</p>
+  <section class="list paginated-list">
+    <p id="category-posts-page-info" class="meta pagination-info">Showing {postsPerPage} posts per page</p>
     <div class="post-grid" data-category-posts-per-page={postsPerPage}>
       {posts.map((post) => (
         <PostCard
@@ -275,7 +275,7 @@ if (posts.length === 0) {
 
   <style>
     .leaderboard-pagination {
-      margin-top: 0.8rem;
+      margin-top: 0.45rem;
       display: flex;
       flex-wrap: wrap;
       align-items: center;

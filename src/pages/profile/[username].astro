@@ -130,9 +130,9 @@ const structuredData = {
     </div>
   </section>
 
-  <section class="list">
+  <section class="list paginated-list">
     <p class="kicker icon-label"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>Latest posts</p>
-    <p id="profile-latest-posts-page-info" class="meta">Showing {postsPerPage} posts per page</p>
+    <p id="profile-latest-posts-page-info" class="meta pagination-info">Showing {postsPerPage} posts per page</p>
 
     {latestPosts.length === 0 ? (
       <article class="card">
@@ -363,7 +363,7 @@ const structuredData = {
     }
 
     .leaderboard-pagination {
-      margin-top: 0.8rem;
+      margin-top: 0.45rem;
       display: flex;
       flex-wrap: wrap;
       align-items: center;

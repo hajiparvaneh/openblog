@@ -594,6 +594,16 @@ p {
   gap: 1rem;
 }
 
+.paginated-list {
+  gap: 0.65rem;
+}
+
+.pagination-info {
+  margin: 0;
+  font-size: 0.82rem;
+  line-height: 1.25;
+}
+
 .post-grid {
   display: grid;
   gap: 1rem;
