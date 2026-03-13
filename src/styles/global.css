@@ -702,6 +702,40 @@ p {
   gap: 0.3rem;
 }
 
+.share-article-meta {
+  gap: 0.4rem;
+  margin-inline-start: auto;
+}
+
+.share-article-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  border: 1px solid var(--border);
+  border-radius: 0;
+  background: var(--surface-soft);
+  color: var(--text);
+  font-family: var(--font-main);
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.24rem 0.5rem;
+  cursor: pointer;
+}
+
+.share-article-button:hover {
+  background: var(--surface);
+}
+
+.share-article-button:disabled {
+  opacity: 0.72;
+  cursor: wait;
+}
+
+.share-article-status {
+  font-size: 0.78rem;
+}
+
 .kicker {
   margin: 0 0 0.4rem;
   font-family: var(--font-main);

@@ -1,6 +1,6 @@
 ---
 import PostCard from './PostCard.astro';
-import { formatCategoryLabel, getLatestContributorByPost, getPosts } from '../lib/openblog';
+import { getLatestContributorByPost, getPosts } from '../lib/openblog';
 
 type Props = {
   category: string;
@@ -17,8 +17,7 @@ const {
   title,
   emptyMessage = 'No other posts in this category yet.'
 } = Astro.props as Props;
-const categoryLabel = formatCategoryLabel(category);
-const sectionTitle = title ?? `Latest in ${categoryLabel}`;
+const sectionTitle = title ?? 'Related posts';
 
 const allPosts = getPosts();
 const latestContributorByPost = getLatestContributorByPost();

@@ -141,6 +141,21 @@ const structuredData = [
       <PostContributorsStack slug={slug} />
       <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
       <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.categoryLabel}</a></span>
+      <span class="meta-item share-article-meta">
+        <button
+          id="share-article-button"
+          class="share-article-button"
+          type="button"
+          data-share-title={post.title}
+          data-share-text={pageDescription}
+          data-share-url={canonicalUrl}
+          aria-label="Share this article"
+        >
+          <i class="ti ti-share icon-sm" aria-hidden="true"></i>
+          Share this article
+        </button>
+        <span id="share-article-status" class="share-article-status" role="status" aria-live="polite" hidden></span>
+      </span>
     </p>
     <div class="article-content" set:html={html} />
     <section class="post-contribute meta">
@@ -213,4 +228,104 @@ const structuredData = [
 
   <LatestInCategory category={post.category} currentPostSlug={post.slug} />
   <LatestContributorsInCategory category={post.category} />
+
+  <script is:inline>
+    (function () {
+      var button = document.getElementById('share-article-button');
+      var status = document.getElementById('share-article-status');
+      if (!button) return;
+
+      var title = button.getAttribute('data-share-title') || document.title;
+      var text = button.getAttribute('data-share-text') || '';
+      var url = button.getAttribute('data-share-url') || window.location.href;
+      var statusTimer = null;
+
+      var setStatus = function (message) {
+        if (!status) return;
+        status.textContent = message;
+        status.hidden = !message;
+        if (statusTimer) {
+          window.clearTimeout(statusTimer);
+        }
+        if (message) {
+          statusTimer = window.setTimeout(function () {
+            status.hidden = true;
+            status.textContent = '';
+          }, 3500);
+        }
+      };
+
+      var copyToClipboard = async function (value) {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(value);
+          return true;
+        }
+
+        var textarea = document.createElement('textarea');
+        textarea.value = value;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        var copied = false;
+        try {
+          copied = document.execCommand('copy');
+        } catch (_) {
+          copied = false;
+        }
+        document.body.removeChild(textarea);
+        return copied;
+      };
+
+      var openMailFallback = function () {
+        var body = text ? text + '\n\n' + url : url;
+        var href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+        window.location.href = href;
+      };
+
+      button.addEventListener('click', async function () {
+        if (button.disabled) return;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+
+        try {
+          if (navigator.share) {
+            try {
+              await navigator.share({ title: title, text: text, url: url });
+              setStatus('Shared successfully.');
+              return;
+            } catch (error) {
+              if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
+                setStatus('');
+                return;
+              }
+            }
+          }
+
+          try {
+            var copied = await copyToClipboard(url);
+            if (copied) {
+              setStatus('Link copied. Paste to share.');
+              return;
+            }
+          } catch (_) {}
+
+          try {
+            openMailFallback();
+            setStatus('Opened email app for sharing.');
+            return;
+          } catch (_) {}
+
+          window.prompt('Copy and share this link:', url);
+          setStatus('Link ready to copy.');
+        } finally {
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+        }
+      });
+    })();
+  </script>
 </BaseLayout>
