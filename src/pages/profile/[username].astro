@@ -133,7 +133,7 @@ const structuredData = {
       </article>
     ) : (
       <>
-        <div class="post-grid">
+        <div class="post-grid" data-profile-posts-per-page={postsPerPage}>
           {latestPosts.map((post) => (
             <PostCard
               post={post}
@@ -163,7 +163,8 @@ const structuredData = {
       var cards = Array.from(document.querySelectorAll('[data-profile-latest-post-card]'));
       if (cards.length === 0) return;
 
-      var perPage = {postsPerPage};
+      var grid = document.querySelector('[data-profile-posts-per-page]');
+      var perPage = Number((grid && grid.getAttribute('data-profile-posts-per-page')) || '6');
       var pages = Math.max(1, Math.ceil(cards.length / perPage));
       var pageInfo = document.getElementById('profile-latest-posts-page-info');
       var prev = document.getElementById('profile-latest-posts-prev');

@@ -105,7 +105,7 @@ const structuredData = [
     <section class="list">
       <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
       <p id="home-posts-page-info" class="meta">Showing {postsPerPage} posts per page</p>
-      <div class="post-grid">
+      <div class="post-grid" data-home-posts-per-page={postsPerPage}>
         {remainingPosts.map((post) => (
           <PostCard
             post={post}
@@ -162,7 +162,7 @@ const structuredData = [
         });
       }
 
-      var perPage = {postsPerPage};
+      var perPage = Number((grid && grid.getAttribute('data-home-posts-per-page')) || '6');
       var pages = Math.max(1, Math.ceil(cards.length / perPage));
       var pageInfo = document.getElementById('home-posts-page-info');
       var prev = document.getElementById('home-posts-prev');
