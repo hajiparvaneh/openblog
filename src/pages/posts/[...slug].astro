@@ -288,7 +288,13 @@ const structuredData = [
                   <span class="post-proof-quality-points" title={task.labelMeta.displayName}>
                     <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{task.labelMeta.points}</span>
                   </span>
-                  <a class="post-proof-quality-action" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+                  <a
+                    class="post-proof-quality-action"
+                    href={postSourceUrl}
+                    target="_blank"
+                    rel="nofollow noopener noreferrer"
+                    aria-label={`Start contribution for ${task.title}`}
+                  >
                     Start contribution
                   </a>
                 </span>
@@ -304,7 +310,12 @@ const structuredData = [
       <ul class="post-proof-quality-extra-list">
         {manualContributionHints.map((hint) => (
           <li class="post-proof-quality-extra-item">
-            <a class="post-proof-quality-extra-link" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+            <a
+              class="post-proof-quality-extra-link"
+              href={postSourceUrl}
+              target="_blank"
+              rel="nofollow noopener noreferrer"
+            >
               <span class="icon-label">
                 <i class={`ti ti-${hint.labelMeta.icon} icon-sm post-proof-quality-extra-icon`} aria-hidden="true"></i>
                 <span>{hint.labelMeta.displayName}</span>
