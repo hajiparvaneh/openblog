@@ -77,6 +77,13 @@ export type LatestContributorRecord = {
   lastContributionAt: string;
 };
 
+export type LatestCategoryContributorRecord = LatestContributorRecord & {
+  latestPostSlug: string;
+  latestPostTitle: string;
+  totalContributions: number;
+  totalPostsContributed: number;
+};
+
 type PostContributorPrRecord = {
   prNumber: number;
   points: number;
@@ -705,5 +712,86 @@ export function getLatestContributorsForPost(postSlug: string, limit = 5): Lates
 
   return [...latestByUser.values()]
     .sort((a, b) => b.lastContributionAt.localeCompare(a.lastContributionAt) || a.username.localeCompare(b.username))
+    .slice(0, limit);
+}
+
+export function getLatestContributorsForCategory(category: string, limit = 6): LatestCategoryContributorRecord[] {
+  if (!fs.existsSync(EVENTS_DIR)) return [];
+  const normalizedCategory = normalizeCategoryKey(category);
+  const posts = getPosts();
+  const postBySlug = new Map(posts.map((post) => [post.slug, post]));
+  const knownSlugs = new Set(postBySlug.keys());
+  const latestByUser = new Map<
+    string,
+    {
+      username: string;
+      avatarUrl: string | null;
+      lastContributionAt: string;
+      latestPostSlug: string;
+      latestPostTitle: string;
+      totalContributions: number;
+      contributedPosts: Set<string>;
+    }
+  >();
+
+  for (const file of fs.readdirSync(EVENTS_DIR)) {
+    if (!file.endsWith('.json')) continue;
+    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+    if (!event.username || !event.mergedAt) continue;
+
+    for (const contribution of getEventContributions(event)) {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs);
+      if (!resolvedPostSlug) continue;
+
+      const post = postBySlug.get(resolvedPostSlug);
+      if (!post || post.category !== normalizedCategory) continue;
+
+      const current = latestByUser.get(event.username) ?? {
+        username: event.username,
+        avatarUrl: null,
+        lastContributionAt: '',
+        latestPostSlug: resolvedPostSlug,
+        latestPostTitle: post.title,
+        totalContributions: 0,
+        contributedPosts: new Set<string>()
+      };
+
+      current.totalContributions += 1;
+      current.contributedPosts.add(resolvedPostSlug);
+      if (event.userAvatarUrl) {
+        current.avatarUrl = event.userAvatarUrl;
+      }
+
+      if (
+        !current.lastContributionAt ||
+        event.mergedAt > current.lastContributionAt ||
+        (event.mergedAt === current.lastContributionAt && resolvedPostSlug.localeCompare(current.latestPostSlug) < 0)
+      ) {
+        current.lastContributionAt = event.mergedAt;
+        current.latestPostSlug = resolvedPostSlug;
+        current.latestPostTitle = post.title;
+      }
+
+      latestByUser.set(event.username, current);
+    }
+  }
+
+  return [...latestByUser.values()]
+    .map((entry) => ({
+      username: entry.username,
+      profileUrl: `https://github.com/${entry.username}`,
+      avatarUrl: entry.avatarUrl,
+      lastContributionAt: entry.lastContributionAt,
+      latestPostSlug: entry.latestPostSlug,
+      latestPostTitle: entry.latestPostTitle,
+      totalContributions: entry.totalContributions,
+      totalPostsContributed: entry.contributedPosts.size
+    }))
+    .sort(
+      (a, b) =>
+        b.lastContributionAt.localeCompare(a.lastContributionAt) ||
+        b.totalContributions - a.totalContributions ||
+        a.username.localeCompare(b.username)
+    )
     .slice(0, limit);
 }

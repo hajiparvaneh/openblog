@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import LatestInCategory from '../../components/LatestInCategory.astro';
+import LatestContributorsInCategory from '../../components/LatestContributorsInCategory.astro';
 import PostContributorsStack from '../../components/PostContributorsStack.astro';
 import UserAvatar from '../../components/UserAvatar.astro';
 import { marked } from 'marked';
@@ -211,4 +212,5 @@ const structuredData = [
   </section>
 
   <LatestInCategory category={post.category} currentPostSlug={post.slug} />
+  <LatestContributorsInCategory category={post.category} />
 </BaseLayout>

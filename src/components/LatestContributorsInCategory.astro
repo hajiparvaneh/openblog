@@ -1,0 +1,52 @@
+---
+import UserAvatar from './UserAvatar.astro';
+import { formatCategoryLabel, formatPostDate, getLatestContributorsForCategory, getProfilePath } from '../lib/openblog';
+
+type Props = {
+  category: string;
+  limit?: number;
+  title?: string;
+  emptyMessage?: string;
+};
+
+const {
+  category,
+  limit = 6,
+  title,
+  emptyMessage = 'No recent contributors in this category yet.'
+} = Astro.props as Props;
+const categoryLabel = formatCategoryLabel(category);
+const sectionTitle = title ?? `Latest contributors in ${categoryLabel}`;
+
+const contributors = getLatestContributorsForCategory(category, limit);
+---
+
+<section class="card category-latest-contributors">
+  <p class="kicker icon-label"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>{sectionTitle}</p>
+  {contributors.length === 0 ? (
+    <p class="meta">{emptyMessage}</p>
+  ) : (
+    <ul class="category-contributors-grid">
+      {contributors.map((contributor) => (
+        <li class="category-contributor-card">
+          <a class="user-chip user-link category-contributor-user" href={getProfilePath(contributor.username)} title={`@${contributor.username}`}>
+            <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={56} />
+            <span class="category-contributor-copy">
+              <strong class="user-handle">@{contributor.username}</strong>
+              <span class="meta category-contributor-meta">
+                {formatPostDate(contributor.lastContributionAt)}
+                <span aria-hidden="true">•</span>
+                {contributor.totalContributions}c/{contributor.totalPostsContributed}p
+              </span>
+            </span>
+          </a>
+
+          <a class="category-contributor-post" href={`/posts/${contributor.latestPostSlug}`} title={contributor.latestPostTitle}>
+            <i class="ti ti-article icon-sm" aria-hidden="true"></i>
+            <span>{contributor.latestPostTitle}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+  )}
+</section>
