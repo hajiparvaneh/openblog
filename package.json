@@ -15,5 +15,10 @@
     "astro": "^4.16.18",
     "gray-matter": "^4.0.3",
     "marked": "^14.1.2"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.7",
+    "@types/node": "^25.5.0",
+    "typescript": "^5.9.3"
   }
 }

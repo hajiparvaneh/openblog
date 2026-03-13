@@ -96,6 +96,19 @@ type PostContributorRecord = UserRecord & {
   pullRequests: PostContributorPrRecord[];
 };
 
+function isCategoryLeaderboardRecord(entry: unknown): entry is CategoryLeaderboardRecord {
+  if (!entry || typeof entry !== 'object') return false;
+
+  const candidate = entry as Partial<CategoryLeaderboardRecord>;
+  return (
+    typeof candidate.username === 'string' &&
+    typeof candidate.totalPoints === 'number' &&
+    typeof candidate.acceptedPrs === 'number' &&
+    typeof candidate.totalContributions === 'number' &&
+    typeof candidate.totalPostsContributed === 'number'
+  );
+}
+
 const ROOT = process.cwd();
 const POSTS_DIR = path.join(ROOT, 'content/posts');
 const GENERATED_USERS_DIR = path.join(ROOT, 'openblog/generated/users');
@@ -304,16 +317,9 @@ export function getCategoryLeaderboard(category: string): CategoryLeaderboardRec
   const data = JSON.parse(fs.readFileSync(categoryLeaderboardPath, 'utf8'));
   if (!Array.isArray(data.leaderboard)) return [];
 
-  return data.leaderboard
-    .filter((entry): entry is CategoryLeaderboardRecord =>
-      Boolean(entry) &&
-      typeof entry === 'object' &&
-      typeof entry.username === 'string' &&
-      typeof entry.totalPoints === 'number' &&
-      typeof entry.acceptedPrs === 'number' &&
-      typeof entry.totalContributions === 'number' &&
-      typeof entry.totalPostsContributed === 'number'
-    );
+  return data.leaderboard.filter((entry: unknown): entry is CategoryLeaderboardRecord =>
+    isCategoryLeaderboardRecord(entry)
+  );
 }
 
 export function getUserPostContributionCounts(): Record<string, number> {
