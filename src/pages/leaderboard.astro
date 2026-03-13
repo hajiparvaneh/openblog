@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import UserAvatar from '../components/UserAvatar.astro';
 import { getLeaderboard, getPosts, getRecentEvents, getUserPostContributionCounts } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
@@ -11,9 +12,6 @@ const postContributionCounts = getUserPostContributionCounts();
 const rowsPerPage = 10;
 const totalPages = Math.max(1, Math.ceil(leaderboard.length / rowsPerPage));
 const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
-
-const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
-  avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const getProfileUrl = (username: string) => `/profile/@${username}`;
 const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${postSlug}` : null);
@@ -99,7 +97,7 @@ const structuredData = [
             <td>#{index + 1}</td>
             <td>
               <a class="user-chip user-link" href={getProfileUrl(user.username)}>
-                <img class="avatar" src={getAvatarUrl(user.username, user.avatarUrl)} alt={`@${user.username} avatar`} loading="lazy" />
+                <UserAvatar username={user.username} avatarUrl={user.avatarUrl} size={80} />
                 <span class="user-handle">@{user.username}</span>
               </a>
             </td>
@@ -141,7 +139,7 @@ const structuredData = [
           <li class="recent-item">
             <span class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i><a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a> by</span>
             <a class="user-chip user-link" href={getProfileUrl(event.username)}>
-              <img class="avatar avatar-sm" src={getAvatarUrl(event.username, event.userAvatarUrl)} alt={`@${event.username} avatar`} loading="lazy" />
+              <UserAvatar username={event.username} avatarUrl={event.userAvatarUrl} size={64} class="avatar-sm" />
               <span class="user-handle">@{event.username}</span>
             </a>
             <span>

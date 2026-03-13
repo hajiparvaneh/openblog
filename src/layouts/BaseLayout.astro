@@ -1,5 +1,6 @@
 ---
 import '../styles/global.css';
+import UserAvatar from '../components/UserAvatar.astro';
 import { getCategoryPath, getLatestContributors, getPosts, getProfilePath } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
@@ -44,8 +45,6 @@ const categories = [...new Map(getPosts().map((post) => [post.category, post.cat
 const latestContributors = getLatestContributors(10);
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
-const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
-  avatarUrl ?? `https://github.com/${username}.png?size=64`;
 ---
 <html lang="en">
   <head>
@@ -175,14 +174,14 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
                         aria-label={`@${contributor.username}`}
                         title={`@${contributor.username}`}
                       >
-                        <img
-                          class="avatar sidebar-avatar"
-                          src={getAvatarUrl(contributor.username, contributor.avatarUrl)}
+                        <UserAvatar
+                          username={contributor.username}
+                          avatarUrl={contributor.avatarUrl}
+                          size={64}
+                          class="sidebar-avatar"
                           alt=""
-                          loading="lazy"
-                          decoding="async"
-                          width="28"
-                          height="28"
+                          width={28}
+                          height={28}
                         />
                       </a>
                     </li>

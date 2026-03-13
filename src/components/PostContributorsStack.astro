@@ -1,0 +1,43 @@
+---
+import { formatPostDate, getLatestContributorsForPost, getProfilePath } from '../lib/openblog';
+import UserAvatar from './UserAvatar.astro';
+
+type Props = {
+  slug: string;
+  limit?: number;
+};
+
+const { slug, limit = 5 } = Astro.props as Props;
+const contributors = getLatestContributorsForPost(slug, limit);
+---
+{
+  contributors.length > 0 ? (
+    <span class="meta-item post-contributor-stack">
+      <i class="ti ti-users icon-sm" aria-hidden="true"></i>
+      <span class="post-contributor-avatars" aria-label="Latest contributors for this post">
+        {contributors.map((contributor) => (
+          <a
+            class="post-contributor-avatar-link"
+            href={getProfilePath(contributor.username)}
+            aria-label={`@${contributor.username}`}
+            title={`@${contributor.username} · Last contribution: ${formatPostDate(contributor.lastContributionAt)}`}
+          >
+            <UserAvatar
+              username={contributor.username}
+              avatarUrl={contributor.avatarUrl}
+              size={64}
+              class="avatar-sm post-contributor-avatar"
+              width={24}
+              height={24}
+            />
+          </a>
+        ))}
+      </span>
+    </span>
+  ) : (
+    <span class="meta-item post-contributor-stack post-contributor-stack-empty">
+      <i class="ti ti-user icon-sm" aria-hidden="true"></i>
+      <span>OpenBlog</span>
+    </span>
+  )
+}

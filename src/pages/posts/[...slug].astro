@@ -2,6 +2,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostContributorsStack from '../../components/PostContributorsStack.astro';
+import UserAvatar from '../../components/UserAvatar.astro';
 import { marked } from 'marked';
 import { formatPostDate, getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
@@ -23,8 +25,6 @@ const post = getPostBySlug(slug);
 if (!post) throw new Error('Post not found');
 const contributors = getContributorsForPost(slug);
 const html = marked.parse(post.body);
-const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
-  avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const getProfileUrl = (username: string) => `/profile/@${username}`;
 const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 const formatMergedDate = (isoDate: string) => {
@@ -130,6 +130,7 @@ const structuredData = [
     <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.categoryLabel}</a></p>
     <h1>{post.title}</h1>
     <p class="meta meta-inline">
+      <PostContributorsStack slug={slug} />
       <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
       <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.categoryLabel}</a></span>
     </p>
@@ -153,7 +154,7 @@ const structuredData = [
           <li class="contributor-card contributor-card-enhanced">
             <div class="contributor-header">
               <a class="user-chip user-link" href={getProfileUrl(contributor.username)}>
-                <img class="avatar" src={getAvatarUrl(contributor.username, contributor.avatarUrl)} alt={`@${contributor.username} avatar`} loading="lazy" />
+                <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={80} />
                 <strong class="user-handle">@{contributor.username}</strong>
               </a>
               <span class="badge contributor-total-badge points-badge">

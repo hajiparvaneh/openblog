@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostCard from '../../components/PostCard.astro';
+import UserAvatar from '../../components/UserAvatar.astro';
 import { getCategoryLeaderboard, getCategoryPath, getLatestContributorByPost, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { getSiteUrl } from '../../lib/site';
@@ -28,8 +29,6 @@ const postsTotalPages = Math.max(1, Math.ceil(posts.length / postsPerPage));
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const latestContributorByPost = getLatestContributorByPost();
 const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
-const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
-  avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const canonicalPath = getCategoryPath(category);
 const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on OpenBlog and see the top contributors for this category.`;
 const siteUrl = getSiteUrl(Astro.site);
@@ -129,7 +128,7 @@ if (posts.length === 0) {
               <td>#{index + 1}</td>
               <td>
                 <a class="user-chip user-link" href={getProfilePath(user.username)}>
-                  <img class="avatar" src={getAvatarUrl(user.username, user.avatarUrl)} alt={`@${user.username} avatar`} loading="lazy" />
+                  <UserAvatar username={user.username} avatarUrl={user.avatarUrl} size={80} />
                   <span class="user-handle">@{user.username}</span>
                 </a>
               </td>

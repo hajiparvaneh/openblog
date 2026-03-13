@@ -1,5 +1,6 @@
 ---
 import { formatPostDate, getCategoryPath, getProfilePath } from '../lib/openblog';
+import UserAvatar from './UserAvatar.astro';
 import type { LatestContributorRecord, Post } from '../lib/openblog';
 
 type Props = {
@@ -24,15 +25,7 @@ const cardAttributes = {
     <span class="meta-item">
       {author ? (
         <a class="user-chip user-link post-card-author-link" href={getProfilePath(author.username)}>
-          <img
-            class="avatar avatar-sm"
-            src={author.avatarUrl ?? `https://github.com/${author.username}.png?size=64`}
-            alt={`@${author.username} avatar`}
-            loading="lazy"
-            decoding="async"
-            width="24"
-            height="24"
-          />
+          <UserAvatar username={author.username} avatarUrl={author.avatarUrl} size={64} class="avatar-sm" width={24} height={24} />
           <span class="user-handle">@{author.username}</span>
         </a>
       ) : (

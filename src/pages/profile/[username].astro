@@ -24,8 +24,7 @@ if (!profile) {
   throw new Error('Profile not found');
 }
 
-const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
-  avatarUrl ?? `https://github.com/${username}.png?size=112`;
+const profileImageUrl = profile.avatarUrl ?? `https://github.com/${profile.username}.png?size=112`;
 const latestContributorByPost = getLatestContributorByPost();
 const latestPosts = getContributedPostSlugsByUser(profile.username)
   .map((postSlug) => getPostBySlug(postSlug))
@@ -53,7 +52,7 @@ const structuredData = {
     '@type': 'Person',
     name: profile.username,
     url: profile.profileUrl,
-    image: getAvatarUrl(profile.username, profile.avatarUrl),
+    image: profileImageUrl,
     sameAs: [profile.profileUrl]
   }
 };
@@ -67,14 +66,25 @@ const structuredData = {
 >
   <section class="card">
     <div class="profile-head">
-      <img
-        class="avatar profile-avatar"
-        src={getAvatarUrl(profile.username, profile.avatarUrl)}
-        alt={`@${profile.username} avatar`}
-        loading="lazy"
-        width="128"
-        height="128"
-      />
+      <a
+        class="profile-avatar-link"
+        href={profile.profileUrl}
+        target="_blank"
+        rel="noopener noreferrer"
+        aria-label={`Open @${profile.username} GitHub profile`}
+      >
+        <img
+          class="avatar profile-avatar"
+          src={profileImageUrl}
+          alt={`@${profile.username} avatar`}
+          loading="lazy"
+          width="128"
+          height="128"
+        />
+        <span class="profile-avatar-overlay" aria-hidden="true">
+          <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
+        </span>
+      </a>
       <div class="profile-copy">
         <p class="kicker icon-label"><i class="ti ti-user-circle icon-sm" aria-hidden="true"></i>Contributor profile</p>
         <h1>@{profile.username}</h1>
@@ -289,6 +299,33 @@ const structuredData = {
     .profile-avatar {
       width: 8rem;
       height: 8rem;
+      border-radius: 0;
+    }
+
+    .profile-avatar-link {
+      position: relative;
+      display: inline-flex;
+      flex: 0 0 auto;
+      color: var(--surface);
+      text-decoration: none;
+      line-height: 1;
+    }
+
+    .profile-avatar-overlay {
+      position: absolute;
+      inset: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: color-mix(in srgb, var(--text) 55%, transparent);
+      opacity: 0;
+      transition: opacity 140ms ease;
+      border-radius: 0;
+    }
+
+    .profile-avatar-link:hover .profile-avatar-overlay,
+    .profile-avatar-link:focus-visible .profile-avatar-overlay {
+      opacity: 1;
     }
 
     .profile-copy {

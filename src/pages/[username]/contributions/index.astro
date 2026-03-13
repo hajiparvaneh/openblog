@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro';
+import UserAvatar from '../../../components/UserAvatar.astro';
 import {
   getKnownContributors,
   getProfileContributionsPath,
@@ -20,8 +21,6 @@ if (!profile) {
   throw new Error('Profile not found');
 }
 
-const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
-  avatarUrl ?? `https://github.com/${username}.png?size=80`;
 const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 const getPostUrl = (postSlug: string) => `/posts/${postSlug}`;
 const postsPerPage = 8;
@@ -58,14 +57,7 @@ const structuredData = {
         <p class="meta">{profile.contributedPosts.length} posts with accepted contributions.</p>
       </div>
       <a class="user-chip user-link contribution-user" href={getProfilePath(profile.username)}>
-        <img
-          class="avatar"
-          src={getAvatarUrl(profile.username, profile.avatarUrl)}
-          alt={`@${profile.username} avatar`}
-          loading="lazy"
-          width="64"
-          height="64"
-        />
+        <UserAvatar username={profile.username} avatarUrl={profile.avatarUrl} size={80} width={64} height={64} />
         <strong class="user-handle">@{profile.username}</strong>
       </a>
     </div>

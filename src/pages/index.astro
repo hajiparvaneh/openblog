@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
+import UserAvatar from '../components/UserAvatar.astro';
 import { formatPostDate, getCategoryPath, getLatestContributorByPost, getLatestContributorsForPost, getPosts, getProfilePath } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
@@ -16,8 +17,6 @@ const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => in
 const categoryCount = new Set(posts.map((post) => post.category)).size;
 const latestContributorByPost = getLatestContributorByPost();
 const latestContributors = latestPost ? getLatestContributorsForPost(latestPost.slug, 5) : [];
-const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
-  avatarUrl ?? `https://github.com/${username}.png?size=64`;
 const pageDescription =
   'OpenBlog is a collaborative technical blog where merged pull requests improve articles and contributors earn points on a public leaderboard.';
 const canonicalPath = '/';
@@ -81,14 +80,14 @@ const structuredData = [
                   aria-label={`@${contributor.username}`}
                   title={`@${contributor.username}`}
                 >
-                  <img
-                    class="avatar avatar-sm"
-                    src={getAvatarUrl(contributor.username, contributor.avatarUrl)}
+                  <UserAvatar
+                    username={contributor.username}
+                    avatarUrl={contributor.avatarUrl}
+                    size={64}
+                    class="avatar-sm"
                     alt=""
-                    loading="lazy"
-                    decoding="async"
-                    width="24"
-                    height="24"
+                    width={24}
+                    height={24}
                   />
                   <span class="latest-post-contributor-name">@{contributor.username}</span>
                 </a>
