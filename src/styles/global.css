@@ -178,7 +178,7 @@ p {
 
 .brand-mark {
   font-family: var(--font-main);
-  font-size: 1.08rem;
+  font-size: 1.55rem;
   font-weight: 700;
   line-height: 1.15;
   color: var(--text);
@@ -987,7 +987,7 @@ p {
   }
 
   .brand-mark {
-    font-size: 0.97rem;
+    font-size: 1.3rem;
   }
 
   .category-sidebar {
