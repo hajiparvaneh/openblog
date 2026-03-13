@@ -5,22 +5,9 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
   line-height: 1.6;
   --font-main: 'OpenBlog', 'Segoe UI', Tahoma, Arial, sans-serif;
-  --bg: #101216;
-  --surface: #171a20;
-  --surface-soft: #1e222b;
-  --text: #e9edf5;
-  --muted: #b1b9c7;
-  --primary: #8fb4ff;
-  --primary-strong: #b3ccff;
-  --border: #303846;
-  --points-gold: #d4af37;
-}
-
-:root[data-theme='light'] {
-  color-scheme: light;
   --bg: #f6f7fa;
   --surface: #ffffff;
   --surface-soft: #f1f4f9;
@@ -30,6 +17,19 @@
   --primary-strong: #1d47a0;
   --border: #cfd7e5;
   --points-gold: #b8860b;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #101216;
+  --surface: #171a20;
+  --surface-soft: #1e222b;
+  --text: #e9edf5;
+  --muted: #b1b9c7;
+  --primary: #8fb4ff;
+  --primary-strong: #b3ccff;
+  --border: #303846;
+  --points-gold: #d4af37;
 }
 
 * {
@@ -92,23 +92,23 @@ a:hover {
   gap: 0.2rem;
 }
 
-.theme-icon-moon {
+.theme-icon-sun {
   display: none;
 }
 
-:root[data-theme='light'] .theme-icon-sun {
+:root[data-theme='dark'] .theme-icon-moon {
   display: none;
 }
 
-:root[data-theme='light'] .theme-icon-moon {
+:root[data-theme='dark'] .theme-icon-sun {
   display: inline-block;
 }
 
-:root[data-theme='light'] .brand-icon-dark {
+:root[data-theme='dark'] .brand-icon-light {
   display: none;
 }
 
-:root[data-theme='light'] .brand-icon-light {
+:root[data-theme='dark'] .brand-icon-dark {
   display: block;
 }
 
@@ -201,7 +201,7 @@ p {
   object-fit: contain;
 }
 
-.brand-icon-light {
+.brand-icon-dark {
   display: none;
 }
 

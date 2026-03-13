@@ -54,7 +54,7 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
-    <meta name="theme-color" content="#0f172a" />
+    <meta name="theme-color" content="#f6f7fa" />
     <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/x-icon" href={faviconHref} />
     <link rel="shortcut icon" href={faviconHref} />
@@ -90,7 +90,7 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
         try {
           saved = localStorage.getItem(storageKey);
         } catch (_) {}
-        var theme = saved === 'light' || saved === 'dark' ? saved : 'dark';
+        var theme = saved === 'light' || saved === 'dark' ? saved : 'light';
         document.documentElement.setAttribute('data-theme', theme);
         document.documentElement.style.colorScheme = theme;
       })();
@@ -121,7 +121,7 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
             <span class="icon-label">
               <i class="ti ti-sun theme-icon theme-icon-sun icon-sm" aria-hidden="true"></i>
               <i class="ti ti-moon theme-icon theme-icon-moon icon-sm" aria-hidden="true"></i>
-              <span id="theme-toggle-label">Theme: Dark</span>
+              <span id="theme-toggle-label">Theme: Light</span>
             </span>
           </button>
         </div>
@@ -210,18 +210,22 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
         var storageKey = 'openblog-theme';
         var button = document.getElementById('theme-toggle');
         var label = document.getElementById('theme-toggle-label');
+        var themeColor = document.querySelector('meta[name="theme-color"]');
         if (!button) return;
 
         var applyTheme = function (theme) {
           document.documentElement.setAttribute('data-theme', theme);
           document.documentElement.style.colorScheme = theme;
+          if (themeColor) {
+            themeColor.setAttribute('content', theme === 'dark' ? '#0f172a' : '#f6f7fa');
+          }
           if (label) {
             label.textContent = theme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
           }
           button.setAttribute('aria-pressed', String(theme === 'dark'));
         };
 
-        var current = document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+        var current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
         applyTheme(current);
 
         button.addEventListener('click', function () {
