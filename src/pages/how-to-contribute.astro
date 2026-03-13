@@ -35,7 +35,7 @@ const sortedScoringRules = Object.entries(parsedScoreByLabel)
 const topScoringRule = sortedScoringRules[0];
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const pageDescription =
-  'Learn how to contribute to OpenBlog in one focused pull request, including the contribution flow, checklist, and scoring rules.';
+  'Learn how to contribute to OpenBlog in one focused pull request and build visible GitHub proof of teamwork, writing quality, and technical consistency.';
 const canonicalPath = '/how-to-contribute';
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
@@ -64,7 +64,7 @@ const structuredData = {
     <section class="card contribute-hero">
       <p class="kicker icon-label"><i class="ti ti-book icon-sm" aria-hidden="true"></i>Contributor guide</p>
       <h1>Contribute in one focused PR</h1>
-      <p>OpenBlog grows through merged pull requests. Pick a post, improve one clear thing, and submit your update.</p>
+      <p>OpenBlog grows through merged pull requests. Pick a post, improve one clear thing, and submit your update in public.</p>
       <p class="meta">Small improvements count. Fixes, sources, examples, translations, and new posts are all eligible for points.</p>
       <div class="contribute-actions">
         <a class="contribute-action" href={repoUrl} target="_blank" rel="noopener noreferrer">

@@ -21,7 +21,7 @@ type BaseLayoutProps = {
 
 const {
   title = 'OpenBlog',
-  description = 'OpenBlog is a Git-based collaborative blog where accepted pull requests earn points.',
+  description = 'OpenBlog is a Git-based collaborative blog where accepted pull requests create public proof of work and help contributors grow visibility.',
   canonicalPath = Astro.url.pathname,
   ogType = 'website',
   ogImagePath = '/og-default.png',
@@ -107,7 +107,7 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
           </span>
           <span class="brand-copy">
             <span class="brand-mark">Open<span class="brand-mark-primary">Blog</span></span>
-            <span class="brand-tagline">Community writing, tracked by merged PRs</span>
+            <span class="brand-tagline">Collaborative writing for portfolio and reputation growth</span>
           </span>
         </a>
         <div class="site-header-actions">
@@ -135,7 +135,7 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
           <aside class="category-sidebar card">
             <section class="sidebar-block">
               <p class="kicker icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>New Post</p>
-              <p class="meta">Want to contribute? Clone the repo, add a new <code>.md</code> file, and open a PR.</p>
+              <p class="meta">Want to contribute? Clone the repo, add a new <code>.md</code> file, open a PR, and grow your public GitHub proof of work.</p>
               <a class="sidebar-link" href={repoUrl} target="_blank" rel="noopener noreferrer">
                 <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
                 Open GitHub repo
@@ -215,7 +215,7 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
       <footer class="site-footer meta">
         <span class="icon-label">
           <i class="ti ti-edit icon-sm" aria-hidden="true"></i>
-          Built by contributors in public. Improve a post, open a PR, and earn points.
+          Built by contributors in public. Improve a post, open a PR, and strengthen your portfolio visibility.
         </span>
       </footer>
     </div>

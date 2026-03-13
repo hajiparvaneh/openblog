@@ -11,6 +11,14 @@ Main website: [https://openblog.cc](https://openblog.cc)
 
 OpenBlog is a collaborative technical blog where contributors improve content through pull requests.  
 When a PR is merged and labeled, points are added to the public leaderboard.
+It is built for developers who want to show teamwork, improve public reputation, and make their GitHub activity more visible for hiring.
+
+## 🎯 Why OpenBlog
+
+- Practice real collaboration in public through focused pull requests
+- Build a visible proof-of-work portfolio on GitHub
+- Improve technical writing and consistency over time
+- Strengthen your profile for job applications and referrals
 
 ## 🚀 First Contribution In 5 Steps
 
