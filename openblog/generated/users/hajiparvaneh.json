@@ -3,11 +3,11 @@
   "profileUrl": "https://github.com/hajiparvaneh",
   "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
   "joinedAt": "2026-03-12T15:00:09Z",
-  "lastUpdatedAt": "2026-03-13T10:53:44Z",
-  "totalPoints": 380,
-  "acceptedPrs": 9,
-  "totalContributions": 13,
-  "totalPostsContributed": 8,
+  "lastUpdatedAt": "2026-03-13T11:09:51Z",
+  "totalPoints": 385,
+  "acceptedPrs": 10,
+  "totalContributions": 14,
+  "totalPostsContributed": 9,
   "contributedPostSlugs": [
     "blog/how-to-start-with-openblog-free-blogging-github-portfolio",
     "codex/define-game-logic-and-scoring-system",
@@ -15,6 +15,7 @@
     "database/postgresql-indexing-basics",
     "devops/dockerfile-best-practices-nodejs",
     "javascript/async-await-error-handling",
+    "networking/how-dns-works",
     "networking/http-vs-https-explained",
     "security/password-hashing-bcrypt-argon2"
   ],
@@ -32,12 +33,13 @@
     11,
     13,
     16,
-    17
+    17,
+    18
   ],
   "lastContribution": {
-    "prNumber": 17,
-    "postSlug": "blog/how-to-start-with-openblog-free-blogging-github-portfolio",
-    "mergedAt": "2026-03-13T10:53:44Z",
-    "points": 50
+    "prNumber": 18,
+    "postSlug": "networking/how-dns-works",
+    "mergedAt": "2026-03-13T11:09:51Z",
+    "points": 5
   }
 }

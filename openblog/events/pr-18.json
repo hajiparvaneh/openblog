@@ -1,0 +1,16 @@
+{
+  "eventType": "pr_merged",
+  "prNumber": 18,
+  "username": "hajiparvaneh",
+  "userAvatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
+  "mergedAt": "2026-03-13T11:09:51Z",
+  "contributions": [
+    {
+      "postSlug": "networking/how-dns-works",
+      "labels": [
+        "typo"
+      ],
+      "points": 5
+    }
+  ]
+}

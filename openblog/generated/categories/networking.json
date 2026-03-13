@@ -1,14 +1,14 @@
 {
   "category": "networking",
-  "updatedAt": "2026-03-12T20:47:55Z",
+  "updatedAt": "2026-03-13T11:09:51Z",
   "leaderboard": [
     {
       "username": "hajiparvaneh",
       "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
-      "totalPoints": 50,
-      "acceptedPrs": 1,
-      "totalContributions": 1,
-      "totalPostsContributed": 1
+      "totalPoints": 55,
+      "acceptedPrs": 2,
+      "totalContributions": 2,
+      "totalPostsContributed": 2
     },
     {
       "username": "miremad-dev",
