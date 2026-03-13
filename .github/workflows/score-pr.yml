@@ -143,7 +143,7 @@ jobs:
             const marker = '<!-- openblog-contribution-summary -->';
             const owner = context.repo.owner;
             const repo = context.repo.repo;
-            const websiteBaseUrl = (process.env.WEBSITE_BASE_URL || 'https://example.com').trim().replace(/\/+$/, '');
+            const websiteBaseUrl = (process.env.WEBSITE_BASE_URL || 'https://openblog.cc').trim().replace(/\/+$/, '');
             const postSlugs = (process.env.POST_SLUGS || '')
               .split(',')
               .map((value) => value.trim())
@@ -209,4 +209,4 @@ jobs:
             }
         env:
           POST_SLUGS: ${{ steps.resolve_post_slug.outputs.post_slugs }}
-          WEBSITE_BASE_URL: ${{ vars.OPENBLOG_BASE_URL || vars.SITE_URL || 'https://example.com' }}
+          WEBSITE_BASE_URL: ${{ vars.OPENBLOG_BASE_URL || secrets.OPENBLOG_BASE_URL || vars.SITE_URL || secrets.SITE_URL || 'https://openblog.cc' }}
