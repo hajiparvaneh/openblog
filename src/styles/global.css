@@ -11,7 +11,7 @@
   --bg: #f6f7fa;
   --surface: #ffffff;
   --surface-soft: #f1f4f9;
-  --text: #1a1f29;
+  --text: #2a2b2f;
   --muted: #5b6677;
   --primary: #2f82cf;
   --primary-strong: #1d47a0;
@@ -178,6 +178,10 @@ p {
   font-weight: 700;
   line-height: 1.15;
   color: var(--text);
+}
+
+.brand-mark-primary {
+  color: var(--primary);
 }
 
 .brand-main {
