@@ -2,7 +2,7 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostCard from '../../components/PostCard.astro';
 import UserAvatar from '../../components/UserAvatar.astro';
-import { getCategoryLeaderboard, getCategoryPath, getLatestContributorByPost, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
+import { getCategoryLeaderboard, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { getSiteUrl } from '../../lib/site';
 
@@ -27,7 +27,6 @@ const categoryLeaderboard = getCategoryLeaderboard(category);
 const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(posts.length / postsPerPage));
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
-const latestContributorByPost = getLatestContributorByPost();
 const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
 const canonicalPath = getCategoryPath(category);
 const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on OpenBlog and see the top contributors for this category.`;
@@ -86,7 +85,6 @@ if (posts.length === 0) {
       {posts.map((post) => (
         <PostCard
           post={post}
-          author={latestContributorByPost.get(post.slug)}
           showCategory={false}
           dataAttribute="data-category-post-card"
         />

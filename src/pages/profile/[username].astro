@@ -4,7 +4,6 @@ import PostCard from '../../components/PostCard.astro';
 import {
   getContributedPostSlugsByUser,
   getKnownContributors,
-  getLatestContributorByPost,
   getPostBySlug,
   getProfileContributionsPath,
   getProfilePath,
@@ -25,7 +24,6 @@ if (!profile) {
 }
 
 const profileImageUrl = profile.avatarUrl ?? `https://github.com/${profile.username}.png?size=112`;
-const latestContributorByPost = getLatestContributorByPost();
 const latestPosts = getContributedPostSlugsByUser(profile.username)
   .map((postSlug) => getPostBySlug(postSlug))
   .filter((post): post is NonNullable<ReturnType<typeof getPostBySlug>> => Boolean(post));
@@ -147,7 +145,6 @@ const structuredData = {
           {latestPosts.map((post) => (
             <PostCard
               post={post}
-              author={latestContributorByPost.get(post.slug)}
               dataAttribute="data-profile-latest-post-card"
             />
           ))}

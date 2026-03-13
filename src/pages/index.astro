@@ -1,8 +1,8 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import PostCard from '../components/PostCard.astro';
-import UserAvatar from '../components/UserAvatar.astro';
-import { formatPostDate, getCategoryPath, getLatestContributorByPost, getLatestContributorsForPost, getPosts, getProfilePath } from '../lib/openblog';
+import PostContributorsStack from '../components/PostContributorsStack.astro';
+import { formatPostDate, getCategoryPath, getPosts } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
 
@@ -15,8 +15,6 @@ const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(remainingPosts.length / postsPerPage));
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
-const latestContributorByPost = getLatestContributorByPost();
-const latestContributors = latestPost ? getLatestContributorsForPost(latestPost.slug, 5) : [];
 const pageDescription =
   'OpenBlog is a collaborative technical blog where merged pull requests improve articles and contributors earn points on a public leaderboard.';
 const canonicalPath = '/';
@@ -70,31 +68,7 @@ const structuredData = [
       <h2><a href={`/posts/${latestPost.slug}`}>{latestPost.title}</a></h2>
       <p>{latestPost.description}</p>
       <p class="meta meta-inline">
-        {latestContributors.length > 0 ? (
-          <span class="meta-item latest-post-contributors-inline">
-            <span class="latest-post-contributors-list">
-              {latestContributors.map((contributor) => (
-                <a
-                  class="user-chip user-link latest-post-contributor-inline"
-                  href={getProfilePath(contributor.username)}
-                  aria-label={`@${contributor.username}`}
-                  title={`@${contributor.username}`}
-                >
-                  <UserAvatar
-                    username={contributor.username}
-                    avatarUrl={contributor.avatarUrl}
-                    size={64}
-                    class="avatar-sm"
-                    alt=""
-                    width={24}
-                    height={24}
-                  />
-                  <span class="latest-post-contributor-name">@{contributor.username}</span>
-                </a>
-              ))}
-            </span>
-          </span>
-        ) : null}
+        <PostContributorsStack slug={latestPost.slug} />
         <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(latestPost.date)}</span>
       </p>
     </section>
@@ -108,7 +82,6 @@ const structuredData = [
         {remainingPosts.map((post) => (
           <PostCard
             post={post}
-            author={latestContributorByPost.get(post.slug)}
             dataAttribute="data-home-post-card"
             dateSortValue={post.date}
           />

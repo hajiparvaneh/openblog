@@ -4,23 +4,26 @@ import UserAvatar from './UserAvatar.astro';
 
 type Props = {
   slug: string;
-  limit?: number;
+  maxVisible?: number;
 };
 
-const { slug, limit = 5 } = Astro.props as Props;
-const contributors = getLatestContributorsForPost(slug, limit);
+const { slug, maxVisible = 3 } = Astro.props as Props;
+const contributors = getLatestContributorsForPost(slug, 999);
+const visibleContributors = contributors.slice(0, maxVisible);
+const hiddenCount = Math.max(0, contributors.length - visibleContributors.length);
 ---
 {
   contributors.length > 0 ? (
     <span class="meta-item post-contributor-stack">
       <i class="ti ti-users icon-sm" aria-hidden="true"></i>
       <span class="post-contributor-avatars" aria-label="Latest contributors for this post">
-        {contributors.map((contributor) => (
+        {visibleContributors.map((contributor, index) => (
           <a
             class="post-contributor-avatar-link"
             href={getProfilePath(contributor.username)}
             aria-label={`@${contributor.username}`}
             title={`@${contributor.username} · Last contribution: ${formatPostDate(contributor.lastContributionAt)}`}
+            style={`--stack-z: ${visibleContributors.length - index + (hiddenCount > 0 ? 1 : 0)};`}
           >
             <UserAvatar
               username={contributor.username}
@@ -32,6 +35,16 @@ const contributors = getLatestContributorsForPost(slug, limit);
             />
           </a>
         ))}
+        {hiddenCount > 0 ? (
+          <span
+            class="post-contributor-avatar-more"
+            aria-label={`${hiddenCount} more contributors`}
+            title={`${hiddenCount} more contributors`}
+            style="--stack-z: 0;"
+          >
+            +{hiddenCount}
+          </span>
+        ) : null}
       </span>
     </span>
   ) : (
