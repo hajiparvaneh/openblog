@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { formatPostDate, getCategoryLeaderboard, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
+import { formatPostDate, getCategoryLeaderboard, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
+import { toAbsoluteUrl } from '../../lib/seo';
 
 export function getStaticPaths() {
   const categoryMap = new Map<string, string>();
@@ -26,12 +27,48 @@ const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => in
 const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
 const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
   avatarUrl ?? `https://github.com/${username}.png?size=80`;
+const canonicalPath = getCategoryPath(category);
+const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on OpenBlog and see the top contributors for this category.`;
+const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${categoryLabel} posts`,
+    description: pageDescription,
+    url: canonicalUrl
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: toAbsoluteUrl('/', siteUrl)
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: categoryLabel,
+        item: canonicalUrl
+      }
+    ]
+  }
+];
 
 if (posts.length === 0) {
   throw new Error(`Category not found: ${category}`);
 }
 ---
-<BaseLayout title={`${categoryLabel} | Categories | OpenBlog`}>
+<BaseLayout
+  title={`${categoryLabel} | Categories | OpenBlog`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  structuredData={structuredData}
+>
   <section class="card">
     <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Category</p>
     <h1>{categoryLabel}</h1>

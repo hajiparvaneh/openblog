@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import { getKnownContributors, getUserProfile } from '../../lib/openblog';
+import { getKnownContributors, getProfilePath, getUserProfile } from '../../lib/openblog';
+import { toAbsoluteUrl } from '../../lib/seo';
 
 export function getStaticPaths() {
   return getKnownContributors().map((username) => ({ params: { username: `@${username}` } }));
@@ -25,8 +26,32 @@ const formatDate = (isoDate: string | null) => {
   const parsed = new Date(isoDate);
   return Number.isNaN(parsed.getTime()) ? isoDate : parsed.toISOString().slice(0, 10);
 };
+const canonicalPath = getProfilePath(profile.username);
+const pageDescription = `View @${profile.username}'s OpenBlog profile, including contribution stats, accepted PRs, and contributed posts.`;
+const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'ProfilePage',
+  name: `@${profile.username} | OpenBlog`,
+  description: pageDescription,
+  url: canonicalUrl,
+  mainEntity: {
+    '@type': 'Person',
+    name: profile.username,
+    url: profile.profileUrl,
+    image: getAvatarUrl(profile.username, profile.avatarUrl),
+    sameAs: [profile.profileUrl]
+  }
+};
 ---
-<BaseLayout title={`@${profile.username} | OpenBlog`}>
+<BaseLayout
+  title={`@${profile.username} | OpenBlog`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  ogType="profile"
+  structuredData={structuredData}
+>
   <section class="card">
     <div class="profile-head">
       <img

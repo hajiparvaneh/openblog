@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#2563eb"/>
+    </linearGradient>
+
+    <linearGradient id="accent" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#60a5fa"/>
+      <stop offset="100%" stop-color="#3b82f6"/>
+    </linearGradient>
+  </defs>
+
+  <!-- background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- soft shapes -->
+  <circle cx="1080" cy="120" r="240" fill="#93c5fd" opacity="0.12"/>
+  <circle cx="150" cy="560" r="260" fill="#60a5fa" opacity="0.10"/>
+
+  <!-- title -->
+  <text x="90" y="250"
+        fill="#ffffff"
+        font-size="88"
+        font-family="Inter, Segoe UI, Arial, sans-serif"
+        font-weight="700">
+        Open<tspan fill="#93c5fd">Blog</tspan>
+  </text>
+
+  <!-- subtitle -->
+  <text x="90" y="340"
+        fill="#dbeafe"
+        font-size="44"
+        font-family="Inter, Segoe UI, Arial, sans-serif">
+        Open blogging powered by Git
+  </text>
+
+  <text x="90" y="420"
+        fill="#bfdbfe"
+        font-size="32"
+        font-family="Inter, Segoe UI, Arial, sans-serif">
+        Posts • Pull Requests • Public Contributors
+  </text>
+
+  <!-- icon container -->
+  <circle cx="980" cy="330" r="170" fill="#ffffff" opacity="0.06"/>
+
+  <!-- simple blog icon -->
+  <g transform="translate(900,250)">
+    <rect x="0" y="60" width="160" height="110" rx="14" fill="#e5e7eb"/>
+    <rect x="10" y="75" width="140" height="8" fill="#94a3b8"/>
+    <rect x="10" y="95" width="110" height="8" fill="#94a3b8"/>
+    <rect x="10" y="115" width="90" height="8" fill="#94a3b8"/>
+
+    <!-- pencil -->
+    <rect x="100" y="10" width="70" height="16" rx="4" fill="url(#accent)" transform="rotate(35 100 10)"/>
+  </g>
+
+</svg>

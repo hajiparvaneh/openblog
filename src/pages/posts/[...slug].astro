@@ -4,6 +4,7 @@ import path from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import { marked } from 'marked';
 import { formatPostDate, getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/openblog';
+import { toAbsoluteUrl } from '../../lib/seo';
 
 type ScoringLabelConfig = {
   points: number;
@@ -49,8 +50,81 @@ const getLabelMeta = (label: string): ScoringLabelConfig => {
 const categoryPath = getCategoryPath(post.category);
 const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
 const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
+const canonicalPath = `/posts/${postSourcePath}`;
+const pageDescription = post.description || `Read ${post.title} on OpenBlog.`;
+const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const latestContributionAt = contributors
+  .flatMap((contributor) => contributor.pullRequests.map((pullRequest) => pullRequest.mergedAt))
+  .sort((a, b) => b.localeCompare(a))[0];
+const publishedTime = post.date ? `${post.date}T00:00:00Z` : undefined;
+const modifiedTime = latestContributionAt ?? publishedTime;
+const articleAuthors =
+  contributors.length > 0
+    ? contributors.map((contributor) => ({
+        '@type': 'Person',
+        name: contributor.username,
+        url: toAbsoluteUrl(getProfileUrl(contributor.username), siteUrl)
+      }))
+    : [{ '@type': 'Organization', name: 'OpenBlog Contributors' }];
+const blogPostingSchema: Record<string, unknown> = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.title,
+  description: pageDescription,
+  url: canonicalUrl,
+  mainEntityOfPage: canonicalUrl,
+  articleSection: post.categoryLabel,
+  author: articleAuthors,
+  publisher: {
+    '@type': 'Organization',
+    name: 'OpenBlog',
+    url: toAbsoluteUrl('/', siteUrl)
+  }
+};
+if (post.date) {
+  blogPostingSchema.datePublished = post.date;
+}
+if (latestContributionAt) {
+  blogPostingSchema.dateModified = formatPostDate(latestContributionAt);
+}
+const structuredData = [
+  blogPostingSchema,
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: toAbsoluteUrl('/', siteUrl)
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: post.categoryLabel,
+        item: toAbsoluteUrl(categoryPath, siteUrl)
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: post.title,
+        item: canonicalUrl
+      }
+    ]
+  }
+];
 ---
-<BaseLayout title={`${post.title} | OpenBlog`}>
+<BaseLayout
+  title={`${post.title} | OpenBlog`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  ogType="article"
+  publishedTime={publishedTime}
+  modifiedTime={modifiedTime}
+  structuredData={structuredData}
+>
   <article class="card">
     <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.categoryLabel}</a></p>
     <h1>{post.title}</h1>

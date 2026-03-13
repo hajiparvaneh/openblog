@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
 import { getLeaderboard, getPosts, getRecentEvents, getUserPostContributionCounts } from '../lib/openblog';
+import { toAbsoluteUrl } from '../lib/seo';
 
 const leaderboard = getLeaderboard();
 const recentEvents = getRecentEvents(10);
@@ -15,8 +16,34 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
 const getProfileUrl = (username: string) => `/profile/@${username}`;
 const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${postSlug}` : null);
+const pageDescription =
+  'See the OpenBlog contributor leaderboard ranked by points and merged pull requests, plus the latest accepted contributions.';
+const canonicalPath = '/leaderboard';
+const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const topContributors = leaderboard.slice(0, 10);
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: 'OpenBlog Leaderboard',
+    description: pageDescription,
+    url: canonicalUrl
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'OpenBlog Top Contributors',
+    itemListElement: topContributors.map((user, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: toAbsoluteUrl(getProfileUrl(user.username), siteUrl),
+      name: `@${user.username}`
+    }))
+  }
+];
 ---
-<BaseLayout title="Leaderboard | OpenBlog">
+<BaseLayout title="Leaderboard | OpenBlog" description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
   <section class="card">
     <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Community scoreboard</p>
     <h1>Leaderboard</h1>

@@ -1,7 +1,43 @@
 ---
 import '../styles/global.css';
 import { getCategoryPath, getLatestContributors, getPosts, getProfilePath } from '../lib/openblog';
-const { title = 'OpenBlog' } = Astro.props;
+import { toAbsoluteUrl } from '../lib/seo';
+type JsonLd = Record<string, unknown>;
+
+type BaseLayoutProps = {
+  title?: string;
+  description?: string;
+  canonicalPath?: string;
+  ogType?: 'website' | 'article' | 'profile';
+  ogImagePath?: string;
+  ogImageAlt?: string;
+  robots?: string;
+  publishedTime?: string;
+  modifiedTime?: string;
+  structuredData?: JsonLd | JsonLd[];
+};
+
+const {
+  title = 'OpenBlog',
+  description = 'OpenBlog is a Git-based collaborative blog where accepted pull requests earn points.',
+  canonicalPath = Astro.url.pathname,
+  ogType = 'website',
+  ogImagePath = '/og-default.png',
+  ogImageAlt = 'OpenBlog',
+  robots = 'index, follow',
+  publishedTime,
+  modifiedTime,
+  structuredData
+} = Astro.props as BaseLayoutProps;
+
+const siteUrl = Astro.site ?? new URL('https://hajiparvaneh.github.io/');
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const ogImageUrl = toAbsoluteUrl(ogImagePath, siteUrl);
+const faviconHref = '/openblog-favicon.ico';
+const logoDarkSrc = '/openblog-logo-dark.png';
+const logoLightSrc = '/openblog-logo-light.png';
+const jsonLdEntries = Array.isArray(structuredData) ? structuredData : structuredData ? [structuredData] : [];
+const serializedStructuredData = jsonLdEntries.map((entry) => JSON.stringify(entry).replace(/</g, '\\u003c'));
 const categories = [...new Map(getPosts().map((post) => [post.category, post.categoryLabel])).entries()]
   .sort((a, b) => a[1].localeCompare(b[1]));
 const latestContributors = getLatestContributors(10);
@@ -15,7 +51,36 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
-    <meta name="description" content="OpenBlog is a Git-based collaborative blog where accepted pull requests earn points." />
+    <meta name="description" content={description} />
+    <meta name="robots" content={robots} />
+    <meta name="theme-color" content="#0f172a" />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" type="image/x-icon" href={faviconHref} />
+    <link rel="shortcut icon" href={faviconHref} />
+
+    <meta property="og:type" content={ogType} />
+    <meta property="og:site_name" content="OpenBlog" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    {ogType === 'article' && publishedTime ? <meta property="article:published_time" content={publishedTime} /> : null}
+    {ogType === 'article' && modifiedTime ? <meta property="article:modified_time" content={modifiedTime} /> : null}
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
+
+    {serializedStructuredData.map((item) => (
+      <script type="application/ld+json" set:html={item} />
+    ))}
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
     <script is:inline>
       (function () {
@@ -34,8 +99,16 @@ const getAvatarUrl = (username: string, avatarUrl?: string | null) =>
     <div class="page-shell">
       <header class="site-header card">
         <a class="brand" href="/">
-          <span class="brand-mark">OpenBlog</span>
-          <span class="brand-tagline">Community writing, tracked by merged PRs</span>
+          <span class="brand-main">
+            <span class="brand-icon-wrap" aria-hidden="true">
+              <img class="brand-icon brand-icon-dark" src={logoDarkSrc} alt="" loading="eager" decoding="async" width="44" height="44" />
+              <img class="brand-icon brand-icon-light" src={logoLightSrc} alt="" loading="eager" decoding="async" width="44" height="44" />
+            </span>
+          </span>
+          <span class="brand-copy">
+            <span class="brand-mark">OpenBlog</span>
+            <span class="brand-tagline">Community writing, tracked by merged PRs</span>
+          </span>
         </a>
         <div class="site-header-actions">
           <nav class="nav" aria-label="Main navigation">

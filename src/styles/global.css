@@ -1,6 +1,13 @@
+@font-face {
+  font-family: 'OpenBlog';
+  src: local('OpenBlog'), local('Open Blog');
+  font-display: swap;
+}
+
 :root {
   color-scheme: dark;
   line-height: 1.6;
+  --font-main: 'OpenBlog', 'Segoe UI', Tahoma, Arial, sans-serif;
   --bg: #101216;
   --surface: #171a20;
   --surface-soft: #1e222b;
@@ -38,7 +45,7 @@ body {
 body {
   background: var(--bg);
   color: var(--text);
-  font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
+  font-family: var(--font-main);
 }
 
 a {
@@ -97,6 +104,14 @@ a:hover {
   display: inline-block;
 }
 
+:root[data-theme='light'] .brand-icon-dark {
+  display: none;
+}
+
+:root[data-theme='light'] .brand-icon-light {
+  display: block;
+}
+
 h1,
 h2,
 h3 {
@@ -144,20 +159,58 @@ p {
 }
 
 .brand {
-  display: grid;
-  gap: 0.15rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
   color: var(--text);
   text-decoration: none;
+  min-width: 0;
+}
+
+.brand-copy {
+  display: grid;
+  gap: 0.08rem;
 }
 
 .brand-mark {
-  font-size: 1.55rem;
+  font-family: var(--font-main);
+  font-size: 1.08rem;
   font-weight: 700;
+  line-height: 1.15;
+  color: var(--text);
+}
+
+.brand-main {
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+}
+
+.brand-icon-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4.9rem;
+  height: 4.9rem;
+}
+
+.brand-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-icon-light {
+  display: none;
 }
 
 .brand-tagline {
   color: var(--muted);
-  font-size: 0.9rem;
+  font-size: 0.88rem;
+  line-height: 1.35;
+  max-width: 22rem;
+  white-space: normal;
 }
 
 .site-header-actions {
@@ -179,7 +232,7 @@ p {
   align-items: center;
   gap: 0.35rem;
   color: var(--text);
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.9rem;
   font-weight: 700;
   line-height: 1;
@@ -202,7 +255,7 @@ p {
   border-radius: 0;
   background: var(--surface-soft);
   color: var(--text);
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.9rem;
   font-weight: 700;
   line-height: 1;
@@ -229,7 +282,7 @@ p {
   align-items: center;
   gap: 0.35rem;
   margin-top: 0.35rem;
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.86rem;
   font-weight: 700;
 }
@@ -237,7 +290,7 @@ p {
 .sidebar-sub-link {
   display: block;
   margin-top: 0.15rem;
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.78rem;
   color: var(--muted);
 }
@@ -297,7 +350,7 @@ p {
   border-radius: 0;
   background: var(--surface-soft);
   color: var(--text);
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.78rem;
   font-weight: 700;
   padding: 0.25rem 0.55rem;
@@ -374,7 +427,7 @@ p {
   border-radius: 0;
   background: var(--surface-soft);
   color: var(--text);
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.84rem;
   font-weight: 700;
   line-height: 1;
@@ -424,7 +477,7 @@ p {
   border-radius: 0;
   background: var(--surface-soft);
   padding: 0.48rem 0.62rem 0.48rem 1.75rem;
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.84rem;
 }
 
@@ -524,7 +577,7 @@ p {
 
 .stat-label {
   color: var(--muted);
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.8rem;
 }
 
@@ -588,7 +641,7 @@ p {
 
 .meta {
   color: var(--muted);
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.9rem;
 }
 
@@ -606,7 +659,7 @@ p {
 
 .kicker {
   margin: 0 0 0.4rem;
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -635,7 +688,7 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.84rem;
   font-weight: 600;
 }
@@ -683,7 +736,7 @@ p {
 }
 
 .table thead th {
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.82rem;
   letter-spacing: 0.05em;
   text-transform: uppercase;
@@ -696,7 +749,7 @@ p {
   border-radius: 0;
   background: var(--surface-soft);
   color: var(--text);
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.76rem;
   font-weight: 700;
   padding: 0.15rem 0.5rem;
@@ -718,7 +771,7 @@ p {
 }
 
 .user-handle {
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-weight: 600;
 }
 
@@ -832,7 +885,7 @@ p {
   border: 1px solid var(--border);
   background: var(--surface);
   padding: 0.15rem 0.4rem;
-  font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+  font-family: var(--font-main);
   font-size: 0.76rem;
   font-weight: 700;
 }
@@ -872,6 +925,24 @@ p {
 
   .content-layout {
     grid-template-columns: 1fr;
+  }
+
+  .brand-icon-wrap {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .brand {
+    gap: 0.55rem;
+  }
+
+  .brand-tagline {
+    font-size: 0.82rem;
+    max-width: 16rem;
+  }
+
+  .brand-mark {
+    font-size: 0.97rem;
   }
 
   .category-sidebar {
