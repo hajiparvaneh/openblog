@@ -128,7 +128,7 @@ p {
 }
 
 .page-shell {
-  max-width: 1050px;
+  max-width: 1280px;
   margin: 0 auto;
   padding: 1rem;
 }
@@ -140,7 +140,7 @@ p {
 
 .content-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 220px);
+  grid-template-columns: minmax(0, 1fr) minmax(210px, 250px);
   gap: 1rem;
   align-items: start;
 }
