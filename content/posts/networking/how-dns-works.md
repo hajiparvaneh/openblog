@@ -6,7 +6,7 @@ date: 2026-03-12
 
 DNS converts human-readable domain names into IP addresses that machines can route.
 
-## Basic flow
+## Basic flow 
 
 1. You type `example.com` in your browser.
 2. Resolver checks cache first.
