@@ -10,6 +10,20 @@ export type Post = {
   description: string;
   date: string;
   body: string;
+  qualityScore: number;
+};
+
+export const POST_QUALITY_MAX_SCORE = 5;
+export const POST_QUALITY_MINIMUM_DEPTH_WORDS = 220;
+
+export type PostQualityReport = {
+  score: number;
+  maxScore: number;
+  wordCount: number;
+  minimumDepthWords: number;
+  hasRicherText: boolean;
+  hasReferences: boolean;
+  hasPracticalExample: boolean;
 };
 
 type EventContributionRecord = {
@@ -202,6 +216,42 @@ export function formatPostDate(value: unknown): string {
   return toDateString(value);
 }
 
+function markdownToPlainText(markdown: string): string {
+  return markdown
+    .replace(/```[\s\S]*?```/g, ' ')
+    .replace(/`[^`\n]*`/g, ' ')
+    .replace(/!\[([^\]]*)\]\(([^)]+)\)/g, '$1 ')
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ')
+    .replace(/[#>*_\-[\]()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function evaluatePostQuality(body: string): PostQualityReport {
+  const plainText = markdownToPlainText(body);
+  const wordCount = plainText ? plainText.split(' ').length : 0;
+  const hasRicherText = wordCount >= POST_QUALITY_MINIMUM_DEPTH_WORDS;
+  const hasReferences = /\bhttps?:\/\/[^\s)]+/i.test(body);
+  const hasPracticalExample =
+    /```[\s\S]*?```/.test(body) ||
+    /\b(for example|example:|e\.g\.)\b/i.test(body) ||
+    /(^|\n)##?\s.*example/i.test(body);
+  const score =
+    (hasRicherText ? 2 : 0) +
+    (hasReferences ? 2 : 0) +
+    (hasPracticalExample ? 1 : 0);
+
+  return {
+    score,
+    maxScore: POST_QUALITY_MAX_SCORE,
+    wordCount,
+    minimumDepthWords: POST_QUALITY_MINIMUM_DEPTH_WORDS,
+    hasRicherText,
+    hasReferences,
+    hasPracticalExample
+  };
+}
+
 function resolvePostSlug(postSlug: string, availableSlugs: Set<string>): string | null {
   const raw = postSlug.trim().replace(/\\/g, '/');
   if (!raw) return null;
@@ -283,6 +333,8 @@ export function getPosts(): Post[] {
       const raw = fs.readFileSync(postPath, 'utf8');
       const { data, content } = matter(raw);
       const postName = postEntry.name.replace(/\.md$/, '');
+      const body = content.trim();
+      const quality = evaluatePostQuality(body);
       posts.push({
         slug: `${rawCategory}/${postName}`,
         category,
@@ -290,7 +342,8 @@ export function getPosts(): Post[] {
         title: data.title ?? postName,
         description: data.description ?? '',
         date: toDateString(data.date),
-        body: content.trim()
+        body,
+        qualityScore: quality.score
       });
     }
   }

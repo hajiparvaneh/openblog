@@ -7,17 +7,25 @@ import { getSiteUrl } from '../lib/site';
 
 type ScoringLabelConfig = {
   points: number;
+  displayName?: string;
   icon: string;
   color: string;
 };
 
 const scoreByLabelPath = path.join(process.cwd(), 'openblog/enums/scoring-labels.json');
 const parsedScoreByLabel = JSON.parse(fs.readFileSync(scoreByLabelPath, 'utf8')) as Record<string, number | ScoringLabelConfig>;
+const toLabelDisplayName = (label: string): string =>
+  label
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
 const sortedScoringRules = Object.entries(parsedScoreByLabel)
   .map(([label, config]) => {
     if (typeof config === 'number') {
       return {
         label,
+        displayName: toLabelDisplayName(label),
         points: config,
         icon: 'tag',
         color: '#64748b'
@@ -26,6 +34,7 @@ const sortedScoringRules = Object.entries(parsedScoreByLabel)
 
     return {
       label,
+      displayName: config.displayName || toLabelDisplayName(label),
       points: config.points,
       icon: config.icon,
       color: config.color
@@ -121,7 +130,7 @@ const structuredData = {
             <li class="score-item" style={`--score-color: ${rule.color};`}>
               <span class="score-label-meta">
                 <i class={`ti ti-${rule.icon} icon-sm score-icon`} aria-hidden="true"></i>
-                <code>{rule.label}</code>
+                <span>{rule.displayName}</span>
               </span>
               <span class="badge score-points points-badge">
                 <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
@@ -136,7 +145,7 @@ const structuredData = {
             {' '}
             <span class="score-top-inline">
               <i class={`ti ti-${topScoringRule.icon} icon-sm`} aria-hidden="true"></i>
-              <code>{topScoringRule.label}</code>
+              <span>{topScoringRule.displayName}</span>
             </span>
             {' '}
             (<span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{topScoringRule.points}</span> points)

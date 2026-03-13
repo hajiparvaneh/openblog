@@ -8,6 +8,7 @@ import PostContributorsStack from '../../components/PostContributorsStack.astro'
 import UserAvatar from '../../components/UserAvatar.astro';
 import { marked } from 'marked';
 import {
+  evaluatePostQuality,
   formatPostDate,
   getCategoryPath,
   getPosts,
@@ -19,8 +20,20 @@ import { getSiteUrl } from '../../lib/site';
 
 type ScoringLabelConfig = {
   points: number;
+  displayName?: string;
   icon: string;
   color: string;
+};
+
+type ProofQualityTask = {
+  key: 'depth' | 'reference' | 'example';
+  title: string;
+  details: string;
+  labelMeta: ScoringLabelConfig;
+};
+
+type ManualContributionHint = {
+  labelMeta: ScoringLabelConfig;
 };
 
 export function getStaticPaths() {
@@ -40,22 +53,74 @@ const formatMergedDate = (isoDate: string) => {
   return Number.isNaN(parsed.getTime()) ? isoDate : parsed.toISOString().slice(0, 10);
 };
 
+const toLabelDisplayName = (label: string): string =>
+  label
+    .split('-')
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+
 const scoringLabelsPath = path.join(process.cwd(), 'openblog/enums/scoring-labels.json');
 const scoringLabels = JSON.parse(fs.readFileSync(scoringLabelsPath, 'utf8')) as Record<string, number | ScoringLabelConfig>;
 const getLabelMeta = (label: string): ScoringLabelConfig => {
   const labelConfig = scoringLabels[label];
   if (typeof labelConfig === 'number') {
-    return { points: labelConfig, icon: 'tag', color: '#64748b' };
+    return { points: labelConfig, displayName: toLabelDisplayName(label), icon: 'tag', color: '#64748b' };
   }
   if (labelConfig && typeof labelConfig === 'object') {
     return {
       points: typeof labelConfig.points === 'number' ? labelConfig.points : 0,
+      displayName: labelConfig.displayName || toLabelDisplayName(label),
       icon: labelConfig.icon || 'tag',
       color: labelConfig.color || '#64748b'
     };
   }
-  return { points: 0, icon: 'tag', color: '#64748b' };
+  return { points: 0, displayName: toLabelDisplayName(label), icon: 'tag', color: '#64748b' };
 };
+
+const postQuality = evaluatePostQuality(post.body);
+const minimumDepthWords = postQuality.minimumDepthWords;
+const hasRicherText = postQuality.hasRicherText;
+const hasReferences = postQuality.hasReferences;
+const hasPracticalExample = postQuality.hasPracticalExample;
+const qualityMeterSegments = Array.from(
+  { length: postQuality.maxScore },
+  (_, index) => index < post.qualityScore
+);
+
+const proofQualityTasks: ProofQualityTask[] = [];
+
+if (!hasRicherText) {
+  proofQualityTasks.push({
+    key: 'depth',
+    title: 'Add richer technical depth',
+    details: `Expand this post to at least ${minimumDepthWords} words with clearer explanation, edge cases, and tradeoffs.`,
+    labelMeta: getLabelMeta('fact-check')
+  });
+}
+
+if (!hasReferences) {
+  proofQualityTasks.push({
+    key: 'reference',
+    title: 'Add trusted references',
+    details: 'Support core claims with reliable links (official docs, standards, or reputable technical sources).',
+    labelMeta: getLabelMeta('source-added')
+  });
+}
+
+if (!hasPracticalExample) {
+  proofQualityTasks.push({
+    key: 'example',
+    title: 'Add a practical example',
+    details: 'Include a concrete example such as code, command output, step-by-step flow, or a real scenario.',
+    labelMeta: getLabelMeta('new-example')
+  });
+}
+
+const proofQualityReady = proofQualityTasks.length === 0;
+const manualContributionHints: ManualContributionHint[] = ['typo', 'fact-check', 'translation'].map((label) => ({
+  labelMeta: getLabelMeta(label)
+}));
 const categoryPath = getCategoryPath(post.category);
 const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
 const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
@@ -165,6 +230,63 @@ const structuredData = [
       </a>
       , open a PR, and earn contribution points.
     </section>
+
+    <section class="post-proof-quality">
+      <div class="post-proof-quality-head">
+        <p class="kicker icon-label"><i class="ti ti-sparkles icon-sm" aria-hidden="true"></i>Raise proof quality</p>
+        <p class="meta post-proof-quality-score">
+          <span class="icon-label"><i class="ti ti-meter-2 icon-sm" aria-hidden="true"></i>Quality score <strong>{post.qualityScore}/{postQuality.maxScore}</strong></span>
+          <span class="post-proof-quality-meter" role="img" aria-label={`Quality score ${post.qualityScore} out of ${postQuality.maxScore}`}>
+            {qualityMeterSegments.map((isFilled) => (
+              <span class:list={['post-proof-quality-meter-step', isFilled && 'is-filled']} />
+            ))}
+          </span>
+        </p>
+      </div>
+      {proofQualityReady ? (
+        <p class="meta">
+          This post already includes baseline depth, references, and practical examples.
+          You can still improve correctness, clarity, and fresh examples through new PRs.
+        </p>
+      ) : (
+        <>
+          <p class="meta">
+            This post can be improved to become stronger proof-of-work.
+            Pick one item, contribute in a focused PR, and help complete it.
+          </p>
+          <ul class="post-proof-quality-list">
+            {proofQualityTasks.map((task) => (
+              <li class="post-proof-quality-item" style={`--task-label-color: ${task.labelMeta.color};`}>
+                <span class="post-proof-quality-item-head">
+                  <span class="post-proof-quality-title icon-label">
+                    <i class={`ti ti-${task.labelMeta.icon} icon-sm post-proof-quality-title-icon`} aria-hidden="true"></i>
+                    <span>{task.title}</span>
+                  </span>
+                  <span class="post-proof-quality-points" title={task.labelMeta.displayName}>
+                    <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{task.labelMeta.points}</span>
+                  </span>
+                </span>
+                <span class="meta">{task.details}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <p class="meta post-proof-quality-extra-intro">
+        Also valuable manual improvements (not auto-detected):
+      </p>
+      <ul class="post-proof-quality-extra-list">
+        {manualContributionHints.map((hint) => (
+          <li class="post-proof-quality-extra-item" style={`--manual-label-color: ${hint.labelMeta.color};`}>
+            <span class="icon-label">
+              <i class={`ti ti-${hint.labelMeta.icon} icon-sm post-proof-quality-extra-icon`} aria-hidden="true"></i>
+              <span>{hint.labelMeta.displayName}</span>
+            </span>
+            <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{hint.labelMeta.points}</span>
+          </li>
+        ))}
+      </ul>
+    </section>
   </article>
 
   <section class="card">
@@ -194,9 +316,9 @@ const structuredData = [
               {contributor.labels.map((label) => {
                 const labelMeta = getLabelMeta(label);
                 return (
-                  <span class="badge contributor-label-badge" style={`--label-color: ${labelMeta.color};`}>
+                  <span class="badge contributor-label-badge" style={`--label-color: ${labelMeta.color};`} title={`Label: ${label}`}>
                     <i class={`ti ti-${labelMeta.icon} icon-sm`} aria-hidden="true"></i>
-                    <span>{label}</span>
+                    <span>{labelMeta.displayName}</span>
                     {labelMeta.points > 0 ? <span class="contributor-label-points points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{labelMeta.points}</span> : null}
                   </span>
                 );
