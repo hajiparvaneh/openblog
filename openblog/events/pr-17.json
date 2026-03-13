@@ -1,0 +1,16 @@
+{
+  "eventType": "pr_merged",
+  "prNumber": 17,
+  "username": "hajiparvaneh",
+  "userAvatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
+  "mergedAt": "2026-03-13T10:53:44Z",
+  "contributions": [
+    {
+      "postSlug": "blog/how-to-start-with-openblog-free-blogging-github-portfolio",
+      "labels": [
+        "new-post"
+      ],
+      "points": 50
+    }
+  ]
+}
