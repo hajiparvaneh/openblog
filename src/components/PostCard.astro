@@ -8,9 +8,10 @@ type Props = {
   showCategory?: boolean;
   dataAttribute?: string;
   dateSortValue?: string;
+  displayDate?: string;
 };
 
-const { post, showCategory = true, dataAttribute, dateSortValue } = Astro.props as Props;
+const { post, showCategory = true, dataAttribute, dateSortValue, displayDate } = Astro.props as Props;
 const cardAttributes = {
   ...(dataAttribute ? { [dataAttribute]: '' } : {}),
   ...(dateSortValue ? { 'data-post-date': dateSortValue } : {})
@@ -24,7 +25,7 @@ const cardAttributes = {
     <PostContributorsStack slug={post.slug} />
     <span class="meta-item">
       <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
-      {formatPostDate(post.date)}
+      {formatPostDate(displayDate ?? post.date)}
     </span>
     {showCategory ? (
       <span class="meta-item">

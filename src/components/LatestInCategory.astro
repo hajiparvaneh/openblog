@@ -1,0 +1,60 @@
+---
+import PostCard from './PostCard.astro';
+import { getLatestContributorByPost, getPosts } from '../lib/openblog';
+
+type Props = {
+  category: string;
+  currentPostSlug: string;
+  limit?: number;
+  title?: string;
+  emptyMessage?: string;
+};
+
+const {
+  category,
+  currentPostSlug,
+  limit = 6,
+  title = 'Latest in this category',
+  emptyMessage = 'No other posts in this category yet.'
+} = Astro.props as Props;
+
+const allPosts = getPosts();
+const latestContributorByPost = getLatestContributorByPost();
+const latestInCategory = allPosts
+  .filter((categoryPost) => categoryPost.category === category && categoryPost.slug !== currentPostSlug)
+  .map((categoryPost) => {
+    const latestContributionAt = latestContributorByPost.get(categoryPost.slug)?.lastContributionAt;
+    const lastUpdatedAt = latestContributionAt ?? (categoryPost.date ? `${categoryPost.date}T00:00:00Z` : '');
+    return {
+      post: categoryPost,
+      lastUpdatedAt
+    };
+  })
+  .sort(
+    (a, b) =>
+      b.lastUpdatedAt.localeCompare(a.lastUpdatedAt) ||
+      b.post.date.localeCompare(a.post.date) ||
+      a.post.slug.localeCompare(b.post.slug)
+  )
+  .slice(0, limit);
+---
+
+<section class="list">
+  <p class="kicker icon-label"><i class="ti ti-clock-hour-4 icon-sm" aria-hidden="true"></i>{title}</p>
+  {latestInCategory.length === 0 ? (
+    <article class="card">
+      <p class="meta">{emptyMessage}</p>
+    </article>
+  ) : (
+    <div class="post-grid">
+      {latestInCategory.map((categoryPostRecord) => (
+        <PostCard
+          post={categoryPostRecord.post}
+          showCategory={false}
+          displayDate={categoryPostRecord.lastUpdatedAt}
+          dateSortValue={categoryPostRecord.lastUpdatedAt}
+        />
+      ))}
+    </div>
+  )}
+</section>

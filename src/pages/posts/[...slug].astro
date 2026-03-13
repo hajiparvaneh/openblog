@@ -2,10 +2,17 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import LatestInCategory from '../../components/LatestInCategory.astro';
 import PostContributorsStack from '../../components/PostContributorsStack.astro';
 import UserAvatar from '../../components/UserAvatar.astro';
 import { marked } from 'marked';
-import { formatPostDate, getCategoryPath, getPosts, getPostBySlug, getContributorsForPost } from '../../lib/openblog';
+import {
+  formatPostDate,
+  getCategoryPath,
+  getPosts,
+  getPostBySlug,
+  getContributorsForPost
+} from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { getSiteUrl } from '../../lib/site';
 
@@ -202,4 +209,6 @@ const structuredData = [
       </ul>
     )}
   </section>
+
+  <LatestInCategory category={post.category} currentPostSlug={post.slug} />
 </BaseLayout>
