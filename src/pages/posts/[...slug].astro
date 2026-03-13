@@ -118,9 +118,32 @@ if (!hasPracticalExample) {
 }
 
 const proofQualityReady = proofQualityTasks.length === 0;
-const manualContributionHints: ManualContributionHint[] = ['typo', 'fact-check', 'translation'].map((label) => ({
-  labelMeta: getLabelMeta(label)
-}));
+const passedQualityHints: ManualContributionHint[] = [];
+if (hasRicherText) {
+  const labelMeta = getLabelMeta('fact-check');
+  passedQualityHints.push({
+    labelMeta: { ...labelMeta, displayName: 'Add richer technical depth' }
+  });
+}
+if (hasReferences) {
+  const labelMeta = getLabelMeta('source-added');
+  passedQualityHints.push({
+    labelMeta: { ...labelMeta, displayName: 'Add trusted references' }
+  });
+}
+if (hasPracticalExample) {
+  const labelMeta = getLabelMeta('new-example');
+  passedQualityHints.push({
+    labelMeta: { ...labelMeta, displayName: 'Add a practical example' }
+  });
+}
+
+const manualContributionHints: ManualContributionHint[] = [
+  ...['typo', 'fact-check', 'translation'].map((label) => ({
+    labelMeta: getLabelMeta(label)
+  })),
+  ...passedQualityHints
+];
 const categoryPath = getCategoryPath(post.category);
 const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
 const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
@@ -244,13 +267,13 @@ const structuredData = [
         </p>
       </div>
       {proofQualityReady ? (
-        <p class="meta">
+        <p class="meta post-proof-quality-intro">
           This post already includes baseline depth, references, and practical examples.
           You can still improve correctness, clarity, and fresh examples through new PRs.
         </p>
       ) : (
         <>
-          <p class="meta">
+          <p class="meta post-proof-quality-intro">
             This post can be improved to become stronger proof-of-work.
             Pick one item, contribute in a focused PR, and help complete it.
           </p>
@@ -286,7 +309,9 @@ const structuredData = [
                 <i class={`ti ti-${hint.labelMeta.icon} icon-sm post-proof-quality-extra-icon`} aria-hidden="true"></i>
                 <span>{hint.labelMeta.displayName}</span>
               </span>
-              <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{hint.labelMeta.points}</span>
+              {hint.labelMeta.points > 0 ? (
+                <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{hint.labelMeta.points}</span>
+              ) : null}
             </a>
           </li>
         ))}

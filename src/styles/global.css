@@ -791,7 +791,7 @@ p {
 
 .post-proof-quality-head {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 0.6rem;
   flex-wrap: wrap;
@@ -803,11 +803,15 @@ p {
 
 .post-proof-quality-score {
   margin: 0 0 0 auto;
-  margin-bottom: 0.35rem;
   display: flex;
   align-items: center;
-  gap: 0.55rem;
+  gap: 0.45rem;
   flex-wrap: wrap;
+}
+
+.post-proof-quality-intro {
+  margin-top: 0.32rem;
+  margin-bottom: 0.32rem;
 }
 
 .post-proof-quality-meter {
@@ -838,8 +842,8 @@ p {
 
 .post-proof-quality-item {
   display: grid;
-  gap: 0.18rem;
-  padding: 0.35rem 0.4rem;
+  gap: 0.2rem;
+  padding: 0.42rem 0.4rem;
   border-bottom: 1px solid var(--border);
   background: transparent;
 }
@@ -852,7 +856,8 @@ p {
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  gap: 0.7rem;
+  gap: 0.55rem;
+  row-gap: 0.2rem;
   flex-wrap: wrap;
 }
 
@@ -885,12 +890,13 @@ p {
   color: var(--text);
   text-decoration: underline;
   text-underline-offset: 0.14em;
+  margin-left: 0.05rem;
 }
 
 .post-proof-quality-extra-intro {
-  margin-top: 0.6rem;
-  margin-bottom: 0.25rem;
-  padding-top: 0.5rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.2rem;
+  padding-top: 0.45rem;
   border-top: 1px solid var(--border);
 }
 
@@ -927,8 +933,7 @@ p {
 
 .post-proof-quality-extra-link:hover {
   color: var(--text);
-  text-decoration: underline;
-  text-underline-offset: 0.14em;
+  text-decoration: none;
 }
 
 .post-proof-quality-extra-item + .post-proof-quality-extra-item::before {
@@ -938,7 +943,7 @@ p {
 }
 
 .post-proof-quality-help {
-  margin: 0.55rem 0 0;
+  margin: 0.48rem 0 0;
   font-size: 0.78rem;
   color: var(--muted);
   text-align: right;
