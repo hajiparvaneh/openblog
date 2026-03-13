@@ -256,7 +256,7 @@ const structuredData = [
           </p>
           <ul class="post-proof-quality-list">
             {proofQualityTasks.map((task) => (
-              <li class="post-proof-quality-item" style={`--task-label-color: ${task.labelMeta.color};`}>
+              <li class="post-proof-quality-item">
                 <span class="post-proof-quality-item-head">
                   <span class="post-proof-quality-title icon-label">
                     <i class={`ti ti-${task.labelMeta.icon} icon-sm post-proof-quality-title-icon`} aria-hidden="true"></i>
@@ -265,6 +265,9 @@ const structuredData = [
                   <span class="post-proof-quality-points" title={task.labelMeta.displayName}>
                     <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{task.labelMeta.points}</span>
                   </span>
+                  <a class="post-proof-quality-action" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+                    Start contribution
+                  </a>
                 </span>
                 <span class="meta">{task.details}</span>
               </li>
@@ -277,15 +280,22 @@ const structuredData = [
       </p>
       <ul class="post-proof-quality-extra-list">
         {manualContributionHints.map((hint) => (
-          <li class="post-proof-quality-extra-item" style={`--manual-label-color: ${hint.labelMeta.color};`}>
-            <span class="icon-label">
-              <i class={`ti ti-${hint.labelMeta.icon} icon-sm post-proof-quality-extra-icon`} aria-hidden="true"></i>
-              <span>{hint.labelMeta.displayName}</span>
-            </span>
-            <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{hint.labelMeta.points}</span>
+          <li class="post-proof-quality-extra-item">
+            <a class="post-proof-quality-extra-link" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+              <span class="icon-label">
+                <i class={`ti ti-${hint.labelMeta.icon} icon-sm post-proof-quality-extra-icon`} aria-hidden="true"></i>
+                <span>{hint.labelMeta.displayName}</span>
+              </span>
+              <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{hint.labelMeta.points}</span>
+            </a>
           </li>
         ))}
       </ul>
+      <p class="post-proof-quality-help">
+        Need help?
+        {' '}
+        <a href="/how-to-contribute">How to contribute</a>
+      </p>
     </section>
   </article>
 
