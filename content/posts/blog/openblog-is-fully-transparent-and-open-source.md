@@ -1,51 +1,53 @@
 ---
 title: "OpenBlog Is 100% Free, Transparent, and Open Source"
-description: "OpenBlog runs fully in public on GitHub with no hidden process, no hidden requests, and a clear contribution path for everyone."
+description: "OpenBlog is built in public on GitHub with zero hidden process, zero hidden requests, and automatic publishing for contributions on openblog.cc."
 date: 2026-03-14
 ---
 
-OpenBlog is built with one core principle: transparency.
+Most projects say they are open. OpenBlog tries to prove it.
 
-Everything is public in one GitHub repository. There is no hidden process and no hidden request flow behind the platform. If you want to understand how it works, you can inspect the repository directly.
+The full project lives in one public repository: [github.com/hajiparvaneh/openblog](https://github.com/hajiparvaneh/openblog). You can inspect the code, read the history, review pull requests, and see exactly how changes happen.
 
-## Everything is accessible in the repository
+There is no hidden process behind the scenes. There are no hidden request flows or private rules that only a few people can see. What you need to understand the project is already in the repository, accessible to everyone.
 
-- All project files are visible
-- Contribution history is public
-- Changes are tracked with pull requests
-- Discussions happen in the open
+## Built in public, end to end
 
-This means anyone can verify how the project evolves and how decisions are made.
+When we say transparent, we mean practical transparency:
 
-## 100% free and open to everyone
+- Source code is public
+- Post content is public
+- PR discussions are public
+- Change history is public
 
-OpenBlog is 100% free. You can use it, explore it, and contribute without paywalls.
+That gives contributors confidence. You are not sending work into a black box. You can track what was changed, why it changed, and who reviewed it.
 
-The project also encourages you to:
+## 100% free to use and contribute
 
-- Fork the repository
-- Improve content or code
-- Open pull requests with your contributions
+OpenBlog is 100% free. No paywall, no hidden premium workflow, no closed contribution channel.
 
-## Contribute, earn points, and grow your visibility
+If you want to join, the path is simple:
 
-When you contribute through pull requests, your work becomes visible and measurable.
+1. Fork the repository.
+2. Create or improve a post.
+3. Open a pull request.
+4. Collaborate on feedback.
+5. Merge and grow your public track record.
 
-By contributing in this blog, you can:
+## Your contributions are published automatically
 
-- Earn points from accepted contributions
-- Build public proof of your consistency
-- Increase your GitHub visibility over time
-- Strengthen your developer profile
+All contributions are published automatically on [openblog.cc](https://openblog.cc). Once your contribution is accepted, it becomes part of the live platform and visible to everyone.
 
-## A practical way to show real ability
+This is important because your work does not stay private after review. It becomes public proof of execution.
 
-OpenBlog is a practical way to demonstrate:
+## Why this is valuable for your career
 
-- Git workflow skills
-- Team collaboration habits
-- Technical depth through real contributions
+Contributing here is more than writing text. It is a real-world way to demonstrate:
 
-Instead of only listing skills on a resume, you can show real work in public.
+- Git workflow and PR hygiene
+- Team collaboration and communication
+- Technical depth in your subject area
+- Consistency over time
 
-If you want to grow your profile, improve your teamwork, and show technical ability with real output, fork the repository and start contributing today.
+You also earn points through contributions, which helps increase your visibility. Over time, that visibility can support the growth of your GitHub profile and help people discover your work faster.
+
+If you want a practical, public, and credible way to show your ability, fork OpenBlog and start contributing.
