@@ -10,7 +10,7 @@
   "totalPostsContributed": 11,
   "contributedPostSlugs": [
     "blog/how-to-start-with-openblog-free-blogging-github-portfolio",
-    "blog/openblog-is-fully-transparent-and-open-source-2",
+    "blog/openblog-is-fully-transparent-and-open-source-3",
     "blog/openblog-is-fully-transparent-and-open-source2 copy",
     "codex/define-game-logic-and-scoring-system",
     "csharp/csharp-performance-techniques-for-clean-scalable-apps",
@@ -42,7 +42,7 @@
   ],
   "lastContribution": {
     "prNumber": 32,
-    "postSlug": "blog/openblog-is-fully-transparent-and-open-source-2",
+    "postSlug": "blog/openblog-is-fully-transparent-and-open-source-3",
     "mergedAt": "2026-03-14T14:21:49Z",
     "points": 50
   }
