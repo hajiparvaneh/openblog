@@ -3,13 +3,14 @@
   "profileUrl": "https://github.com/hajiparvaneh",
   "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
   "joinedAt": "2026-03-12T15:00:09Z",
-  "lastUpdatedAt": "2026-03-14T13:51:38Z",
-  "totalPoints": 435,
-  "acceptedPrs": 11,
-  "totalContributions": 15,
-  "totalPostsContributed": 10,
+  "lastUpdatedAt": "2026-03-14T14:21:49Z",
+  "totalPoints": 485,
+  "acceptedPrs": 12,
+  "totalContributions": 16,
+  "totalPostsContributed": 11,
   "contributedPostSlugs": [
     "blog/how-to-start-with-openblog-free-blogging-github-portfolio",
+    "blog/openblog-is-fully-transparent-and-open-source-2",
     "blog/openblog-is-fully-transparent-and-open-source2 copy",
     "codex/define-game-logic-and-scoring-system",
     "csharp/csharp-performance-techniques-for-clean-scalable-apps",
@@ -36,12 +37,13 @@
     16,
     17,
     18,
-    29
+    29,
+    32
   ],
   "lastContribution": {
-    "prNumber": 29,
-    "postSlug": "blog/openblog-is-fully-transparent-and-open-source2 copy",
-    "mergedAt": "2026-03-14T13:51:38Z",
+    "prNumber": 32,
+    "postSlug": "blog/openblog-is-fully-transparent-and-open-source-2",
+    "mergedAt": "2026-03-14T14:21:49Z",
     "points": 50
   }
 }

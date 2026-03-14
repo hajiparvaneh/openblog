@@ -1,14 +1,14 @@
 {
   "category": "blog",
-  "updatedAt": "2026-03-14T13:51:38Z",
+  "updatedAt": "2026-03-14T14:21:49Z",
   "leaderboard": [
     {
       "username": "hajiparvaneh",
       "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
-      "totalPoints": 100,
-      "acceptedPrs": 2,
-      "totalContributions": 2,
-      "totalPostsContributed": 2
+      "totalPoints": 150,
+      "acceptedPrs": 3,
+      "totalContributions": 3,
+      "totalPostsContributed": 3
     }
   ]
 }
