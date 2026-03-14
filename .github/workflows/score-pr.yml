@@ -36,6 +36,8 @@ jobs:
         with:
           ref: ${{ github.event_name != 'workflow_dispatch' && github.event.pull_request.base.ref || github.ref_name }}
           fetch-depth: 0
+          token: ${{ secrets.OPENBLOG_BOT_TOKEN }}
+          persist-credentials: true
 
       - name: Setup Node
         uses: actions/setup-node@v6
