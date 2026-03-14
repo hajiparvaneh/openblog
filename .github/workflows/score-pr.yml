@@ -19,6 +19,12 @@ on:
       new_post_slugs:
         description: 'Comma-separated slugs that were newly added posts'
         required: false
+      renamed_from_slugs:
+        description: 'Comma-separated old slugs for renamed posts'
+        required: false
+      renamed_to_slugs:
+        description: 'Comma-separated new slugs for renamed posts'
+        required: false
 
 permissions:
   contents: write
@@ -65,7 +71,7 @@ jobs:
             });
 
             const allowedPath = /^content\/posts\/[^/]+\/[^/]+\.md$/;
-            const allowedStatuses = new Set(['added', 'modified', 'removed']);
+            const allowedStatuses = new Set(['added', 'modified', 'removed', 'renamed']);
             const eligibleFiles = files.filter((file) =>
               allowedPath.test(file.filename) && allowedStatuses.has(file.status)
             );
@@ -82,9 +88,17 @@ jobs:
             const newPostSlugs = eligibleFiles
               .filter((file) => file.status === 'added')
               .map((file) => file.filename.replace(/^content\/posts\//, '').replace(/\.md$/, ''));
+            const renamedFiles = eligibleFiles
+              .filter((file) => file.status === 'renamed' && typeof file.previous_filename === 'string');
+            const renamedFromSlugs = renamedFiles
+              .map((file) => file.previous_filename.replace(/^content\/posts\//, '').replace(/\.md$/, ''));
+            const renamedToSlugs = renamedFiles
+              .map((file) => file.filename.replace(/^content\/posts\//, '').replace(/\.md$/, ''));
 
             core.setOutput('post_slugs', allSlugs.join(','));
             core.setOutput('new_post_slugs', newPostSlugs.join(','));
+            core.setOutput('renamed_from_slugs', renamedFromSlugs.join(','));
+            core.setOutput('renamed_to_slugs', renamedToSlugs.join(','));
 
             return allSlugs[0];
 
@@ -98,6 +112,8 @@ jobs:
           PR_LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
           PR_POST_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.post_slugs || github.event.inputs.post_slugs || github.event.inputs.post_slug || '' }}
           PR_NEW_POST_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.new_post_slugs || github.event.inputs.new_post_slugs || '' }}
+          PR_RENAMED_FROM_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.renamed_from_slugs || github.event.inputs.renamed_from_slugs || '' }}
+          PR_RENAMED_TO_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.renamed_to_slugs || github.event.inputs.renamed_to_slugs || '' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual dispatch: set all PR_* values (especially PR_POST_SLUGS and optional PR_NEW_POST_SLUGS) via inputs/env."

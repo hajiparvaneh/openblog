@@ -22,6 +22,23 @@ function parseNewPostSlugList() {
   return parseCsvList(process.env.PR_NEW_POST_SLUGS ?? '');
 }
 
+function parseRenamedFromSlugList() {
+  return parseCsvList(process.env.PR_RENAMED_FROM_SLUGS ?? '');
+}
+
+function parseRenamedToSlugList() {
+  return parseCsvList(process.env.PR_RENAMED_TO_SLUGS ?? '');
+}
+
+function canonicalizePostSlug(postSlug) {
+  return postSlug
+    .trim()
+    .replace(/\\/g, '/')
+    .replace(/\.md$/i, '')
+    .replace(/^content\/posts\//i, '')
+    .replace(/^\/+/, '');
+}
+
 function normalizeContribution(raw) {
   if (!raw || typeof raw !== 'object') return null;
   if (typeof raw.postSlug !== 'string' || !raw.postSlug.trim()) return null;
@@ -50,15 +67,86 @@ function getEventContributions(event) {
   return [];
 }
 
+function buildRenameMap(fromSlugs, toSlugs) {
+  const size = Math.min(fromSlugs.length, toSlugs.length);
+  const renameMap = new Map();
+
+  for (let index = 0; index < size; index += 1) {
+    const from = canonicalizePostSlug(fromSlugs[index]);
+    const to = canonicalizePostSlug(toSlugs[index]);
+    if (!from || !to || from === to) continue;
+    renameMap.set(from, to);
+  }
+
+  return renameMap;
+}
+
+function applySlugRenameMigrations(renameMap) {
+  if (renameMap.size === 0) return { changedFiles: 0, migratedContributions: 0 };
+
+  const eventsRoot = path.join(process.cwd(), 'openblog/events');
+  if (!fs.existsSync(eventsRoot)) return { changedFiles: 0, migratedContributions: 0 };
+
+  let changedFiles = 0;
+  let migratedContributions = 0;
+
+  for (const file of fs.readdirSync(eventsRoot)) {
+    if (!file.endsWith('.json')) continue;
+
+    const eventPath = path.join(eventsRoot, file);
+    const event = JSON.parse(fs.readFileSync(eventPath, 'utf8'));
+    let changed = false;
+
+    if (Array.isArray(event.contributions)) {
+      for (const contribution of event.contributions) {
+        if (!contribution || typeof contribution.postSlug !== 'string') continue;
+        const canonical = canonicalizePostSlug(contribution.postSlug);
+        const renamedTo = renameMap.get(canonical);
+        if (!renamedTo) continue;
+        contribution.postSlug = renamedTo;
+        migratedContributions += 1;
+        changed = true;
+      }
+    }
+
+    if (typeof event.postSlug === 'string') {
+      const canonical = canonicalizePostSlug(event.postSlug);
+      const renamedTo = renameMap.get(canonical);
+      if (renamedTo) {
+        event.postSlug = renamedTo;
+        migratedContributions += 1;
+        changed = true;
+      }
+    }
+
+    if (!changed) continue;
+
+    fs.writeFileSync(eventPath, `${JSON.stringify(event, null, 2)}\n`);
+    changedFiles += 1;
+  }
+
+  return { changedFiles, migratedContributions };
+}
+
 const payload = {
   prNumber: Number(process.env.PR_NUMBER),
   username: process.env.PR_USERNAME,
   userAvatarUrl: process.env.PR_USER_AVATAR_URL || undefined,
   postSlugs: parsePostSlugList(),
   newPostSlugs: parseNewPostSlugList(),
+  renamedFromSlugs: parseRenamedFromSlugList(),
+  renamedToSlugs: parseRenamedToSlugList(),
   mergedAt: process.env.PR_MERGED_AT,
   labels: parseCsvList(process.env.PR_LABELS ?? '')
 };
+
+const renameMap = buildRenameMap(payload.renamedFromSlugs, payload.renamedToSlugs);
+const renameMigration = applySlugRenameMigrations(renameMap);
+if (renameMigration.migratedContributions > 0) {
+  console.log(
+    `Migrated ${renameMigration.migratedContributions} historical contribution slug(s) across ${renameMigration.changedFiles} event file(s).`
+  );
+}
 
 const allTargetSlugs = parseCsvList([...payload.postSlugs, ...payload.newPostSlugs].join(','));
 if (!payload.prNumber || !payload.username || allTargetSlugs.length === 0 || !payload.mergedAt) {
@@ -93,6 +181,10 @@ for (const postSlug of allTargetSlugs) {
 }
 
 if (scoredContributionCount === 0) {
+  if (renameMigration.migratedContributions > 0) {
+    console.log('No scoring labels found; rename migration applied and event generation skipped.');
+    process.exit(0);
+  }
   console.log('No scoring labels found for eligible post changes; skipping event generation.');
   process.exit(0);
 }
