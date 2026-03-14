@@ -1,0 +1,16 @@
+{
+  "eventType": "pr_merged",
+  "prNumber": 29,
+  "username": "hajiparvaneh",
+  "userAvatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
+  "mergedAt": "2026-03-14T13:51:38Z",
+  "contributions": [
+    {
+      "postSlug": "blog/openblog-is-fully-transparent-and-open-source2 copy",
+      "labels": [
+        "new-post"
+      ],
+      "points": 50
+    }
+  ]
+}

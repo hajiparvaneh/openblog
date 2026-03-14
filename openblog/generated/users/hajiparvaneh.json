@@ -3,13 +3,14 @@
   "profileUrl": "https://github.com/hajiparvaneh",
   "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
   "joinedAt": "2026-03-12T15:00:09Z",
-  "lastUpdatedAt": "2026-03-13T11:09:51Z",
-  "totalPoints": 385,
-  "acceptedPrs": 10,
-  "totalContributions": 14,
-  "totalPostsContributed": 9,
+  "lastUpdatedAt": "2026-03-14T13:51:38Z",
+  "totalPoints": 435,
+  "acceptedPrs": 11,
+  "totalContributions": 15,
+  "totalPostsContributed": 10,
   "contributedPostSlugs": [
     "blog/how-to-start-with-openblog-free-blogging-github-portfolio",
+    "blog/openblog-is-fully-transparent-and-open-source2 copy",
     "codex/define-game-logic-and-scoring-system",
     "csharp/csharp-performance-techniques-for-clean-scalable-apps",
     "database/postgresql-indexing-basics",
@@ -34,12 +35,13 @@
     13,
     16,
     17,
-    18
+    18,
+    29
   ],
   "lastContribution": {
-    "prNumber": 18,
-    "postSlug": "networking/how-dns-works",
-    "mergedAt": "2026-03-13T11:09:51Z",
-    "points": 5
+    "prNumber": 29,
+    "postSlug": "blog/openblog-is-fully-transparent-and-open-source2 copy",
+    "mergedAt": "2026-03-14T13:51:38Z",
+    "points": 50
   }
 }
