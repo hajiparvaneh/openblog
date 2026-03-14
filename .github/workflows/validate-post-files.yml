@@ -5,17 +5,30 @@ on:
     types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
-  pull-requests: read
+  contents: read
+  pull-requests: write
+  issues: write
 
 jobs:
   validate-post-files:
     runs-on: ubuntu-latest
 
     steps:
+      - name: Checkout base branch data
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.pull_request.base.sha }}
+          fetch-depth: 1
+          token: ${{ secrets.OPENBLOG_BOT_TOKEN }}
+
       - name: Validate changed files
         uses: actions/github-script@v8
         with:
+          github-token: ${{ secrets.OPENBLOG_BOT_TOKEN }}
           script: |
+            const fs = require('node:fs');
+            const path = require('node:path');
+
             const actor = context.payload.pull_request?.user?.login;
             if (actor === 'hajiparvaneh') {
               core.info('Validation skipped for repository owner @hajiparvaneh.');
@@ -36,11 +49,22 @@ jobs:
             });
 
             const allowedPath = /^content\/posts\/[^/]+\/[^/]+\.md$/;
-            const allowedStatuses = new Set(['added', 'modified']);
+            const allowedStatuses = new Set(['added', 'modified', 'renamed']);
 
-            const invalidPathFiles = files
-              .filter((file) => !allowedPath.test(file.filename))
-              .map((file) => file.filename);
+            const invalidPathFiles = files.flatMap((file) => {
+              const issues = [];
+              if (!allowedPath.test(file.filename)) {
+                issues.push(file.filename);
+              }
+              if (
+                file.status === 'renamed' &&
+                typeof file.previous_filename === 'string' &&
+                !allowedPath.test(file.previous_filename)
+              ) {
+                issues.push(`${file.previous_filename} -> ${file.filename}`);
+              }
+              return issues;
+            });
             const invalidStatusFiles = files
               .filter((file) => !allowedStatuses.has(file.status))
               .map((file) => `${file.filename} (${file.status})`);
@@ -50,9 +74,63 @@ jobs:
               return;
             }
 
+            const marker = '<!-- openblog-rename-ownership -->';
+            async function upsertRenamePolicyComment(body) {
+              try {
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  per_page: 100
+                });
+
+                const existing = comments.find((comment) => comment.body?.includes(marker));
+                if (existing) {
+                  await github.rest.issues.updateComment({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    comment_id: existing.id,
+                    body
+                  });
+                  return;
+                }
+
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  body
+                });
+              } catch (error) {
+                core.warning(`Unable to write PR comment: ${error?.message ?? error}`);
+              }
+            }
+
+            async function clearRenamePolicyComment() {
+              try {
+                const comments = await github.paginate(github.rest.issues.listComments, {
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: prNumber,
+                  per_page: 100
+                });
+
+                const existing = comments.find((comment) => comment.body?.includes(marker));
+                if (!existing) return;
+
+                await github.rest.issues.deleteComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  comment_id: existing.id
+                });
+              } catch (error) {
+                core.warning(`Unable to clear previous rename-policy comment: ${error?.message ?? error}`);
+              }
+            }
+
             if (invalidPathFiles.length > 0 || invalidStatusFiles.length > 0) {
               const messages = [
-                'This repository only allows adding or editing markdown posts in category folders.',
+                'This repository only allows adding, editing, or renaming markdown posts in category folders.',
                 'Allowed pattern: content/posts/<category>/<post>.md'
               ];
 
@@ -61,11 +139,129 @@ jobs:
               }
 
               if (invalidStatusFiles.length > 0) {
-                messages.push(`Invalid file operations (only added/modified allowed):\n- ${invalidStatusFiles.join('\n- ')}`);
+                messages.push(`Invalid file operations (only added/modified/renamed allowed):\n- ${invalidStatusFiles.join('\n- ')}`);
               }
 
               core.setFailed(messages.join('\n\n'));
               return;
             }
 
+            function canonicalizePostSlug(postSlug) {
+              return postSlug
+                .trim()
+                .replace(/\\/g, '/')
+                .replace(/\.md$/i, '')
+                .replace(/^content\/posts\//i, '')
+                .replace(/^\/+/, '');
+            }
+
+            function normalizeContribution(raw) {
+              if (!raw || typeof raw !== 'object') return null;
+              if (typeof raw.postSlug !== 'string' || !raw.postSlug.trim()) return null;
+              const labels = Array.isArray(raw.labels) ? raw.labels.filter((label) => typeof label === 'string') : [];
+              return {
+                postSlug: raw.postSlug,
+                labels
+              };
+            }
+
+            function getEventContributions(event) {
+              if (Array.isArray(event.contributions) && event.contributions.length > 0) {
+                return event.contributions
+                  .map((item) => normalizeContribution(item))
+                  .filter((item) => item !== null);
+              }
+
+              if (typeof event.postSlug === 'string' && event.postSlug.trim()) {
+                const labels = Array.isArray(event.labels) ? event.labels.filter((label) => typeof label === 'string') : [];
+                return [{ postSlug: event.postSlug, labels }];
+              }
+
+              return [];
+            }
+
+            function parseEventTimestamp(rawMergedAt) {
+              const time = Date.parse(rawMergedAt ?? '');
+              return Number.isFinite(time) ? time : 0;
+            }
+
+            const eventsDir = path.join(process.cwd(), 'openblog/events');
+            const creatorBySlug = new Map();
+            const firstContributorBySlug = new Map();
+            if (fs.existsSync(eventsDir)) {
+              const eventFiles = fs
+                .readdirSync(eventsDir)
+                .filter((file) => file.endsWith('.json'))
+                .sort((a, b) => a.localeCompare(b));
+
+              const events = eventFiles
+                .map((file) => {
+                  const fullPath = path.join(eventsDir, file);
+                  return JSON.parse(fs.readFileSync(fullPath, 'utf8'));
+                })
+                .sort((a, b) => parseEventTimestamp(a.mergedAt) - parseEventTimestamp(b.mergedAt));
+
+              for (const event of events) {
+                if (!event?.username) continue;
+                for (const contribution of getEventContributions(event)) {
+                  const slug = canonicalizePostSlug(contribution.postSlug);
+                  if (!slug) continue;
+
+                  if (!firstContributorBySlug.has(slug)) {
+                    firstContributorBySlug.set(slug, event.username);
+                  }
+
+                  if (contribution.labels.includes('new-post') && !creatorBySlug.has(slug)) {
+                    creatorBySlug.set(slug, event.username);
+                  }
+                }
+              }
+            }
+
+            const renameFiles = files.filter(
+              (file) => file.status === 'renamed' && typeof file.previous_filename === 'string'
+            );
+
+            const renameViolations = [];
+            for (const file of renameFiles) {
+              const previousPath = file.previous_filename;
+              const currentPath = file.filename;
+              const previousSlug = canonicalizePostSlug(previousPath);
+              const creator = creatorBySlug.get(previousSlug) ?? firstContributorBySlug.get(previousSlug) ?? null;
+              const actorLower = (actor ?? '').toLowerCase();
+              const creatorLower = (creator ?? '').toLowerCase();
+
+              if (!creator) {
+                renameViolations.push(
+                  `- \`${previousPath}\` -> \`${currentPath}\`: creator could not be resolved from openblog events.`
+                );
+                continue;
+              }
+
+              if (creatorLower !== actorLower) {
+                renameViolations.push(
+                  `- \`${previousPath}\` -> \`${currentPath}\`: only @${creator} (original creator) can rename this post file.`
+                );
+              }
+            }
+
+            if (renameViolations.length > 0) {
+              const body = [
+                marker,
+                `Hi @${actor}, thanks for your contribution.`,
+                '',
+                'This PR includes renamed post file(s), but OpenBlog only allows the original creator of a post to rename its markdown file so contributor history stays correct.',
+                '',
+                '**Rename validation errors:**',
+                ...renameViolations,
+                '',
+                'Please revert the rename(s) or ask the original creator to open the rename PR.'
+              ].join('\n');
+
+              await upsertRenamePolicyComment(body);
+              core.setFailed(`Rename policy failed for ${renameViolations.length} file(s).`);
+              return;
+            }
+
+            await clearRenamePolicyComment();
             core.info(`Validated ${files.length} file(s). All changes follow post-folder policy.`);
