@@ -34,7 +34,7 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
     <p class="post-card-description">{post.description}</p>
     {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
       <div class="post-card-taxonomy">
-        {post.featured ? <IconBadge label="Featured" icon="star" class="post-card-flag" /> : null}
+        {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-card-flag" /> : null}
         {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
         {visibleTags.map((tag) => (
           <TagBadge tag={tag} class="post-card-tag" />

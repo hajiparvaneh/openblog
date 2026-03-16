@@ -327,7 +327,7 @@ const structuredData = [
     ) : null}
     {(post.featured || post.tags.length > 0 || post.lang || post.translateOf) ? (
       <div class="post-meta-chips">
-        {post.featured ? <IconBadge label="Featured" icon="star" class="post-meta-chip" /> : null}
+        {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-meta-chip" /> : null}
         {post.lang ? <IconBadge label={post.lang} icon="language" class="post-meta-chip" /> : null}
         {post.tags.map((tag) => (
           <TagBadge tag={tag} class="post-meta-chip" />
