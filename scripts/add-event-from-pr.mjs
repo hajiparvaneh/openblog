@@ -176,8 +176,8 @@ for (const postSlug of allTargetSlugs) {
   if (newPostSlugSet.has(postSlug) && !labels.includes('new-post')) {
     labels.push('new-post');
   }
-  if (metadataPostSlugSet.has(postSlug) && !newPostSlugSet.has(postSlug) && !labels.includes('typo')) {
-    labels.push('typo');
+  if (metadataPostSlugSet.has(postSlug) && !newPostSlugSet.has(postSlug) && !labels.includes('fix-metadata')) {
+    labels.push('fix-metadata');
   }
 
   const points = calculatePoints(labels);

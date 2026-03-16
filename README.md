@@ -117,6 +117,7 @@ Points are determined by labels in `openblog/enums/scoring-labels.json`:
 
 - `typo`: +5
 - `source-added`: +10
+- `fix-metadata`: +10
 - `fact-check`: +15
 - `new-example`: +20
 - `translation`: +30
@@ -133,7 +134,7 @@ Rules:
 - Only merged PRs are eligible.
 - At least one scoring label is required unless the PR adds a new post file.
 - New files under `content/posts/<category>/<post>.md` automatically receive `new-post` scoring in automation (even if the label was not applied manually).
-- Frontmatter metadata edits (`title`, `description`, `date`, `thumbnail`, `thumbnailAlt`, `tags`, `draft`, `featured`, `lang`, `translateOf`) automatically receive `typo` scoring (+5) when no `new-post` label applies.
+- Frontmatter metadata edits (`title`, `description`, `date`, `thumbnail`, `thumbnailAlt`, `tags`, `draft`, `featured`, `lang`, `translateOf`) automatically receive `fix-metadata` scoring (+10) when no `new-post` label applies.
 - If multiple scoring labels are applied, points are summed.
 
 Event schema:

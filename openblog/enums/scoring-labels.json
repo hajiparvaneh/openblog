@@ -11,6 +11,12 @@
     "icon": "link",
     "color": "#1c39bb"
   },
+  "fix-metadata": {
+    "points": 10,
+    "displayName": "Improve metadata",
+    "icon": "file-description",
+    "color": "#6c5ce7"
+  },
   "fact-check": {
     "points": 15,
     "displayName": "Improve accuracy",
