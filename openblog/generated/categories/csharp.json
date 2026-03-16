@@ -1,13 +1,13 @@
 {
   "category": "csharp",
-  "updatedAt": "2026-03-12T22:23:17Z",
+  "updatedAt": "2026-03-16T11:34:46Z",
   "leaderboard": [
     {
       "username": "hajiparvaneh",
       "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
-      "totalPoints": 65,
-      "acceptedPrs": 4,
-      "totalContributions": 4,
+      "totalPoints": 75,
+      "acceptedPrs": 5,
+      "totalContributions": 5,
       "totalPostsContributed": 1
     }
   ]
