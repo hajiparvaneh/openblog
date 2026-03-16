@@ -1,6 +1,8 @@
 ---
 import { formatPostDate, getCategoryPath } from '../lib/openblog';
+import IconBadge from './IconBadge.astro';
 import PostContributorsStack from './PostContributorsStack.astro';
+import TagBadge from './TagBadge.astro';
 import type { Post } from '../lib/openblog';
 
 type Props = {
@@ -39,12 +41,12 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
     <p class="post-card-description">{post.description}</p>
     {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
       <div class="post-card-taxonomy">
-        {post.featured ? <span class="badge post-card-flag"><i class="ti ti-star icon-sm" aria-hidden="true"></i>Featured</span> : null}
-        {showLanguageBadge ? <span class="badge post-card-flag"><i class="ti ti-language icon-sm" aria-hidden="true"></i>{post.lang}</span> : null}
+        {post.featured ? <IconBadge label="Featured" icon="star" class="post-card-flag" /> : null}
+        {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
         {visibleTags.map((tag) => (
-          <span class="badge post-card-tag">{tag}</span>
+          <TagBadge tag={tag} class="post-card-tag" />
         ))}
-        {hiddenTagCount > 0 ? <span class="badge post-card-tag">+{hiddenTagCount}</span> : null}
+        {hiddenTagCount > 0 ? <span class="post-card-tag post-tag-more">+{hiddenTagCount}</span> : null}
       </div>
     ) : null}
     <p class="meta meta-inline">

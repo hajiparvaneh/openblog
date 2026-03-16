@@ -1,0 +1,296 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import FeaturedPostsSlider from '../../components/FeaturedPostsSlider.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getPostsByTagSlug, getTagLabelBySlug, getTagPathBySlug, getTagRecords, slugifyTag } from '../../lib/openblog';
+import { toAbsoluteUrl } from '../../lib/seo';
+import { getSiteUrl } from '../../lib/site';
+
+export function getStaticPaths() {
+  return getTagRecords().map((tag) => ({
+    params: { tag: tag.slug },
+    props: { tagLabel: tag.label }
+  }));
+}
+
+const tagParam = Astro.params.tag ?? '';
+const tagSlug = slugifyTag(decodeURIComponent(tagParam));
+const posts = getPostsByTagSlug(tagSlug);
+const postsPerPage = 6;
+const postsTotalPages = Math.max(1, Math.ceil(posts.length / postsPerPage));
+const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
+const tagLabel =
+  Astro.props.tagLabel ??
+  posts
+    .flatMap((post) => post.tags)
+    .find((tag) => slugifyTag(tag) === tagSlug) ??
+  getTagLabelBySlug(tagSlug) ??
+  tagSlug;
+
+if (posts.length === 0) {
+  throw new Error(`Tag not found: ${tagSlug}`);
+}
+
+const canonicalPath = getTagPathBySlug(tagSlug);
+const pageDescription = `Browse ${posts.length} post${posts.length === 1 ? '' : 's'} tagged "${tagLabel}" on OpenBlog.`;
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${tagLabel} tag posts`,
+    description: pageDescription,
+    url: canonicalUrl
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: toAbsoluteUrl('/', siteUrl)
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: tagLabel,
+        item: canonicalUrl
+      }
+    ]
+  }
+];
+---
+<BaseLayout
+  title={`${tagLabel} | Tag | OpenBlog`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  robots="noindex, follow"
+  structuredData={structuredData}
+>
+  <section class="card">
+    <p class="kicker icon-label"><i class="ti ti-tag icon-sm" aria-hidden="true"></i>Tag</p>
+    <h1>{tagLabel}</h1>
+    <p class="meta icon-label">
+      <i class="ti ti-notes icon-sm" aria-hidden="true"></i>
+      {posts.length} post{posts.length > 1 ? 's' : ''} available for this tag.
+    </p>
+  </section>
+
+  <FeaturedPostsSlider
+    posts={posts}
+    title={`${tagLabel} featured posts`}
+    class="card"
+  />
+
+  <section class="list paginated-list">
+    <p id="tag-posts-page-info" class="meta pagination-info">Showing {postsPerPage} posts per page</p>
+    <div class="post-grid" data-tag-posts-per-page={postsPerPage}>
+      {posts.map((post) => (
+        <PostCard
+          post={post}
+          dataAttribute="data-tag-post-card"
+        />
+      ))}
+    </div>
+
+    {postsTotalPages > 1 && (
+      <nav class="leaderboard-pagination" aria-label={`${tagLabel} posts pages`}>
+        <a id="tag-posts-prev" class="page-control" href="?page=1">Previous</a>
+        <ul class="page-links" aria-label="Page numbers">
+          {postPageNumbers.map((page) => (
+            <li>
+              <a data-tag-page-link={page} class="page-link" href={`?page=${page}`}>{page}</a>
+            </li>
+          ))}
+        </ul>
+        <a id="tag-posts-next" class="page-control" href={`?page=${postsTotalPages > 1 ? 2 : 1}`}>Next</a>
+      </nav>
+    )}
+  </section>
+
+  <script is:inline>
+    (function () {
+      var cards = Array.from(document.querySelectorAll('[data-tag-post-card]'));
+      if (cards.length === 0) return;
+
+      var grid = document.querySelector('[data-tag-posts-per-page]');
+      var perPage = Number((grid && grid.getAttribute('data-tag-posts-per-page')) || '6');
+      var pages = Math.max(1, Math.ceil(cards.length / perPage));
+      var pageInfo = document.getElementById('tag-posts-page-info');
+      var prev = document.getElementById('tag-posts-prev');
+      var next = document.getElementById('tag-posts-next');
+      var pageLinks = Array.from(document.querySelectorAll('[data-tag-page-link]'));
+
+      var parsePage = function () {
+        var params = new URLSearchParams(window.location.search);
+        var pageParam = Number(params.get('page') || '1');
+        if (!Number.isFinite(pageParam) || pageParam < 1) return 1;
+        if (pageParam > pages) return pages;
+        return Math.floor(pageParam);
+      };
+
+      var currentPage = parsePage();
+
+      var setPageState = function (target, disabled) {
+        if (!target) return;
+        if (disabled) {
+          target.setAttribute('aria-disabled', 'true');
+          target.classList.add('is-disabled');
+        } else {
+          target.removeAttribute('aria-disabled');
+          target.classList.remove('is-disabled');
+        }
+      };
+
+      var syncUrl = function () {
+        var url = new URL(window.location.href);
+        if (currentPage === 1) {
+          url.searchParams.delete('page');
+        } else {
+          url.searchParams.set('page', String(currentPage));
+        }
+        window.history.replaceState({}, '', url);
+      };
+
+      var render = function () {
+        var start = (currentPage - 1) * perPage;
+        var end = start + perPage;
+
+        cards.forEach(function (card, index) {
+          card.hidden = index < start || index >= end;
+        });
+
+        if (pageInfo) {
+          pageInfo.textContent = 'Page ' + currentPage + ' of ' + pages + ' (' + cards.length + ' posts)';
+        }
+
+        pageLinks.forEach(function (link) {
+          var page = Number(link.getAttribute('data-tag-page-link'));
+          var isActive = page === currentPage;
+          if (isActive) {
+            link.classList.add('is-active');
+            link.setAttribute('aria-current', 'page');
+          } else {
+            link.classList.remove('is-active');
+            link.removeAttribute('aria-current');
+          }
+        });
+
+        if (prev) {
+          prev.setAttribute('href', '?page=' + Math.max(1, currentPage - 1));
+        }
+        if (next) {
+          next.setAttribute('href', '?page=' + Math.min(pages, currentPage + 1));
+        }
+
+        setPageState(prev, currentPage <= 1);
+        setPageState(next, currentPage >= pages);
+      };
+
+      var goToPage = function (page) {
+        if (page < 1 || page > pages || page === currentPage) return false;
+        currentPage = page;
+        render();
+        syncUrl();
+        return true;
+      };
+
+      pageLinks.forEach(function (link) {
+        link.addEventListener('click', function (event) {
+          var targetPage = Number(link.getAttribute('data-tag-page-link')) || 1;
+          if (targetPage === currentPage) {
+            event.preventDefault();
+            return;
+          }
+          if (goToPage(targetPage)) {
+            event.preventDefault();
+          }
+        });
+      });
+
+      if (prev) {
+        prev.addEventListener('click', function (event) {
+          if (currentPage <= 1) {
+            event.preventDefault();
+            return;
+          }
+          if (goToPage(currentPage - 1)) {
+            event.preventDefault();
+          }
+        });
+      }
+
+      if (next) {
+        next.addEventListener('click', function (event) {
+          if (currentPage >= pages) {
+            event.preventDefault();
+            return;
+          }
+          if (goToPage(currentPage + 1)) {
+            event.preventDefault();
+          }
+        });
+      }
+
+      render();
+      syncUrl();
+    })();
+  </script>
+
+  <style>
+    .leaderboard-pagination {
+      margin-top: 0.45rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .page-links {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .page-control,
+    .page-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      min-height: 2rem;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0.35rem 0.55rem;
+      text-decoration: none;
+    }
+
+    .page-link.is-active {
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    }
+
+    .page-control.is-disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    @media (max-width: 860px) {
+      .leaderboard-pagination {
+        justify-content: center;
+      }
+    }
+  </style>
+</BaseLayout>

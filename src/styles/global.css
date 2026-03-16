@@ -737,6 +737,35 @@ p {
   font-size: 0.72rem;
 }
 
+.post-tag-link {
+  color: var(--muted);
+  text-decoration: none;
+}
+
+.post-chip-label {
+  color: var(--muted);
+  font-weight: 500;
+  font-size: 0.74rem;
+  line-height: 1.2;
+}
+
+.post-tag-link:hover {
+  color: var(--text);
+  text-decoration: none;
+}
+
+.post-chip-icon {
+  font-size: 0.64rem;
+  opacity: 0.72;
+}
+
+.post-tag-more {
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
 .post-contributor-stack {
   gap: 0.35rem;
 }
@@ -1003,6 +1032,14 @@ p {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+.post-meta-chips .post-chip-label {
+  font-size: 0.82rem;
+}
+
+.post-meta-chips .post-chip-icon {
+  font-size: 0.7rem;
 }
 
 .post-translation-link {
