@@ -1,0 +1,244 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { toAbsoluteUrl } from '../lib/seo';
+import { getSiteUrl } from '../lib/site';
+
+type ScoringLabelConfig = {
+  points: number;
+  displayName?: string;
+  icon: string;
+  color: string;
+};
+
+const scoreByLabelPath = path.join(process.cwd(), 'openblog/enums/scoring-labels.json');
+const parsedScoreByLabel = JSON.parse(fs.readFileSync(scoreByLabelPath, 'utf8')) as Record<string, number | ScoringLabelConfig>;
+const metadataRule = parsedScoreByLabel['fix-metadata'];
+const metadataPoints = typeof metadataRule === 'number' ? metadataRule : metadataRule?.points ?? 10;
+
+const pageDescription =
+  'Clear OpenBlog .md post structure with frontmatter metadata definitions, examples, and contributor scoring notes for metadata improvements.';
+const canonicalPath = '/post-md-file-structure';
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'TechArticle',
+  headline: 'OpenBlog post .md file structure and metadata guide',
+  description: pageDescription,
+  url: canonicalUrl,
+  author: {
+    '@type': 'Organization',
+    name: 'OpenBlog'
+  },
+  about: ['Markdown', 'Frontmatter', 'Metadata', 'Technical writing']
+};
+
+const fullTemplate = `---
+title: How DNS Works
+description: Learn how DNS converts domain names to IP addresses with practical examples.
+date: 2026-03-16
+thumbnail: https://images.example.com/dns-cover.jpg
+thumbnailAlt: Network map with DNS lookup arrows
+tags:
+  - networking
+  - dns
+  - internet
+featured: false
+draft: false
+lang: en
+# translateOf: how-dns-works-fa.md
+---
+
+Start with a short intro that explains the problem and what the reader will learn.
+
+## How DNS lookup works
+
+Explain the flow clearly and add at least one practical example.
+
+For example, resolving openblog.cc usually goes through:
+1. Recursive resolver
+2. Root and TLD nameservers
+3. Authoritative nameserver
+
+\`\`\`bash
+dig openblog.cc
+nslookup openblog.cc
+\`\`\``;
+
+const minimalTemplate = `---
+title: HTTP Caching Basics
+description: Understand browser and CDN caching in simple terms.
+date: 2026-03-16
+---
+
+Intro paragraph.
+
+## Main section
+
+Explain with one simple example.`;
+
+const translationTemplate = `---
+title: How DNS Works (FA Translation)
+description: Persian translation of the DNS guide.
+date: 2026-03-16
+lang: fa
+translateOf: how-dns-works.md
+---`;
+---
+
+<BaseLayout
+  title="Post .md file structure and metadata guide | OpenBlog"
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  structuredData={structuredData}
+>
+  <div class="contribute-page">
+    <section class="card contribute-hero">
+      <p class="kicker icon-label"><i class="ti ti-file-description icon-sm" aria-hidden="true"></i>Writing guide</p>
+      <h1>Post <code>.md</code> structure for OpenBlog</h1>
+      <p>Use this structure when you create or improve any post file under <code>content/posts/</code>.</p>
+      <p class="meta">This page explains each metadata field, shows production-ready examples, and helps you avoid common mistakes.</p>
+      <div class="contribute-actions">
+        <a class="contribute-action" href="/how-to-contribute">
+          <i class="ti ti-arrow-left icon-sm" aria-hidden="true"></i>
+          Back to contribution guide
+        </a>
+        <a class="contribute-action" href="/markdown-file-standards">
+          <i class="ti ti-markdown icon-sm" aria-hidden="true"></i>
+          Markdown standards
+        </a>
+      </div>
+    </section>
+
+    <section class="card article-content">
+      <h2 class="icon-label"><i class="ti ti-folder icon-sm" aria-hidden="true"></i>File path and naming</h2>
+      <ul class="contribute-checklist">
+        <li>Store posts only in <code>content/posts/&lt;category&gt;/&lt;post-file&gt;.md</code>.</li>
+        <li>Use lowercase and hyphens for category and file names.</li>
+        <li>Keep one post per file. Nested folders are not supported inside categories.</li>
+      </ul>
+      <pre><code>{`content/posts/networking/how-dns-works.md`}</code></pre>
+    </section>
+
+    <section class="card article-content">
+      <h2 class="icon-label"><i class="ti ti-template icon-sm" aria-hidden="true"></i>Recommended full template</h2>
+      <pre><code>{fullTemplate}</code></pre>
+    </section>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-table icon-sm" aria-hidden="true"></i>Metadata field reference</h2>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Field</th>
+              <th>Required</th>
+              <th>What it does</th>
+              <th>Example</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><code>title</code></td>
+              <td>Yes</td>
+              <td>Main post title used on cards, post page, and SEO tags.</td>
+              <td><code>How DNS Works</code></td>
+            </tr>
+            <tr>
+              <td><code>description</code></td>
+              <td>Yes</td>
+              <td>Short summary used in listings, previews, and meta description.</td>
+              <td><code>Learn DNS lookup flow with examples.</code></td>
+            </tr>
+            <tr>
+              <td><code>date</code></td>
+              <td>Yes</td>
+              <td>Publishing date used for sorting and display. Prefer <code>YYYY-MM-DD</code>.</td>
+              <td><code>2026-03-16</code></td>
+            </tr>
+            <tr>
+              <td><code>thumbnail</code></td>
+              <td>No</td>
+              <td>Cover image URL shown in cards and post header.</td>
+              <td><code>https://images.example.com/dns.jpg</code></td>
+            </tr>
+            <tr>
+              <td><code>thumbnailAlt</code></td>
+              <td>No</td>
+              <td>Accessible alt text for the thumbnail image.</td>
+              <td><code>DNS lookup diagram</code></td>
+            </tr>
+            <tr>
+              <td><code>tags</code></td>
+              <td>No</td>
+              <td>Topic keywords for filtering and tag pages. String or YAML array.</td>
+              <td><code>[networking, dns]</code></td>
+            </tr>
+            <tr>
+              <td><code>draft</code></td>
+              <td>No</td>
+              <td>When <code>true</code>, the post is hidden from public pages.</td>
+              <td><code>false</code></td>
+            </tr>
+            <tr>
+              <td><code>featured</code></td>
+              <td>No</td>
+              <td>Highlights the post in featured UI areas.</td>
+              <td><code>true</code></td>
+            </tr>
+            <tr>
+              <td><code>lang</code></td>
+              <td>No</td>
+              <td>Language code used for badges and page language metadata.</td>
+              <td><code>en</code>, <code>fa</code>, <code>de</code></td>
+            </tr>
+            <tr>
+              <td><code>translateOf</code></td>
+              <td>No</td>
+              <td>Links a translation to the source post in the same category folder.</td>
+              <td><code>how-dns-works.md</code></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="two-column contribute-columns">
+      <section class="card article-content">
+        <h2 class="icon-label"><i class="ti ti-sparkles icon-sm" aria-hidden="true"></i>Minimal valid template</h2>
+        <pre><code>{minimalTemplate}</code></pre>
+      </section>
+
+      <section class="card article-content">
+        <h2 class="icon-label"><i class="ti ti-language-hiragana icon-sm" aria-hidden="true"></i>Translation metadata</h2>
+        <pre><code>{translationTemplate}</code></pre>
+        <p class="meta">Use a relative file name in the same category folder for <code>translateOf</code>.</p>
+      </section>
+    </div>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-award icon-sm" aria-hidden="true"></i>Scoring note for metadata improvements</h2>
+      <p>
+        If your merged PR improves metadata on an existing post, it receives
+        {' '}
+        <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{metadataPoints}</span>
+        {' '}
+        points via the <code>fix-metadata</code> scoring rule.
+      </p>
+      <p class="meta">This applies even when the post was originally written by another contributor.</p>
+    </section>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-alert-circle icon-sm" aria-hidden="true"></i>Common mistakes to avoid</h2>
+      <ul class="contribute-rules">
+        <li>Do not place posts directly under <code>content/posts/</code> (category folder is required).</li>
+        <li>Do not use absolute paths in <code>translateOf</code>.</li>
+        <li>Do not reference a translation target outside the same category folder.</li>
+        <li>Avoid vague descriptions like <code>This post is about...</code>; write concrete summaries.</li>
+      </ul>
+    </section>
+  </div>
+</BaseLayout>

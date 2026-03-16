@@ -42,6 +42,7 @@ const sortedScoringRules = Object.entries(parsedScoreByLabel)
   })
   .sort((a, b) => b.points - a.points);
 const topScoringRule = sortedScoringRules[0];
+const metadataScoringRule = sortedScoringRules.find((rule) => rule.label === 'fix-metadata');
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const pageDescription =
   'Learn how to contribute to OpenBlog in one focused pull request and build visible GitHub proof of teamwork, writing quality, and technical consistency.';
@@ -100,6 +101,30 @@ const structuredData = {
         <li>Open a PR with a short summary of what changed and why it is better.</li>
         <li>Maintainers review, apply scoring label(s), merge, and points are added automatically.</li>
       </ol>
+    </section>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-book-2 icon-sm" aria-hidden="true"></i>Post writing docs</h2>
+      <p class="meta">Use these two guides before opening your PR.</p>
+      <div class="contribute-actions">
+        <a class="contribute-action" href="/post-md-file-structure">
+          <i class="ti ti-file-description icon-sm" aria-hidden="true"></i>
+          Post .md structure and metadata guide
+        </a>
+        <a class="contribute-action" href="/markdown-file-standards">
+          <i class="ti ti-markdown icon-sm" aria-hidden="true"></i>
+          General markdown standards
+        </a>
+      </div>
+      {metadataScoringRule && (
+        <p class="meta">
+          Metadata improvements on existing posts are scored for everyone, even if the post is not originally yours:
+          {' '}
+          <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{metadataScoringRule.points}</span>
+          {' '}
+          with the <code>fix-metadata</code> label.
+        </p>
+      )}
     </section>
 
     <div class="two-column contribute-columns">

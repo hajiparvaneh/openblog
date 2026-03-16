@@ -32,7 +32,9 @@ export const GET: APIRoute = ({ site }) => {
   const staticEntries: SitemapEntry[] = [
     { path: '/', changefreq: 'daily', priority: 1 },
     { path: '/leaderboard', changefreq: 'daily', priority: 0.8 },
-    { path: '/how-to-contribute', changefreq: 'weekly', priority: 0.7 }
+    { path: '/how-to-contribute', changefreq: 'weekly', priority: 0.7 },
+    { path: '/post-md-file-structure', changefreq: 'weekly', priority: 0.7 },
+    { path: '/markdown-file-standards', changefreq: 'weekly', priority: 0.7 }
   ];
 
   const categoryEntries: SitemapEntry[] = [...new Set(posts.map((post) => getCategoryPath(post.category)))].map((path) => ({
