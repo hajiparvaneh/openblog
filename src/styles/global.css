@@ -145,6 +145,11 @@ p {
   align-items: start;
 }
 
+.content-layout > *,
+.container > * {
+  min-width: 0;
+}
+
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -764,6 +769,32 @@ p {
 
 .article-content {
   margin-top: 1rem;
+  min-width: 0;
+}
+
+.article-content :is(p, li, blockquote, a, code, h1, h2, h3, h4, h5, h6) {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.article-content :is(img, video, iframe, svg, canvas) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.article-content table {
+  width: 100%;
+  max-width: 100%;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+
+.article-content :is(th, td) {
+  padding: 0.55rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  overflow-wrap: anywhere;
 }
 
 .post-contribute {
