@@ -2,6 +2,7 @@
 title: Password Hashing Best Practices with bcrypt and Argon2
 description: Discover how to securely hash passwords using bcrypt or Argon2, including salting, cost factors, and common mistakes to avoid in web applications.
 date: 2026-03-10
+tags: security, password-hashing, bcrypt, argon2
 ---
 
 Secure password storage starts with hashing, not encryption. A hash is one-way, so the original password cannot be directly recovered.
