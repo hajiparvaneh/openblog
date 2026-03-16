@@ -1,0 +1,58 @@
+{
+  "eventType": "pr_merged",
+  "prNumber": 35,
+  "username": "hajiparvaneh",
+  "userAvatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
+  "mergedAt": "2026-03-16T11:34:46Z",
+  "contributions": [
+    {
+      "postSlug": "blog/openblog-is-fully-transparent-and-open-source-3",
+      "labels": [
+        "fix-metadata"
+      ],
+      "points": 10
+    },
+    {
+      "postSlug": "csharp/csharp-performance-techniques-for-clean-scalable-apps",
+      "labels": [
+        "fix-metadata"
+      ],
+      "points": 10
+    },
+    {
+      "postSlug": "database/postgresql-indexing-basics",
+      "labels": [
+        "fix-metadata"
+      ],
+      "points": 10
+    },
+    {
+      "postSlug": "devops/dockerfile-best-practices-nodejs",
+      "labels": [
+        "fix-metadata"
+      ],
+      "points": 10
+    },
+    {
+      "postSlug": "javascript/async-await-error-handling",
+      "labels": [
+        "fix-metadata"
+      ],
+      "points": 10
+    },
+    {
+      "postSlug": "networking/http-vs-https-explained",
+      "labels": [
+        "fix-metadata"
+      ],
+      "points": 10
+    },
+    {
+      "postSlug": "security/password-hashing-bcrypt-argon2",
+      "labels": [
+        "fix-metadata"
+      ],
+      "points": 10
+    }
+  ]
+}
