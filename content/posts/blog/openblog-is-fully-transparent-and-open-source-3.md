@@ -2,6 +2,8 @@
 title: "OpenBlog Is 100% Free, Transparent, and Open Source"
 description: "OpenBlog is built in public on GitHub with zero hidden process, zero hidden requests, and automatic publishing for contributions on openblog.cc."
 date: 2026-03-14
+thumbnail: https://github.com/hajiparvaneh/openblog/raw/main/public/og-default.png
+thumbnailAlt: OpenBlog banner showing a collaborative open-source blogging platform for contributors
 tags: openblog, open-source, transparency, github
 ---
 
