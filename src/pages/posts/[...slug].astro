@@ -4,7 +4,9 @@ import path from 'node:path';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import LatestInCategory from '../../components/LatestInCategory.astro';
 import LatestContributorsInCategory from '../../components/LatestContributorsInCategory.astro';
+import IconBadge from '../../components/IconBadge.astro';
 import PostContributorsStack from '../../components/PostContributorsStack.astro';
+import TagBadge from '../../components/TagBadge.astro';
 import UserAvatar from '../../components/UserAvatar.astro';
 import { marked } from 'marked';
 import {
@@ -325,14 +327,10 @@ const structuredData = [
     ) : null}
     {(post.featured || post.tags.length > 0 || post.lang || post.translateOf) ? (
       <div class="post-meta-chips">
-        {post.featured ? (
-          <span class="badge post-meta-chip icon-label"><i class="ti ti-star icon-sm" aria-hidden="true"></i>Featured</span>
-        ) : null}
-        {post.lang ? (
-          <span class="badge post-meta-chip icon-label"><i class="ti ti-language icon-sm" aria-hidden="true"></i>{post.lang}</span>
-        ) : null}
+        {post.featured ? <IconBadge label="Featured" icon="star" class="post-meta-chip" /> : null}
+        {post.lang ? <IconBadge label={post.lang} icon="language" class="post-meta-chip" /> : null}
         {post.tags.map((tag) => (
-          <span class="badge post-meta-chip">{tag}</span>
+          <TagBadge tag={tag} class="post-meta-chip" />
         ))}
         {post.translateOf && translatedFromPath ? (
           <a class="badge post-meta-chip post-translation-link icon-label" href={translatedFromPath}>

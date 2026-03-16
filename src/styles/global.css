@@ -737,6 +737,19 @@ p {
   font-size: 0.72rem;
 }
 
+.post-tag-link {
+  color: var(--text);
+}
+
+.post-tag-link:hover {
+  color: var(--text);
+  background: var(--surface);
+}
+
+.post-chip-icon {
+  font-size: 0.72rem;
+}
+
 .post-contributor-stack {
   gap: 0.35rem;
 }

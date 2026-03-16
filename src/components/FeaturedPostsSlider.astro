@@ -1,5 +1,7 @@
 ---
 import PostContributorsStack from './PostContributorsStack.astro';
+import IconBadge from './IconBadge.astro';
+import TagBadge from './TagBadge.astro';
 import { formatPostDate, getCategoryPath, getPosts, normalizeCategoryKey } from '../lib/openblog';
 import type { Post } from '../lib/openblog';
 
@@ -98,9 +100,9 @@ const rootClass = `featured-slider ${className}`.trim();
                   </p>
                   {(post.visibleTags.length > 0 || post.lang !== 'en') ? (
                     <div class="post-card-taxonomy">
-                      {post.lang !== 'en' ? <span class="badge post-card-flag"><i class="ti ti-language icon-sm" aria-hidden="true"></i>{post.lang}</span> : null}
+                      {post.lang !== 'en' ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
                       {post.visibleTags.map((tag) => (
-                        <span class="badge post-card-tag">{tag}</span>
+                        <TagBadge tag={tag} class="post-card-tag" />
                       ))}
                       {post.hiddenTagCount > 0 ? <span class="badge post-card-tag">+{post.hiddenTagCount}</span> : null}
                     </div>

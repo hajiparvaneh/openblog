@@ -1,0 +1,15 @@
+---
+type Props = {
+  label: string;
+  icon: string;
+  class?: string;
+};
+
+const { label, icon, class: className = '' } = Astro.props as Props;
+const rootClass = `badge icon-label ${className}`.trim();
+---
+
+<span class={rootClass}>
+  <i class={`ti ti-${icon} post-chip-icon`} aria-hidden="true"></i>
+  <span>{label}</span>
+</span>

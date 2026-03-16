@@ -20,6 +20,12 @@ export type Post = {
   qualityScore: number;
 };
 
+export type TagRecord = {
+  slug: string;
+  label: string;
+  postCount: number;
+};
+
 export const POST_QUALITY_MAX_SCORE = 5;
 export const POST_QUALITY_MINIMUM_DEPTH_WORDS = 220;
 
@@ -150,6 +156,28 @@ export function formatCategoryLabel(category: string): string {
 
 export function getCategoryPath(category: string): string {
   return `/categories/${encodeURIComponent(normalizeCategoryKey(category))}`;
+}
+
+export function slugifyTag(tag: string): string {
+  return tag
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .trim()
+    .toLowerCase()
+    .replace(/['’]/g, '')
+    .replace(/&/g, ' and ')
+    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
+    .replace(/^-+|-+$/g, '')
+    .replace(/-{2,}/g, '-');
+}
+
+export function getTagPath(tag: string): string {
+  const slug = slugifyTag(tag);
+  return `/tag/${encodeURIComponent(slug)}`;
+}
+
+export function getTagPathBySlug(tagSlug: string): string {
+  return `/tag/${encodeURIComponent(slugifyTag(tagSlug))}`;
 }
 
 function normalizeUsernameHandle(username: string): string {
@@ -474,6 +502,46 @@ export function getPosts(): Post[] {
 
 export function getPostBySlug(slug: string): Post | undefined {
   return getPosts().find((post) => post.slug === slug);
+}
+
+export function getPostsByTagSlug(tagSlug: string): Post[] {
+  const normalizedTagSlug = slugifyTag(tagSlug);
+  if (!normalizedTagSlug) return [];
+
+  return getPosts().filter((post) =>
+    post.tags.some((tag) => slugifyTag(tag) === normalizedTagSlug)
+  );
+}
+
+export function getTagRecords(): TagRecord[] {
+  const tagMap = new Map<string, TagRecord>();
+
+  for (const post of getPosts()) {
+    for (const tag of post.tags) {
+      const slug = slugifyTag(tag);
+      if (!slug) continue;
+
+      const existing = tagMap.get(slug);
+      if (existing) {
+        existing.postCount += 1;
+      } else {
+        tagMap.set(slug, {
+          slug,
+          label: tag,
+          postCount: 1
+        });
+      }
+    }
+  }
+
+  return [...tagMap.values()].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export function getTagLabelBySlug(tagSlug: string): string | undefined {
+  const normalizedTagSlug = slugifyTag(tagSlug);
+  if (!normalizedTagSlug) return undefined;
+
+  return getTagRecords().find((tag) => tag.slug === normalizedTagSlug)?.label;
 }
 
 export function getLeaderboard(): UserRecord[] {
