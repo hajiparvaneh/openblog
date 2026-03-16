@@ -269,15 +269,59 @@ const structuredData = [
       </span>
     </p>
     {post.thumbnail ? (
-      <figure class="post-thumbnail-wrap">
-        <img
-          class="post-thumbnail"
-          src={post.thumbnail}
-          alt={post.thumbnailAlt ?? post.title}
-          loading="eager"
-          decoding="async"
-        />
-      </figure>
+      <>
+        <figure class="post-thumbnail-wrap">
+          <img
+            class="post-thumbnail"
+            src={post.thumbnail}
+            alt={post.thumbnailAlt ?? post.title}
+            loading="eager"
+            decoding="async"
+          />
+          <button
+            type="button"
+            class="post-thumbnail-open"
+            data-thumbnail-open
+            aria-controls="post-thumbnail-lightbox"
+            aria-label="Open image in full view"
+          >
+            <i class="ti ti-arrows-maximize icon-sm" aria-hidden="true"></i>
+          </button>
+        </figure>
+        <div
+          id="post-thumbnail-lightbox"
+          class="post-thumbnail-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Expanded post image"
+          hidden
+        >
+          <button
+            type="button"
+            class="post-thumbnail-lightbox-backdrop"
+            data-thumbnail-close
+            aria-label="Close image preview"
+          />
+          <div class="post-thumbnail-lightbox-panel" role="document">
+            <button
+              type="button"
+              class="post-thumbnail-lightbox-close"
+              data-thumbnail-close
+              aria-label="Close image preview"
+            >
+              <i class="ti ti-x icon-sm" aria-hidden="true"></i>
+              <span>Close</span>
+            </button>
+            <img
+              class="post-thumbnail-lightbox-image"
+              src={post.thumbnail}
+              alt={post.thumbnailAlt ?? post.title}
+              loading="eager"
+              decoding="async"
+            />
+          </div>
+        </div>
+      </>
     ) : null}
     {(post.featured || post.tags.length > 0 || post.lang || post.translateOf) ? (
       <div class="post-meta-chips">
@@ -573,6 +617,52 @@ const structuredData = [
         } finally {
           button.disabled = false;
           button.removeAttribute('aria-busy');
+        }
+      });
+    })();
+  </script>
+  <script is:inline>
+    (function () {
+      var openButton = document.querySelector('[data-thumbnail-open]');
+      var lightbox = document.getElementById('post-thumbnail-lightbox');
+      if (!openButton || !lightbox) return;
+
+      var closeButtons = Array.from(lightbox.querySelectorAll('[data-thumbnail-close]'));
+      var closePrimary = lightbox.querySelector('.post-thumbnail-lightbox-close');
+      var previousOverflow = '';
+      var previousFocused = null;
+
+      var openLightbox = function () {
+        previousFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        lightbox.hidden = false;
+        lightbox.classList.add('is-open');
+        if (closePrimary instanceof HTMLElement) {
+          closePrimary.focus();
+        }
+      };
+
+      var closeLightbox = function () {
+        lightbox.classList.remove('is-open');
+        lightbox.hidden = true;
+        document.body.style.overflow = previousOverflow;
+        if (previousFocused instanceof HTMLElement) {
+          previousFocused.focus();
+        } else if (openButton instanceof HTMLElement) {
+          openButton.focus();
+        }
+      };
+
+      openButton.addEventListener('click', openLightbox);
+
+      closeButtons.forEach(function (control) {
+        control.addEventListener('click', closeLightbox);
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !lightbox.hidden) {
+          closeLightbox();
         }
       });
     })();
