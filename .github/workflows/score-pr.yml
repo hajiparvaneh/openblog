@@ -25,6 +25,9 @@ on:
       renamed_to_slugs:
         description: 'Comma-separated new slugs for renamed posts'
         required: false
+      metadata_post_slugs:
+        description: 'Comma-separated slugs where frontmatter metadata changed (optional manual override)'
+        required: false
 
 permissions:
   contents: write
@@ -76,6 +79,11 @@ jobs:
               allowedPath.test(file.filename) && allowedStatuses.has(file.status)
             );
 
+            const metadataKeyPattern = /^[+-]\s*(title|description|date|thumbnail|thumbnailAlt|tags|draft|featured|lang|translateOf)\s*:/m;
+            const metadataPostSlugs = eligibleFiles
+              .filter((file) => file.status !== 'added' && metadataKeyPattern.test(file.patch || ''))
+              .map((file) => file.filename.replace(/^content\/posts\//, '').replace(/\.md$/, ''));
+
             core.setOutput('has_eligible_changes', eligibleFiles.length > 0 ? 'true' : 'false');
 
             if (eligibleFiles.length === 0) {
@@ -99,6 +107,7 @@ jobs:
             core.setOutput('new_post_slugs', newPostSlugs.join(','));
             core.setOutput('renamed_from_slugs', renamedFromSlugs.join(','));
             core.setOutput('renamed_to_slugs', renamedToSlugs.join(','));
+            core.setOutput('metadata_post_slugs', metadataPostSlugs.join(','));
 
             return allSlugs[0];
 
@@ -114,6 +123,7 @@ jobs:
           PR_NEW_POST_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.new_post_slugs || github.event.inputs.new_post_slugs || '' }}
           PR_RENAMED_FROM_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.renamed_from_slugs || github.event.inputs.renamed_from_slugs || '' }}
           PR_RENAMED_TO_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.renamed_to_slugs || github.event.inputs.renamed_to_slugs || '' }}
+          PR_METADATA_POST_SLUGS: ${{ github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.metadata_post_slugs || github.event.inputs.metadata_post_slugs || '' }}
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
             echo "Manual dispatch: set all PR_* values (especially PR_POST_SLUGS and optional PR_NEW_POST_SLUGS) via inputs/env."

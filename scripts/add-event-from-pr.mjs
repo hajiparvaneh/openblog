@@ -30,6 +30,10 @@ function parseRenamedToSlugList() {
   return parseCsvList(process.env.PR_RENAMED_TO_SLUGS ?? '');
 }
 
+function parseMetadataPostSlugList() {
+  return parseCsvList(process.env.PR_METADATA_POST_SLUGS ?? '');
+}
+
 function canonicalizePostSlug(postSlug) {
   return postSlug
     .trim()
@@ -136,6 +140,7 @@ const payload = {
   newPostSlugs: parseNewPostSlugList(),
   renamedFromSlugs: parseRenamedFromSlugList(),
   renamedToSlugs: parseRenamedToSlugList(),
+  metadataPostSlugs: parseMetadataPostSlugList(),
   mergedAt: process.env.PR_MERGED_AT,
   labels: parseCsvList(process.env.PR_LABELS ?? '')
 };
@@ -163,12 +168,16 @@ const contributionsBySlug = new Map(
 );
 
 const newPostSlugSet = new Set(payload.newPostSlugs);
+const metadataPostSlugSet = new Set(payload.metadataPostSlugs);
 let scoredContributionCount = 0;
 
 for (const postSlug of allTargetSlugs) {
   const labels = [...payload.labels];
   if (newPostSlugSet.has(postSlug) && !labels.includes('new-post')) {
     labels.push('new-post');
+  }
+  if (metadataPostSlugSet.has(postSlug) && !newPostSlugSet.has(postSlug) && !labels.includes('typo')) {
+    labels.push('typo');
   }
 
   const points = calculatePoints(labels);
