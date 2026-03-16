@@ -133,8 +133,22 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
             <span class="brand-tagline">Collaborative writing for portfolio and reputation growth</span>
           </span>
         </a>
-        <div class="site-header-actions">
-          <nav class="nav" aria-label="Main navigation">
+        <div class="site-header-actions" id="site-header-actions" data-menu-open="false">
+          <button
+            class="header-menu-toggle"
+            id="header-menu-toggle"
+            type="button"
+            aria-label="Toggle navigation menu"
+            aria-controls="main-nav"
+            aria-expanded="false"
+          >
+            <span class="icon-label">
+              <i class="ti ti-menu-2 menu-icon menu-icon-open icon-sm" aria-hidden="true"></i>
+              <i class="ti ti-x menu-icon menu-icon-close icon-sm" aria-hidden="true"></i>
+              <span id="header-menu-toggle-label">Menu</span>
+            </span>
+          </button>
+          <nav class="nav" id="main-nav" aria-label="Main navigation">
             <a href="/"><i class="ti ti-home icon-sm" aria-hidden="true"></i>Home</a>
             <a href="/leaderboard"><i class="ti ti-trophy icon-sm" aria-hidden="true"></i>Leaderboard</a>
             <a href="/how-to-contribute"><i class="ti ti-pencil icon-sm" aria-hidden="true"></i>Contribute</a>
@@ -248,7 +262,9 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
         var button = document.getElementById('theme-toggle');
         var label = document.getElementById('theme-toggle-label');
         var themeColor = document.querySelector('meta[name="theme-color"]');
-        if (!button) return;
+        var headerActions = document.getElementById('site-header-actions');
+        var menuButton = document.getElementById('header-menu-toggle');
+        var mainNav = document.getElementById('main-nav');
 
         var applyTheme = function (theme) {
           document.documentElement.setAttribute('data-theme', theme);
@@ -259,18 +275,62 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
           if (label) {
             label.textContent = theme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
           }
-          button.setAttribute('aria-pressed', String(theme === 'dark'));
+          if (button) {
+            button.setAttribute('aria-pressed', String(theme === 'dark'));
+          }
         };
 
         var current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
         applyTheme(current);
 
-        button.addEventListener('click', function () {
-          current = current === 'dark' ? 'light' : 'dark';
-          applyTheme(current);
-          try {
-            localStorage.setItem(storageKey, current);
-          } catch (_) {}
+        if (button) {
+          button.addEventListener('click', function () {
+            current = current === 'dark' ? 'light' : 'dark';
+            applyTheme(current);
+            try {
+              localStorage.setItem(storageKey, current);
+            } catch (_) {}
+          });
+        }
+
+        if (!headerActions || !menuButton || !mainNav) return;
+
+        var mobileMenu = window.matchMedia('(max-width: 860px)');
+
+        var setMenuOpen = function (isOpen) {
+          var open = Boolean(isOpen);
+          headerActions.setAttribute('data-menu-open', String(open));
+          menuButton.setAttribute('aria-expanded', String(open));
+        };
+
+        setMenuOpen(false);
+
+        menuButton.addEventListener('click', function () {
+          var isOpen = menuButton.getAttribute('aria-expanded') === 'true';
+          setMenuOpen(!isOpen);
+        });
+
+        mainNav.addEventListener('click', function (event) {
+          if (!mobileMenu.matches) return;
+          if (!(event.target instanceof Element)) return;
+          if (!event.target.closest('a')) return;
+          setMenuOpen(false);
+        });
+
+        document.addEventListener('click', function (event) {
+          if (!mobileMenu.matches) return;
+          if (!(event.target instanceof Node)) return;
+          if (headerActions.contains(event.target)) return;
+          setMenuOpen(false);
+        });
+
+        document.addEventListener('keydown', function (event) {
+          if (event.key !== 'Escape') return;
+          setMenuOpen(false);
+        });
+
+        mobileMenu.addEventListener('change', function () {
+          setMenuOpen(false);
         });
       })();
     </script>
