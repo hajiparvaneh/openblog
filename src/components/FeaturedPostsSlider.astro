@@ -104,7 +104,7 @@ const rootClass = `featured-slider ${className}`.trim();
                       {post.visibleTags.map((tag) => (
                         <TagBadge tag={tag} class="post-card-tag" />
                       ))}
-                      {post.hiddenTagCount > 0 ? <span class="badge post-card-tag">+{post.hiddenTagCount}</span> : null}
+                      {post.hiddenTagCount > 0 ? <span class="post-card-tag post-tag-more">+{post.hiddenTagCount}</span> : null}
                     </div>
                   ) : null}
                   <p class="meta meta-inline featured-slide-footer">

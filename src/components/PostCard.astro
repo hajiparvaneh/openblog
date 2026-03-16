@@ -46,7 +46,7 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
         {visibleTags.map((tag) => (
           <TagBadge tag={tag} class="post-card-tag" />
         ))}
-        {hiddenTagCount > 0 ? <span class="badge post-card-tag">+{hiddenTagCount}</span> : null}
+        {hiddenTagCount > 0 ? <span class="post-card-tag post-tag-more">+{hiddenTagCount}</span> : null}
       </div>
     ) : null}
     <p class="meta meta-inline">
