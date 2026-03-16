@@ -2,6 +2,7 @@
 title: Async Await Error Handling in JavaScript (Practical Guide)
 description: Improve JavaScript reliability with practical async/await error handling patterns, including try/catch scopes, retries, and centralized logging.
 date: 2026-03-09
+tags: javascript, async-await, error-handling, promises
 ---
 
 `async/await` makes asynchronous code readable, but error handling still requires deliberate structure.
