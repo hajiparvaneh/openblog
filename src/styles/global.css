@@ -237,6 +237,7 @@ p {
 .header-menu-toggle {
   display: none;
   align-items: center;
+  justify-content: center;
   border: 1px solid var(--border);
   border-radius: 0;
   background: var(--surface-soft);
@@ -248,6 +249,10 @@ p {
   min-height: 2rem;
   padding: 0.45rem 0.6rem;
   cursor: pointer;
+}
+
+.header-menu-toggle .icon-label {
+  gap: 0;
 }
 
 .header-menu-toggle:hover {
@@ -1373,7 +1378,11 @@ p {
   }
 
   .site-header {
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    column-gap: 0.55rem;
+    row-gap: 0.45rem;
   }
 
   .content-layout {
@@ -1387,11 +1396,12 @@ p {
 
   .brand {
     gap: 0.55rem;
+    min-width: 0;
   }
 
   .brand-tagline {
     font-size: 0.82rem;
-    max-width: 16rem;
+    max-width: none;
   }
 
   .brand-mark {
@@ -1400,12 +1410,17 @@ p {
 
   .site-header-actions {
     position: relative;
-    margin-left: auto;
+    margin-left: 0;
+    justify-self: end;
+    align-self: start;
     gap: 0.45rem;
+    flex-wrap: nowrap;
   }
 
   .header-menu-toggle {
     display: inline-flex;
+    min-width: 2rem;
+    padding: 0.45rem;
   }
 
   .theme-toggle {
