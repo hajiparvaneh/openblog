@@ -1,0 +1,456 @@
+---
+import PostContributorsStack from './PostContributorsStack.astro';
+import { formatPostDate, getCategoryPath, getPosts, normalizeCategoryKey } from '../lib/openblog';
+import type { Post } from '../lib/openblog';
+
+type Props = {
+  posts?: Post[];
+  category?: string;
+  limit?: number;
+  title?: string;
+  class?: string;
+};
+
+const {
+  posts = getPosts(),
+  category,
+  limit = 5,
+  title = 'Featured posts',
+  class: className = ''
+} = Astro.props as Props;
+
+const normalizedCategory = typeof category === 'string' && category.trim()
+  ? normalizeCategoryKey(category)
+  : null;
+
+const featuredPosts = posts
+  .filter((post) => post.featured && (!normalizedCategory || post.category === normalizedCategory))
+  .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug))
+  .slice(0, limit)
+  .map((post) => ({
+    ...post,
+    url: `/posts/${post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`,
+    visibleTags: post.tags.slice(0, 3),
+    hiddenTagCount: Math.max(0, post.tags.length - 3)
+  }));
+
+const hasManySlides = featuredPosts.length > 1;
+const rootClass = `featured-slider ${className}`.trim();
+---
+
+{featuredPosts.length > 0 ? (
+  <section class={rootClass} data-featured-slider aria-label={title}>
+    <div class="featured-slider-head">
+      <p class="kicker icon-label"><i class="ti ti-star icon-sm" aria-hidden="true"></i>{title}</p>
+      {hasManySlides ? (
+        <div class="featured-slider-actions">
+          <button
+            type="button"
+            class="featured-slider-control"
+            data-featured-prev
+            aria-label="Previous featured post"
+          >
+            <i class="ti ti-arrow-left icon-sm" aria-hidden="true"></i>
+          </button>
+          <button
+            type="button"
+            class="featured-slider-control"
+            data-featured-next
+            aria-label="Next featured post"
+          >
+            <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+          </button>
+        </div>
+      ) : null}
+    </div>
+
+    <div class="featured-slider-viewport" data-featured-viewport tabindex="0">
+      <ul class="featured-slider-track" data-featured-track>
+        {featuredPosts.map((post, index) => (
+          <li class="featured-slide" data-featured-slide data-featured-index={index}>
+            <article class="featured-slide-card">
+              <a class="featured-slide-image-link" href={post.url} aria-label={`Read ${post.title}`}>
+                {post.thumbnail ? (
+                  <img
+                    class="featured-slide-image"
+                    src={post.thumbnail}
+                    alt={post.thumbnailAlt ?? post.title}
+                    loading={index === 0 ? 'eager' : 'lazy'}
+                    decoding="async"
+                  />
+                ) : (
+                  <span class="featured-slide-image-fallback" aria-hidden="true">
+                    <i class="ti ti-photo icon-sm" aria-hidden="true"></i>
+                  </span>
+                )}
+              </a>
+              <div class="featured-slide-body">
+                <div class="featured-slide-content">
+                  <h2 class="featured-slide-title"><a href={post.url}>{post.title}</a></h2>
+                  <p class="featured-slide-description">{post.description}</p>
+                </div>
+                <div class="featured-slide-bottom">
+                  <p class="featured-slide-meta meta icon-label">
+                    <i class="ti ti-category icon-sm" aria-hidden="true"></i>
+                    <a href={getCategoryPath(post.category)}>{post.categoryLabel}</a>
+                    <span aria-hidden="true">•</span>
+                    <span class="icon-label"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
+                  </p>
+                  {(post.visibleTags.length > 0 || post.lang !== 'en') ? (
+                    <div class="post-card-taxonomy">
+                      {post.lang !== 'en' ? <span class="badge post-card-flag"><i class="ti ti-language icon-sm" aria-hidden="true"></i>{post.lang}</span> : null}
+                      {post.visibleTags.map((tag) => (
+                        <span class="badge post-card-tag">{tag}</span>
+                      ))}
+                      {post.hiddenTagCount > 0 ? <span class="badge post-card-tag">+{post.hiddenTagCount}</span> : null}
+                    </div>
+                  ) : null}
+                  <p class="meta meta-inline featured-slide-footer">
+                    <PostContributorsStack slug={post.slug} />
+                    <a class="featured-slide-link" href={post.url}>
+                      Read post
+                      <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+                    </a>
+                  </p>
+                </div>
+              </div>
+            </article>
+          </li>
+        ))}
+      </ul>
+    </div>
+
+    {hasManySlides ? (
+      <div class="featured-slider-dots" aria-label="Featured post navigation">
+        {featuredPosts.map((post, index) => (
+          <button
+            type="button"
+            class="featured-slider-dot"
+            data-featured-dot={index}
+            aria-label={`Go to featured post ${index + 1}: ${post.title}`}
+          />
+        ))}
+      </div>
+    ) : null}
+  </section>
+) : null}
+
+<script is:inline>
+  (function () {
+    var sliderRoots = Array.from(document.querySelectorAll('[data-featured-slider]'));
+    if (sliderRoots.length === 0) return;
+
+    sliderRoots.forEach(function (sliderRoot) {
+      if (sliderRoot.getAttribute('data-featured-slider-ready') === 'true') return;
+      sliderRoot.setAttribute('data-featured-slider-ready', 'true');
+
+      var track = sliderRoot.querySelector('[data-featured-track]');
+      if (!track) return;
+
+      var slides = Array.from(track.querySelectorAll('[data-featured-slide]'));
+      if (slides.length === 0) return;
+
+      var prev = sliderRoot.querySelector('[data-featured-prev]');
+      var next = sliderRoot.querySelector('[data-featured-next]');
+      var viewport = sliderRoot.querySelector('[data-featured-viewport]');
+      var dots = Array.from(sliderRoot.querySelectorAll('[data-featured-dot]'));
+      var currentIndex = 0;
+      var pointerStartX = null;
+      var pointerStartY = null;
+      var pointerId = null;
+
+      var normalizeIndex = function (index) {
+        if (index < 0) return slides.length - 1;
+        if (index >= slides.length) return 0;
+        return index;
+      };
+
+      var render = function () {
+        track.style.transform = 'translateX(-' + currentIndex * 100 + '%)';
+
+        slides.forEach(function (slide, index) {
+          var isActive = index === currentIndex;
+          slide.setAttribute('aria-hidden', isActive ? 'false' : 'true');
+        });
+
+        dots.forEach(function (dot, index) {
+          var isActive = index === currentIndex;
+          dot.classList.toggle('is-active', isActive);
+          if (isActive) {
+            dot.setAttribute('aria-current', 'true');
+          } else {
+            dot.removeAttribute('aria-current');
+          }
+        });
+      };
+
+      var goTo = function (nextIndex) {
+        currentIndex = normalizeIndex(nextIndex);
+        render();
+      };
+
+      if (prev) {
+        prev.addEventListener('click', function () {
+          goTo(currentIndex - 1);
+        });
+      }
+
+      if (next) {
+        next.addEventListener('click', function () {
+          goTo(currentIndex + 1);
+        });
+      }
+
+      dots.forEach(function (dot) {
+        dot.addEventListener('click', function () {
+          var targetIndex = Number(dot.getAttribute('data-featured-dot'));
+          if (!Number.isFinite(targetIndex)) return;
+          goTo(targetIndex);
+        });
+      });
+
+      if (viewport) {
+        viewport.addEventListener('keydown', function (event) {
+          if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            goTo(currentIndex - 1);
+          }
+          if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            goTo(currentIndex + 1);
+          }
+        });
+
+        viewport.addEventListener('pointerdown', function (event) {
+          pointerStartX = event.clientX;
+          pointerStartY = event.clientY;
+          pointerId = event.pointerId;
+        });
+
+        viewport.addEventListener('pointerup', function (event) {
+          if (pointerId !== event.pointerId || pointerStartX === null || pointerStartY === null) return;
+
+          var deltaX = event.clientX - pointerStartX;
+          var deltaY = event.clientY - pointerStartY;
+          pointerStartX = null;
+          pointerStartY = null;
+          pointerId = null;
+
+          if (Math.abs(deltaY) > Math.abs(deltaX)) return;
+          if (Math.abs(deltaX) < 45) return;
+
+          if (deltaX < 0) {
+            goTo(currentIndex + 1);
+          } else {
+            goTo(currentIndex - 1);
+          }
+        });
+
+        viewport.addEventListener('pointercancel', function () {
+          pointerStartX = null;
+          pointerStartY = null;
+          pointerId = null;
+        });
+      }
+
+      render();
+    });
+  })();
+</script>
+
+<style>
+  .featured-slider {
+    display: grid;
+    gap: 0.7rem;
+    overflow: hidden;
+  }
+
+  .featured-slider-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.6rem;
+  }
+
+  .featured-slider-head .kicker {
+    margin: 0;
+  }
+
+  .featured-slider-actions {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .featured-slider-control {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    min-height: 2rem;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
+    color: var(--text);
+    padding: 0.35rem;
+    cursor: pointer;
+  }
+
+  .featured-slider-control:hover {
+    background: var(--surface);
+  }
+
+  .featured-slider-viewport {
+    overflow: hidden;
+    outline: none;
+  }
+
+  .featured-slider-track {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    display: flex;
+    transition: transform 0.3s ease;
+    will-change: transform;
+  }
+
+  .featured-slide {
+    flex: 0 0 100%;
+    min-width: 0;
+  }
+
+  .featured-slide-card {
+    display: grid;
+    grid-template-columns: minmax(200px, 0.9fr) minmax(0, 1.3fr);
+    align-items: stretch;
+    border: 1px solid var(--border);
+    background: var(--surface-soft);
+    min-height: 100%;
+  }
+
+  .featured-slide-image-link {
+    display: block;
+    height: 100%;
+    border-right: 1px solid var(--border);
+    background: var(--surface);
+    overflow: hidden;
+  }
+
+  .featured-slide-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .featured-slide-image-fallback {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: var(--muted);
+  }
+
+  .featured-slide-body {
+    padding: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-height: 100%;
+  }
+
+  .featured-slide-body h2 {
+    margin: 0;
+    font-size: clamp(1.18rem, 2vw, 1.5rem);
+  }
+
+  .featured-slide-body p {
+    margin: 0;
+  }
+
+  .featured-slide-title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .featured-slide-description {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .featured-slide-bottom {
+    margin-top: auto;
+    display: grid;
+    gap: 0.45rem;
+  }
+
+  .featured-slide-meta {
+    display: inline-flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+  }
+
+  .featured-slide-footer {
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .featured-slide-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.24rem;
+    font-size: 0.83rem;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+
+  .featured-slider-dots {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 0.38rem;
+  }
+
+  .featured-slider-dot {
+    width: 0.55rem;
+    height: 0.55rem;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: transparent;
+    cursor: pointer;
+  }
+
+  .featured-slider-dot.is-active {
+    background: var(--primary);
+    border-color: var(--primary);
+  }
+
+  @media (max-width: 860px) {
+    .featured-slide-card {
+      grid-template-columns: 1fr;
+    }
+
+    .featured-slide-image-link {
+      border-right: 0;
+      border-bottom: 1px solid var(--border);
+      height: 7rem;
+    }
+
+    .featured-slide-image,
+    .featured-slide-image-fallback {
+      height: 100%;
+    }
+
+    .featured-slide-footer {
+      justify-content: flex-start;
+    }
+  }
+</style>

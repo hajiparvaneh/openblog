@@ -1,5 +1,6 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
+import FeaturedPostsSlider from '../../components/FeaturedPostsSlider.astro';
 import PostCard from '../../components/PostCard.astro';
 import UserAvatar from '../../components/UserAvatar.astro';
 import { getCategoryLeaderboard, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
@@ -78,6 +79,13 @@ if (posts.length === 0) {
       {posts.length} post{posts.length > 1 ? 's' : ''} available in this topic.
     </p>
   </section>
+
+  <FeaturedPostsSlider
+    posts={posts}
+    category={category}
+    title={`${categoryLabel} featured posts`}
+    class="card"
+  />
 
   <section class="list paginated-list">
     <p id="category-posts-page-info" class="meta pagination-info">Showing {postsPerPage} posts per page</p>

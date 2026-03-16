@@ -5,36 +5,29 @@ import type { Post } from '../lib/openblog';
 
 type Props = {
   post: Post;
-  showCategory?: boolean;
-  dataAttribute?: string;
-  dateSortValue?: string;
-  displayDate?: string;
 };
 
-const { post, showCategory = true, dataAttribute, dateSortValue, displayDate } = Astro.props as Props;
-const cardAttributes = {
-  ...(dataAttribute ? { [dataAttribute]: '' } : {}),
-  ...(dateSortValue ? { 'data-post-date': dateSortValue } : {})
-};
+const { post } = Astro.props as Props;
 const postPath = `/posts/${post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
 const visibleTags = post.tags.slice(0, 3);
 const hiddenTagCount = Math.max(0, post.tags.length - visibleTags.length);
 const showLanguageBadge = post.lang.toLowerCase() !== 'en';
 ---
 
-<article class="card post-card post-card-standard" {...cardAttributes}>
+<article class="card post-card post-card-standard">
   {post.thumbnail ? (
     <a class="post-card-inline-thumbnail-link" href={postPath} aria-label={`Read ${post.title}`}>
       <img
         class="post-card-inline-thumbnail"
         src={post.thumbnail}
         alt={post.thumbnailAlt ?? post.title}
-        loading="lazy"
+        loading="eager"
         decoding="async"
       />
     </a>
   ) : null}
   <div class="post-card-standard-body">
+    <p class="kicker icon-label"><i class="ti ti-clock-hour-4 icon-sm" aria-hidden="true"></i>Latest post</p>
     <h2 class="post-card-title"><a href={postPath}>{post.title}</a></h2>
     <p class="post-card-description">{post.description}</p>
     {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
@@ -49,16 +42,11 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
     ) : null}
     <p class="meta meta-inline">
       <PostContributorsStack slug={post.slug} />
+      <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
       <span class="meta-item">
-        <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
-        {formatPostDate(displayDate ?? post.date)}
+        <i class="ti ti-category icon-sm" aria-hidden="true"></i>
+        <a href={getCategoryPath(post.category)}>{post.categoryLabel}</a>
       </span>
-      {showCategory ? (
-        <span class="meta-item">
-          <i class="ti ti-category icon-sm" aria-hidden="true"></i>
-          <a href={getCategoryPath(post.category)}>{post.categoryLabel}</a>
-        </span>
-      ) : null}
     </p>
   </div>
 </article>

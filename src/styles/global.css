@@ -663,6 +663,48 @@ p {
   height: 100%;
 }
 
+.post-card-standard {
+  flex-direction: row;
+  align-items: stretch;
+  gap: 0.78rem;
+}
+
+.post-card-standard-body {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.post-card-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-card-description {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.post-card-inline-thumbnail-link {
+  flex: 0 0 7.4rem;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+
+.post-card-inline-thumbnail {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-height: 6.5rem;
+  object-fit: cover;
+}
+
 .post-card-thumbnail-link {
   display: block;
   margin: -1rem -1rem 0.75rem;
@@ -673,7 +715,7 @@ p {
 .post-card-thumbnail {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2.3 / 1;
   object-fit: cover;
 }
 
@@ -693,17 +735,6 @@ p {
 
 .post-card-tag {
   font-size: 0.72rem;
-}
-
-.latest-post-card {
-  position: relative;
-  padding-right: 1rem;
-}
-
-.latest-post-category {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
 }
 
 .post-contributor-stack {
@@ -848,7 +879,8 @@ p {
 .post-thumbnail {
   display: block;
   width: 100%;
-  aspect-ratio: 16 / 9;
+  aspect-ratio: 2.5 / 1;
+  max-height: 17.5rem;
   object-fit: cover;
   border: 1px solid var(--border);
   background: var(--surface-soft);
@@ -1535,6 +1567,18 @@ p {
 
   .post-grid {
     grid-template-columns: 1fr;
+  }
+
+  .post-card-standard {
+    gap: 0.62rem;
+  }
+
+  .post-card-inline-thumbnail-link {
+    flex-basis: 6.25rem;
+  }
+
+  .post-card-inline-thumbnail {
+    min-height: 5.9rem;
   }
 
   .two-column {
