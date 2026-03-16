@@ -5,6 +5,7 @@ date: 2026-03-14
 thumbnail: https://github.com/hajiparvaneh/openblog/raw/main/public/og-default.png
 thumbnailAlt: OpenBlog banner showing a collaborative open-source blogging platform for contributors
 tags: openblog, open-source, transparency, github
+featured: true
 ---
 
 Most projects say they are open. OpenBlog tries to prove it.
