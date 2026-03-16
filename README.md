@@ -90,6 +90,10 @@ Content guidelines:
 - Prefer clear, factual writing with practical examples.
 - Keep PR scope focused on one post/topic where possible.
 
+Detailed post-writing guide (including all metadata fields):
+
+- [POSTS-README.md](POSTS-README.md)
+
 ## 🛠️ Improve Existing Posts
 
 Common contribution types:

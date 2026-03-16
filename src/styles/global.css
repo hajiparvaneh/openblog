@@ -663,9 +663,41 @@ p {
   height: 100%;
 }
 
+.post-card-thumbnail-link {
+  display: block;
+  margin: -1rem -1rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.post-card-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+}
+
+.post-card-taxonomy {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.6rem;
+}
+
+.post-card-flag,
+.post-card-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+}
+
+.post-card-tag {
+  font-size: 0.72rem;
+}
+
 .latest-post-card {
   position: relative;
-  padding-right: 8.2rem;
+  padding-right: 1rem;
 }
 
 .latest-post-category {
@@ -807,6 +839,41 @@ p {
 .article-content {
   margin-top: 1rem;
   min-width: 0;
+}
+
+.post-thumbnail-wrap {
+  margin: 0.7rem 0 0;
+}
+
+.post-thumbnail {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.post-meta-chips {
+  margin-top: 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.post-meta-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.post-translation-link {
+  color: var(--text);
+}
+
+.post-translation-link:hover {
+  color: var(--text);
+  background: var(--surface);
 }
 
 .article-content :is(p, li, blockquote, a, code, h1, h2, h3, h4, h5, h6) {
@@ -1468,11 +1535,6 @@ p {
 
   .post-grid {
     grid-template-columns: 1fr;
-  }
-
-  .latest-post-card {
-    padding-right: 1rem;
-    padding-top: 3rem;
   }
 
   .two-column {

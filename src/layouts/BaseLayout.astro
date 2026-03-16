@@ -10,6 +10,7 @@ type BaseLayoutProps = {
   title?: string;
   description?: string;
   canonicalPath?: string;
+  pageLang?: string;
   ogType?: 'website' | 'article' | 'profile';
   ogImagePath?: string;
   ogImageAlt?: string;
@@ -23,6 +24,7 @@ const {
   title = 'OpenBlog',
   description = 'OpenBlog is a Git-based collaborative blog where accepted pull requests create public proof of work and help contributors grow visibility.',
   canonicalPath = Astro.url.pathname,
+  pageLang = 'en',
   ogType = 'website',
   ogImagePath = '/og-default.png',
   ogImageAlt = 'OpenBlog',
@@ -50,7 +52,7 @@ const latestContributors = getLatestContributors(10);
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
 ---
-<html lang="en">
+<html lang={pageLang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

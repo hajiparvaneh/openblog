@@ -47,6 +47,8 @@ if (!post) throw new Error('Post not found');
 const contributors = getContributorsForPost(slug);
 const html = marked.parse(post.body);
 const getProfileUrl = (username: string) => `/profile/@${username}`;
+const getPostUrlBySlug = (postSlug: string) =>
+  `/posts/${postSlug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
 const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 const formatMergedDate = (isoDate: string) => {
   const parsed = new Date(isoDate);
@@ -149,8 +151,11 @@ const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(
 const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
 const canonicalPath = `/posts/${postSourcePath}`;
 const pageDescription = post.description || `Read ${post.title} on OpenBlog.`;
+const translatedFromPost = post.translateOf ? getPostBySlug(post.translateOf) : undefined;
+const translatedFromPath = post.translateOf ? getPostUrlBySlug(post.translateOf) : undefined;
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const ogImagePath = post.thumbnail ?? '/og-default.png';
 const latestContributionAt = contributors
   .flatMap((contributor) => contributor.pullRequests.map((pullRequest) => pullRequest.mergedAt))
   .sort((a, b) => b.localeCompare(a))[0];
@@ -188,6 +193,18 @@ if (post.date) {
 if (latestContributionAt) {
   blogPostingSchema.dateModified = formatPostDate(latestContributionAt);
 }
+if (post.tags.length > 0) {
+  blogPostingSchema.keywords = post.tags;
+}
+if (post.thumbnail) {
+  blogPostingSchema.image = [post.thumbnail];
+}
+if (post.lang) {
+  blogPostingSchema.inLanguage = post.lang;
+}
+if (post.translateOf) {
+  blogPostingSchema.isBasedOn = toAbsoluteUrl(getPostUrlBySlug(post.translateOf), siteUrl);
+}
 const structuredData = [
   blogPostingSchema,
   {
@@ -221,8 +238,11 @@ const structuredData = [
   description={pageDescription}
   canonicalPath={canonicalPath}
   ogType="article"
+  ogImagePath={ogImagePath}
+  ogImageAlt={post.thumbnailAlt ?? post.title}
   publishedTime={publishedTime}
   modifiedTime={modifiedTime}
+  pageLang={post.lang}
   structuredData={structuredData}
 >
   <article class="card">
@@ -248,6 +268,36 @@ const structuredData = [
         <span id="share-article-status" class="share-article-status" role="status" aria-live="polite" hidden></span>
       </span>
     </p>
+    {post.thumbnail ? (
+      <figure class="post-thumbnail-wrap">
+        <img
+          class="post-thumbnail"
+          src={post.thumbnail}
+          alt={post.thumbnailAlt ?? post.title}
+          loading="eager"
+          decoding="async"
+        />
+      </figure>
+    ) : null}
+    {(post.featured || post.tags.length > 0 || post.lang || post.translateOf) ? (
+      <div class="post-meta-chips">
+        {post.featured ? (
+          <span class="badge post-meta-chip icon-label"><i class="ti ti-star icon-sm" aria-hidden="true"></i>Featured</span>
+        ) : null}
+        {post.lang ? (
+          <span class="badge post-meta-chip icon-label"><i class="ti ti-language icon-sm" aria-hidden="true"></i>{post.lang}</span>
+        ) : null}
+        {post.tags.map((tag) => (
+          <span class="badge post-meta-chip">{tag}</span>
+        ))}
+        {post.translateOf && translatedFromPath ? (
+          <a class="badge post-meta-chip post-translation-link icon-label" href={translatedFromPath}>
+            <i class="ti ti-language-hiragana icon-sm" aria-hidden="true"></i>
+            {translatedFromPost ? `Translated from ${translatedFromPost.title}` : `Translated from ${post.translateOf}`}
+          </a>
+        ) : null}
+      </div>
+    ) : null}
     <div class="article-content" set:html={html} />
     <section class="post-contribute meta">
       <span class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>Want to contribute to this post?</span>

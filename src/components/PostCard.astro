@@ -16,11 +16,36 @@ const cardAttributes = {
   ...(dataAttribute ? { [dataAttribute]: '' } : {}),
   ...(dateSortValue ? { 'data-post-date': dateSortValue } : {})
 };
+const postPath = `/posts/${post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
+const visibleTags = post.tags.slice(0, 3);
+const hiddenTagCount = Math.max(0, post.tags.length - visibleTags.length);
+const showLanguageBadge = post.lang.toLowerCase() !== 'en';
 ---
 
 <article class="card post-card" {...cardAttributes}>
-  <h2><a href={`/posts/${post.slug}`}>{post.title}</a></h2>
+  {post.thumbnail ? (
+    <a class="post-card-thumbnail-link" href={postPath} aria-label={`Read ${post.title}`}>
+      <img
+        class="post-card-thumbnail"
+        src={post.thumbnail}
+        alt={post.thumbnailAlt ?? post.title}
+        loading="lazy"
+        decoding="async"
+      />
+    </a>
+  ) : null}
+  <h2><a href={postPath}>{post.title}</a></h2>
   <p>{post.description}</p>
+  {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
+    <div class="post-card-taxonomy">
+      {post.featured ? <span class="badge post-card-flag"><i class="ti ti-star icon-sm" aria-hidden="true"></i>Featured</span> : null}
+      {showLanguageBadge ? <span class="badge post-card-flag"><i class="ti ti-language icon-sm" aria-hidden="true"></i>{post.lang}</span> : null}
+      {visibleTags.map((tag) => (
+        <span class="badge post-card-tag">{tag}</span>
+      ))}
+      {hiddenTagCount > 0 ? <span class="badge post-card-tag">+{hiddenTagCount}</span> : null}
+    </div>
+  ) : null}
   <p class="meta meta-inline">
     <PostContributorsStack slug={post.slug} />
     <span class="meta-item">

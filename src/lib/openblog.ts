@@ -9,6 +9,13 @@ export type Post = {
   title: string;
   description: string;
   date: string;
+  thumbnail?: string;
+  thumbnailAlt?: string;
+  tags: string[];
+  draft: boolean;
+  featured: boolean;
+  lang: string;
+  translateOf?: string;
   body: string;
   qualityScore: number;
 };
@@ -216,6 +223,102 @@ export function formatPostDate(value: unknown): string {
   return toDateString(value);
 }
 
+function toTrimmedString(value: unknown): string {
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' && Number.isFinite(value)) return String(value).trim();
+  return '';
+}
+
+function toOptionalString(value: unknown): string | undefined {
+  const normalized = toTrimmedString(value);
+  return normalized || undefined;
+}
+
+function toBoolean(value: unknown, defaultValue: boolean): boolean {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (!normalized) return defaultValue;
+    if (['true', '1', 'yes'].includes(normalized)) return true;
+    if (['false', '0', 'no'].includes(normalized)) return false;
+  }
+  return defaultValue;
+}
+
+function normalizeLanguage(value: unknown): string {
+  const normalized = toTrimmedString(value)
+    .replace(/_/g, '-')
+    .toLowerCase();
+  return normalized || 'en';
+}
+
+function normalizeTags(value: unknown): string[] {
+  const rawTokens: string[] = [];
+  if (typeof value === 'string') {
+    rawTokens.push(...value.split(/[,\n]/g));
+  } else if (Array.isArray(value)) {
+    for (const item of value) {
+      if (typeof item !== 'string') continue;
+      rawTokens.push(...item.split(/[,\n]/g));
+    }
+  }
+
+  const seen = new Set<string>();
+  const tags: string[] = [];
+  for (const token of rawTokens) {
+    const normalized = token.trim().replace(/\s+/g, ' ');
+    if (!normalized) continue;
+    const dedupeKey = normalized.toLowerCase();
+    if (seen.has(dedupeKey)) continue;
+    seen.add(dedupeKey);
+    tags.push(normalized);
+  }
+
+  return tags;
+}
+
+function normalizeTranslateOf(
+  value: unknown,
+  context: { categoryDir: string; postPath: string; rawCategory: string; postName: string }
+): string | undefined {
+  const rawValue = toTrimmedString(value);
+  if (!rawValue) return undefined;
+
+  const normalizedRelativePath = rawValue.replace(/\\/g, '/');
+  if (!normalizedRelativePath.endsWith('.md')) {
+    throw new Error(
+      `Invalid translateOf in ${context.postPath}: "${rawValue}" must point to a .md file in the same folder.`
+    );
+  }
+
+  if (path.isAbsolute(normalizedRelativePath)) {
+    throw new Error(
+      `Invalid translateOf in ${context.postPath}: "${rawValue}" must be a relative path in the same folder.`
+    );
+  }
+
+  const resolvedPath = path.resolve(context.categoryDir, normalizedRelativePath);
+  if (path.dirname(resolvedPath) !== context.categoryDir) {
+    throw new Error(
+      `Invalid translateOf in ${context.postPath}: "${rawValue}" must reference a file in the same category folder.`
+    );
+  }
+
+  if (!fs.existsSync(resolvedPath)) {
+    throw new Error(
+      `Invalid translateOf in ${context.postPath}: "${rawValue}" does not exist in ${context.categoryDir}.`
+    );
+  }
+
+  const targetName = path.basename(resolvedPath, '.md');
+  if (targetName === context.postName) {
+    throw new Error(`Invalid translateOf in ${context.postPath}: post cannot translate itself.`);
+  }
+
+  return `${context.rawCategory}/${targetName}`;
+}
+
 function markdownToPlainText(markdown: string): string {
   return markdown
     .replace(/```[\s\S]*?```/g, ' ')
@@ -335,13 +438,31 @@ export function getPosts(): Post[] {
       const postName = postEntry.name.replace(/\.md$/, '');
       const body = content.trim();
       const quality = evaluatePostQuality(body);
+      const draft = toBoolean(data.draft, false);
+      if (draft) continue;
+      const thumbnail = toOptionalString(data.thumbnail);
+      const thumbnailAlt = toOptionalString(data.thumbnailAlt);
+      const translateOf = normalizeTranslateOf(data.translateOf, {
+        categoryDir,
+        postPath,
+        rawCategory,
+        postName
+      });
+
       posts.push({
         slug: `${rawCategory}/${postName}`,
         category,
         categoryLabel,
-        title: data.title ?? postName,
-        description: data.description ?? '',
+        title: toTrimmedString(data.title) || postName,
+        description: toTrimmedString(data.description),
         date: toDateString(data.date),
+        thumbnail,
+        thumbnailAlt,
+        tags: normalizeTags(data.tags),
+        draft,
+        featured: toBoolean(data.featured, false),
+        lang: normalizeLanguage(data.lang),
+        translateOf,
         body,
         qualityScore: quality.score
       });

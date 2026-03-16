@@ -8,6 +8,11 @@ import { getSiteUrl } from '../lib/site';
 
 const posts = getPosts();
 const latestPost = posts[0];
+const latestPostUrl = latestPost
+  ? `/posts/${latestPost.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`
+  : '';
+const latestPostVisibleTags = latestPost ? latestPost.tags.slice(0, 3) : [];
+const latestPostHiddenTagCount = latestPost ? Math.max(0, latestPost.tags.length - latestPostVisibleTags.length) : 0;
 const remainingPosts = posts
   .slice(1)
   .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
@@ -60,13 +65,34 @@ const structuredData = [
 
   {latestPost ? (
     <section class="card post-card latest-post-card">
+      {latestPost.thumbnail ? (
+        <a class="post-card-thumbnail-link" href={latestPostUrl} aria-label={`Read ${latestPost.title}`}>
+          <img
+            class="post-card-thumbnail"
+            src={latestPost.thumbnail}
+            alt={latestPost.thumbnailAlt ?? latestPost.title}
+            loading="eager"
+            decoding="async"
+          />
+        </a>
+      ) : null}
       <a class="category-link latest-post-category" href={getCategoryPath(latestPost.category)}>
         <i class="ti ti-category icon-sm" aria-hidden="true"></i>
         {latestPost.categoryLabel}
       </a>
       <p class="kicker icon-label"><i class="ti ti-clock-hour-4 icon-sm" aria-hidden="true"></i>Latest post</p>
-      <h2><a href={`/posts/${latestPost.slug}`}>{latestPost.title}</a></h2>
+      <h2><a href={latestPostUrl}>{latestPost.title}</a></h2>
       <p>{latestPost.description}</p>
+      {(latestPost.featured || latestPost.tags.length > 0 || latestPost.lang !== 'en') ? (
+        <div class="post-card-taxonomy">
+          {latestPost.featured ? <span class="badge post-card-flag"><i class="ti ti-star icon-sm" aria-hidden="true"></i>Featured</span> : null}
+          {latestPost.lang !== 'en' ? <span class="badge post-card-flag"><i class="ti ti-language icon-sm" aria-hidden="true"></i>{latestPost.lang}</span> : null}
+          {latestPostVisibleTags.map((tag) => (
+            <span class="badge post-card-tag">{tag}</span>
+          ))}
+          {latestPostHiddenTagCount > 0 ? <span class="badge post-card-tag">+{latestPostHiddenTagCount}</span> : null}
+        </div>
+      ) : null}
       <p class="meta meta-inline">
         <PostContributorsStack slug={latestPost.slug} />
         <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(latestPost.date)}</span>
