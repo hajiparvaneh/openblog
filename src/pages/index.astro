@@ -25,7 +25,7 @@ const TAGS_LIMIT = 20;
 const TOP_CONTRIBUTORS_LIMIT = 5;
 const LATEST_CONTRIBUTORS_LIMIT = 8;
 const RECENT_EVENTS_LIMIT = 8;
-const QUALITY_SHOWCASE_LIMIT = 4;
+const HOME_EVENTS_WINDOW_LIMIT = 24;
 const remainingPosts = posts
   .slice(1)
   .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
@@ -41,14 +41,10 @@ const leaderboard = getLeaderboard();
 const totalContributors = leaderboard.length;
 const topContributors = leaderboard.slice(0, TOP_CONTRIBUTORS_LIMIT);
 const latestContributors = getLatestContributors(LATEST_CONTRIBUTORS_LIMIT);
-const recentEvents = getRecentEvents(RECENT_EVENTS_LIMIT);
+const allRecentEvents = getRecentEvents(HOME_EVENTS_WINDOW_LIMIT);
+const recentEvents = allRecentEvents.slice(0, RECENT_EVENTS_LIMIT);
 const recentEventPoints = recentEvents.reduce((sum, event) => sum + event.points, 0);
 const postBySlug = new Map(posts.map((post) => [post.slug, post]));
-const highDepthPosts = posts
-  .filter((post) => post.qualityScore >= 4)
-  .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
-const qualityShowcasePosts = highDepthPosts
-  .slice(0, QUALITY_SHOWCASE_LIMIT);
 
 const categoryInsightsMap = new Map<string, {
   key: string;
@@ -80,6 +76,28 @@ const categoryInsights = [...categoryInsightsMap.values()]
 const hiddenCategoryCount = Math.max(0, categoryInsightsMap.size - categoryInsights.length);
 const hiddenTagCount = Math.max(0, tagRecords.length - topTags.length);
 const hiddenContributorCount = Math.max(0, totalContributors - topContributors.length);
+const faqEntries = [
+  {
+    question: 'Do I need to be an advanced writer to publish here?',
+    answer:
+      'No. Draft clarity matters more than perfection. Reviews happen through pull requests, so you can iterate with feedback before your contribution is merged.'
+  },
+  {
+    question: 'What types of improvements are accepted?',
+    answer:
+      'New tutorials, better explanations, fixes to outdated snippets, and stronger references are all valuable. Small quality upgrades are welcome.'
+  },
+  {
+    question: 'How is contribution impact measured?',
+    answer:
+      'Accepted pull requests are scored with transparent labels. Your points and accepted PRs appear on public profile and leaderboard pages.'
+  },
+  {
+    question: 'Can I contribute without writing a full new post?',
+    answer:
+      'Yes. You can refine structure, add examples, improve language, and update technical details in existing posts. Those improvements are tracked too.'
+  }
+] as const;
 
 const getPostPath = (slug: string): string =>
   `/posts/${slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
@@ -116,6 +134,18 @@ const structuredData = [
       position: index + 1,
       url: toAbsoluteUrl(getCategoryPath(category.key), siteUrl),
       name: category.label
+    }))
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqEntries.map((entry) => ({
+      '@type': 'Question',
+      name: entry.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: entry.answer
+      }
     }))
   }
 ];
@@ -204,6 +234,7 @@ const structuredData = [
     <a href="#home-tags"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</a>
     <a href="#home-posts"><i class="ti ti-list icon-sm" aria-hidden="true"></i>All stories</a>
     <a href="#home-community"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i>Community pulse</a>
+    <a href="#home-faq"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Contributor FAQ</a>
   </nav>
 
   <FeaturedPostsSlider posts={posts} limit={5} class="card" />
@@ -277,31 +308,6 @@ const structuredData = [
     )}
   </div>
 
-  {qualityShowcasePosts.length > 0 && (
-    <section class="card home-quality-showcase">
-      <div class="section-head">
-        <div>
-          <p class="kicker icon-label"><i class="ti ti-sparkles icon-sm" aria-hidden="true"></i>High-depth guides</p>
-          <h2>Start with detailed practical posts</h2>
-        </div>
-        <p class="meta">Posts selected by content-depth checks to help readers find stronger technical walkthroughs faster.</p>
-      </div>
-
-      <div class="quality-grid">
-        {qualityShowcasePosts.map((post) => (
-          <article class="quality-card">
-            <h3><a href={getPostPath(post.slug)}>{post.title}</a></h3>
-            <p class="meta">{post.description}</p>
-            <p class="meta meta-inline quality-meta">
-              <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={getCategoryPath(post.category)}>{post.categoryLabel}</a></span>
-              <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
-            </p>
-          </article>
-        ))}
-      </div>
-    </section>
-  )}
-
   {remainingPosts.length > 0 ? (
     <section id="home-posts" class="card list paginated-list home-posts-section">
       <div class="section-head section-head-inline">
@@ -345,6 +351,7 @@ const structuredData = [
       </article>
     </section>
   )}
+
 
   <section id="home-community" class="card home-community">
     <div class="section-head">
@@ -449,6 +456,25 @@ const structuredData = [
         </section>
       )}
       </div>
+    </div>
+  </section>
+
+  <section id="home-faq" class="card home-faq">
+    <div class="section-head">
+      <div>
+        <p class="kicker icon-label"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Contributor FAQ</p>
+        <h2>Common questions before your first pull request</h2>
+      </div>
+      <p class="meta">Short answers for contributors who want to move fast without missing project expectations.</p>
+    </div>
+
+    <div class="faq-list">
+      {faqEntries.map((entry, index) => (
+        <details class="faq-item" open={index === 0}>
+          <summary>{entry.question}</summary>
+          <p class="meta">{entry.answer}</p>
+        </details>
+      ))}
     </div>
   </section>
 
@@ -727,9 +753,13 @@ const structuredData = [
       border-color: var(--primary);
     }
 
+    [id^='home-'] {
+      scroll-margin-top: 1rem;
+    }
+
     .home-jump-links {
       display: grid;
-      grid-template-columns: repeat(4, minmax(0, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
       gap: 0.45rem;
     }
 
@@ -752,6 +782,11 @@ const structuredData = [
     .home-jump-links a:hover {
       border-color: var(--primary);
       background: var(--surface);
+    }
+
+    .home-faq {
+      display: grid;
+      gap: 0.62rem;
     }
 
     .home-discovery-grid {
@@ -817,7 +852,6 @@ const structuredData = [
     }
 
     .home-categories,
-    .home-quality-showcase,
     .home-community {
       display: grid;
       gap: 0.62rem;
@@ -864,35 +898,6 @@ const structuredData = [
       font-size: 0.72rem;
       font-weight: 400;
       line-height: 1.2;
-    }
-
-    .quality-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      align-items: start;
-      gap: 0.52rem;
-    }
-
-    .quality-card {
-      border: 1px solid var(--border);
-      background: var(--surface-soft);
-      padding: 0.55rem;
-      display: grid;
-      gap: 0.35rem;
-    }
-
-    .quality-card h3 {
-      margin: 0;
-      font-size: 1.05rem;
-    }
-
-    .quality-card .meta {
-      margin: 0;
-      font-size: 0.8rem;
-    }
-
-    .quality-meta {
-      gap: 0.45rem;
     }
 
     .tag-cloud {
@@ -1027,6 +1032,37 @@ const structuredData = [
       gap: 0.3rem;
     }
 
+    .faq-list {
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .faq-item {
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      padding: 0.5rem 0.62rem;
+    }
+
+    .faq-item[open] {
+      border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+      background: var(--surface);
+    }
+
+    .faq-item summary {
+      cursor: pointer;
+      font-family: var(--font-main);
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--text);
+    }
+
+    .faq-item .meta {
+      margin: 0.42rem 0 0;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
     .home-empty-state {
       border: 1px solid var(--border);
       background: var(--surface-soft);
@@ -1111,7 +1147,7 @@ const structuredData = [
       }
 
       .hero-side .stats,
-      .quality-grid {
+      .home-discovery-grid {
         grid-template-columns: 1fr;
       }
 
