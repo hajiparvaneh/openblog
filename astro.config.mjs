@@ -4,5 +4,6 @@ const configuredSiteUrl = process.env.OPENBLOG_BASE_URL ?? process.env.SITE_URL 
 const site = configuredSiteUrl.endsWith('/') ? configuredSiteUrl : `${configuredSiteUrl}/`;
 
 export default defineConfig({
-  site
+  site,
+  trailingSlash: 'never'
 });
