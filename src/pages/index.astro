@@ -29,7 +29,7 @@ const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => in
 const categoryCount = new Set(posts.map((post) => post.category)).size;
 const featuredPostCount = posts.filter((post) => post.featured).length;
 const tagRecords = getTagRecords().sort((a, b) => b.postCount - a.postCount || a.label.localeCompare(b.label));
-const topTags = tagRecords.slice(0, 14);
+const topTags = tagRecords.slice(0, 24);
 const leaderboard = getLeaderboard();
 const totalContributors = leaderboard.length;
 const topContributors = leaderboard.slice(0, 6);
@@ -152,6 +152,31 @@ const structuredData = [
           <span class="stat-label">Featured stories</span>
         </div>
       </div>
+      {latestContributors.length > 0 && (
+        <div class="hero-side-foot">
+          <p class="meta icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Recently active</p>
+          <div class="hero-side-avatars">
+            {latestContributors.slice(0, 8).map((contributor) => (
+              <a
+                class="hero-side-avatar-link"
+                href={getProfilePath(contributor.username)}
+                aria-label={`@${contributor.username}`}
+                title={`@${contributor.username}`}
+              >
+                <UserAvatar
+                  username={contributor.username}
+                  avatarUrl={contributor.avatarUrl}
+                  size={64}
+                  class="hero-side-avatar"
+                  alt=""
+                  width={28}
+                  height={28}
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   </section>
 
@@ -193,24 +218,26 @@ const structuredData = [
     </section>
 
     {topTags.length > 0 && (
-      <section id="home-tags" class="card home-tags">
-        <div class="section-head">
-          <div>
-            <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
-            <h2>Explore recurring technologies</h2>
+      <div class="home-discovery-side">
+        <section id="home-tags" class="card home-tags">
+          <div class="section-head">
+            <div>
+              <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
+              <h2>Explore recurring technologies</h2>
+            </div>
+            <p class="meta">Tag volume shows where contributors are actively sharing implementation details and best practices.</p>
           </div>
-          <p class="meta">Tag volume shows where contributors are actively sharing implementation details and best practices.</p>
-        </div>
 
-        <div class="tag-cloud" role="list">
-          {topTags.map((tag) => (
-            <a role="listitem" class="tag-cloud-item" href={getTagPath(tag.label)}>
-              <span>{tag.label}</span>
-              <span class="badge">{tag.postCount}</span>
-            </a>
-          ))}
-        </div>
-      </section>
+          <div class="tag-cloud" role="list">
+            {topTags.map((tag) => (
+              <a role="listitem" class="tag-cloud-item" href={getTagPath(tag.label)}>
+                <span>{tag.label}</span>
+                <span class="badge">{tag.postCount}</span>
+              </a>
+            ))}
+          </div>
+        </section>
+      </div>
     )}
   </div>
 
@@ -298,8 +325,8 @@ const structuredData = [
       <span class="badge"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{latestContributors.length} recently active contributors</span>
     </div>
 
-    <div class="community-grid">
-      <section class="community-block">
+    <div class="community-layout">
+      <section class="community-block community-block-primary">
         <h3 class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>Latest accepted PR activity</h3>
         {recentEvents.length > 0 ? (
           <ul class="home-activity-list">
@@ -329,7 +356,8 @@ const structuredData = [
         )}
       </section>
 
-      <section class="community-block">
+      <div class="community-side">
+        <section class="community-block">
         <h3 class="icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Top contributors</h3>
         {topContributors.length > 0 ? (
           <ol class="home-top-contributors">
@@ -366,6 +394,23 @@ const structuredData = [
           <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
         </a>
       </section>
+
+      {latestContributors.length > 0 && (
+        <section class="community-block">
+          <h3 class="icon-label"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>Recently active contributors</h3>
+          <ul class="home-latest-contributors">
+            {latestContributors.slice(0, 8).map((contributor) => (
+              <li>
+                <a class="user-chip user-link" href={getProfilePath(contributor.username)}>
+                  <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={64} class="avatar-sm" />
+                  <span class="user-handle">@{contributor.username}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      </div>
     </div>
   </section>
 
@@ -518,6 +563,7 @@ const structuredData = [
     .hero {
       display: grid;
       grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      align-items: start;
       gap: 0.85rem;
     }
 
@@ -588,6 +634,8 @@ const structuredData = [
       border: 1px solid var(--border);
       background: var(--surface-soft);
       padding: 0.62rem;
+      display: grid;
+      gap: 0.52rem;
     }
 
     .hero-side .stats {
@@ -603,6 +651,42 @@ const structuredData = [
 
     .hero-side .stat-value {
       font-size: 1.05rem;
+    }
+
+    .hero-side-foot {
+      display: grid;
+      gap: 0.35rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.45rem;
+    }
+
+    .hero-side-foot .meta {
+      margin: 0;
+      font-size: 0.76rem;
+    }
+
+    .hero-side-avatars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.28rem;
+    }
+
+    .hero-side-avatar-link {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      background: var(--surface);
+      padding: 0.08rem;
+    }
+
+    .hero-side-avatar {
+      width: 1.4rem;
+      height: 1.4rem;
+      border: 0;
+    }
+
+    .hero-side-avatar-link:hover {
+      border-color: var(--primary);
     }
 
     .home-jump-links {
@@ -637,6 +721,12 @@ const structuredData = [
       grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
       align-items: start;
       gap: 0.85rem;
+    }
+
+    .home-discovery-side {
+      display: grid;
+      gap: 0;
+      align-content: start;
     }
 
     .section-head {
@@ -682,7 +772,7 @@ const structuredData = [
 
     .category-insights-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
       align-items: start;
       gap: 0.5rem;
     }
@@ -714,7 +804,7 @@ const structuredData = [
 
     .quality-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
       align-items: start;
       gap: 0.52rem;
     }
@@ -786,13 +876,6 @@ const structuredData = [
       gap: 0.25rem;
     }
 
-    .community-grid {
-      display: grid;
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-      align-items: start;
-      gap: 0.6rem;
-    }
-
     .community-block {
       border: 1px solid var(--border);
       background: var(--surface-soft);
@@ -803,6 +886,23 @@ const structuredData = [
       min-width: 0;
     }
 
+    .community-block-primary {
+      min-height: 100%;
+    }
+
+    .community-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 0.6rem;
+    }
+
+    .community-side {
+      display: grid;
+      gap: 0.6rem;
+      align-content: start;
+    }
+
     .community-block h3 {
       margin: 0;
       font-size: 0.92rem;
@@ -810,7 +910,8 @@ const structuredData = [
 
     .home-activity-list,
     .home-top-contributors,
-    .home-process-list {
+    .home-process-list,
+    .home-latest-contributors {
       margin: 0;
       padding-left: 1.05rem;
       display: grid;
@@ -850,6 +951,12 @@ const structuredData = [
       font-family: var(--font-main);
       font-size: 0.82rem;
       font-weight: 700;
+    }
+
+    .home-latest-contributors {
+      padding-left: 0;
+      list-style: none;
+      gap: 0.3rem;
     }
 
     .home-empty-state {
@@ -917,11 +1024,11 @@ const structuredData = [
         grid-template-columns: 1fr;
       }
 
-      .community-grid {
+      .home-discovery-grid {
         grid-template-columns: 1fr;
       }
 
-      .home-discovery-grid {
+      .community-layout {
         grid-template-columns: 1fr;
       }
     }
