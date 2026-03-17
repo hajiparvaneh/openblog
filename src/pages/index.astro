@@ -3,7 +3,18 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import FeaturedPostsSlider from '../components/FeaturedPostsSlider.astro';
 import LatestPostCard from '../components/LatestPostCard.astro';
 import PostCard from '../components/PostCard.astro';
-import { getPosts } from '../lib/openblog';
+import UserAvatar from '../components/UserAvatar.astro';
+import {
+  formatPostDate,
+  getCategoryPath,
+  getLatestContributors,
+  getLeaderboard,
+  getPosts,
+  getProfilePath,
+  getRecentEvents,
+  getTagPath,
+  getTagRecords
+} from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
 
@@ -16,6 +27,55 @@ const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(remainingPosts.length / postsPerPage));
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
+const featuredPostCount = posts.filter((post) => post.featured).length;
+const tagRecords = getTagRecords().sort((a, b) => b.postCount - a.postCount || a.label.localeCompare(b.label));
+const topTags = tagRecords.slice(0, 14);
+const leaderboard = getLeaderboard();
+const totalContributors = leaderboard.length;
+const topContributors = leaderboard.slice(0, 6);
+const latestContributors = getLatestContributors(8);
+const recentEvents = getRecentEvents(8);
+const recentEventPoints = recentEvents.reduce((sum, event) => sum + event.points, 0);
+const postBySlug = new Map(posts.map((post) => [post.slug, post]));
+const qualityShowcasePosts = posts
+  .filter((post) => post.qualityScore >= 4)
+  .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug))
+  .slice(0, 4);
+
+const categoryInsightsMap = new Map<string, {
+  key: string;
+  label: string;
+  postCount: number;
+  featuredCount: number;
+  latestDate: string;
+}>();
+
+for (const post of posts) {
+  const current = categoryInsightsMap.get(post.category) ?? {
+    key: post.category,
+    label: post.categoryLabel,
+    postCount: 0,
+    featuredCount: 0,
+    latestDate: post.date
+  };
+
+  current.postCount += 1;
+  if (post.featured) current.featuredCount += 1;
+  if (post.date > current.latestDate) current.latestDate = post.date;
+
+  categoryInsightsMap.set(post.category, current);
+}
+
+const categoryInsights = [...categoryInsightsMap.values()]
+  .sort((a, b) => b.postCount - a.postCount || a.label.localeCompare(b.label))
+  .slice(0, 8);
+
+const getPostPath = (slug: string): string =>
+  `/posts/${slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
+
+const getPullRequestUrl = (prNumber: number): string =>
+  `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
+
 const pageDescription =
   'OpenBlog is a free collaborative technical blog where developers publish with pull requests, build a visible GitHub portfolio, and improve hiring reputation.';
 const canonicalPath = '/';
@@ -35,39 +95,161 @@ const structuredData = [
     name: 'OpenBlog Home',
     description: pageDescription,
     url: canonicalUrl
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'OpenBlog Top Categories',
+    itemListElement: categoryInsights.slice(0, 6).map((category, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: toAbsoluteUrl(getCategoryPath(category.key), siteUrl),
+      name: category.label
+    }))
   }
 ];
 ---
 <BaseLayout title="OpenBlog | Free Collaborative Blog for GitHub Portfolio Growth" description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
   <section class="card hero">
-    <p class="kicker icon-label"><i class="ti ti-news icon-sm" aria-hidden="true"></i>Open source publication</p>
-    <h1>Write together and grow your GitHub reputation.</h1>
-    <p class="meta">Every accepted pull request improves content and creates visible proof of teamwork, consistency, and technical communication.</p>
-    <div class="stats">
-      <div class="stat">
-        <span class="stat-value stat-head"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>{posts.length}</span>
-        <span class="stat-label">Published posts</span>
+    <div class="hero-main">
+      <p class="kicker icon-label"><i class="ti ti-news icon-sm" aria-hidden="true"></i>Open source publication</p>
+      <h1>Write together and grow your GitHub reputation.</h1>
+      <p class="meta">Every accepted pull request improves content and creates visible proof of teamwork, consistency, and technical communication.</p>
+      <div class="hero-actions">
+        <a class="home-cta" href="/how-to-contribute">
+          <i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>
+          Start contributing
+        </a>
+        <a class="home-cta home-cta-soft" href="/leaderboard">
+          <i class="ti ti-trophy icon-sm" aria-hidden="true"></i>
+          View leaderboard
+        </a>
       </div>
-      <div class="stat">
-        <span class="stat-value stat-head"><i class="ti ti-category icon-sm" aria-hidden="true"></i>{categoryCount}</span>
-        <span class="stat-label">Active categories</span>
-      </div>
-      <div class="stat">
-        <span class="stat-value stat-head"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>PR-based</span>
-        <span class="stat-label">Contribution model</span>
+      <ul class="hero-highlights">
+        <li class="hero-highlight"><i class="ti ti-badge-check icon-sm" aria-hidden="true"></i>Editorial reviews through pull requests</li>
+        <li class="hero-highlight"><i class="ti ti-certificate icon-sm" aria-hidden="true"></i>Public proof-of-work tied to your GitHub profile</li>
+        <li class="hero-highlight"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>Cross-category collaboration with visible contribution history</li>
+      </ul>
+    </div>
+
+    <div class="hero-side">
+      <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Community snapshot</p>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>{posts.length}</span>
+          <span class="stat-label">Published posts</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-category icon-sm" aria-hidden="true"></i>{categoryCount}</span>
+          <span class="stat-label">Active categories</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{totalContributors}</span>
+          <span class="stat-label">Scored contributors</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-star-filled icon-sm" aria-hidden="true"></i>{featuredPostCount}</span>
+          <span class="stat-label">Featured stories</span>
+        </div>
       </div>
     </div>
   </section>
+
+  <nav class="card home-jump-links" aria-label="Homepage sections">
+    <a href="#home-categories"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Explore categories</a>
+    <a href="#home-tags"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</a>
+    <a href="#home-posts"><i class="ti ti-list icon-sm" aria-hidden="true"></i>All stories</a>
+    <a href="#home-community"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i>Community pulse</a>
+  </nav>
 
   <FeaturedPostsSlider posts={posts} limit={5} class="card" />
 
   {latestPost ? <LatestPostCard post={latestPost} /> : null}
 
+  <div class="home-discovery-grid">
+    <section id="home-categories" class="card home-categories">
+      <div class="section-head">
+        <div>
+          <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Explore by category</p>
+          <h2>Pick a topic and dive deeper</h2>
+        </div>
+        <p class="meta">Sorted by post volume, with freshness and featured depth signals.</p>
+      </div>
+
+      <div class="category-insights-grid">
+        {categoryInsights.map((category) => (
+          <article class="category-insight-card">
+            <h3>
+              <a href={getCategoryPath(category.key)}>{category.label}</a>
+            </h3>
+            <p class="meta icon-label"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>Latest update {formatPostDate(category.latestDate)}</p>
+            <div class="category-insight-stats">
+              <span class="badge">{category.postCount} post{category.postCount > 1 ? 's' : ''}</span>
+              <span class="badge">{category.featuredCount} featured</span>
+            </div>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    {topTags.length > 0 && (
+      <section id="home-tags" class="card home-tags">
+        <div class="section-head">
+          <div>
+            <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
+            <h2>Explore recurring technologies</h2>
+          </div>
+          <p class="meta">Tag volume shows where contributors are actively sharing implementation details and best practices.</p>
+        </div>
+
+        <div class="tag-cloud" role="list">
+          {topTags.map((tag) => (
+            <a role="listitem" class="tag-cloud-item" href={getTagPath(tag.label)}>
+              <span>{tag.label}</span>
+              <span class="badge">{tag.postCount}</span>
+            </a>
+          ))}
+        </div>
+      </section>
+    )}
+  </div>
+
+  {qualityShowcasePosts.length > 0 && (
+    <section class="card home-quality-showcase">
+      <div class="section-head">
+        <div>
+          <p class="kicker icon-label"><i class="ti ti-sparkles icon-sm" aria-hidden="true"></i>High-depth guides</p>
+          <h2>Start with detailed practical posts</h2>
+        </div>
+        <p class="meta">Posts selected by content-depth checks to help readers find stronger technical walkthroughs faster.</p>
+      </div>
+
+      <div class="quality-grid">
+        {qualityShowcasePosts.map((post) => (
+          <article class="quality-card">
+            <h3><a href={getPostPath(post.slug)}>{post.title}</a></h3>
+            <p class="meta">{post.description}</p>
+            <p class="meta meta-inline quality-meta">
+              <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={getCategoryPath(post.category)}>{post.categoryLabel}</a></span>
+              <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
+            </p>
+          </article>
+        ))}
+      </div>
+    </section>
+  )}
+
   {remainingPosts.length > 0 ? (
-    <section class="list paginated-list">
-      <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
-      <p id="home-posts-page-info" class="meta pagination-info">Showing {postsPerPage} posts per page</p>
-      <div class="post-grid" data-home-posts-per-page={postsPerPage}>
+    <section id="home-posts" class="card list paginated-list home-posts-section">
+      <div class="section-head section-head-inline">
+        <div>
+          <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
+          <h2>Complete post archive</h2>
+        </div>
+        <p id="home-posts-page-info" class="meta pagination-info">Showing {postsPerPage} posts per page</p>
+      </div>
+
+      <div class="post-grid" data-home-post-grid data-home-posts-per-page={postsPerPage}>
         {remainingPosts.map((post) => (
           <PostCard
             post={post}
@@ -92,20 +274,108 @@ const structuredData = [
       )}
     </section>
   ) : (
-    <section class="list">
+    <section id="home-posts" class="card list home-posts-section">
       <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
-      <article class="card">
+      <article class="home-empty-state">
         <h2>More stories are on the way</h2>
         <p class="meta">Only one post is available right now. More coming soon.</p>
       </article>
     </section>
   )}
 
+  <section id="home-community" class="card home-community">
+    <div class="section-head">
+      <div>
+        <p class="kicker icon-label"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i>Community pulse</p>
+        <h2>See what is being improved right now</h2>
+      </div>
+      <p class="meta">Recent accepted pull requests and active contributors, all visible in public GitHub history.</p>
+    </div>
+
+    <div class="community-overview">
+      <span class="badge"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>{recentEvents.length} latest accepted contributions</span>
+      <span class="badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>{recentEventPoints} points in recent activity</span>
+      <span class="badge"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{latestContributors.length} recently active contributors</span>
+    </div>
+
+    <div class="community-grid">
+      <section class="community-block">
+        <h3 class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>Latest accepted PR activity</h3>
+        {recentEvents.length > 0 ? (
+          <ul class="home-activity-list">
+            {recentEvents.map((event) => {
+              const eventPost = postBySlug.get(event.postSlug);
+              return (
+                <li class="home-activity-item">
+                  <a class="user-chip user-link" href={getProfilePath(event.username)}>
+                    <UserAvatar username={event.username} avatarUrl={event.userAvatarUrl} size={64} class="avatar-sm" />
+                    <span class="user-handle">@{event.username}</span>
+                  </a>
+                  <span class="meta">opened</span>
+                  <a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a>
+                  <span class="meta">for</span>
+                  {eventPost ? (
+                    <a href={getPostPath(eventPost.slug)}>{eventPost.title}</a>
+                  ) : (
+                    <span>{event.postSlug}</span>
+                  )}
+                  <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{event.points}</span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p class="meta">No contribution activity found yet.</p>
+        )}
+      </section>
+
+      <section class="community-block">
+        <h3 class="icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Top contributors</h3>
+        {topContributors.length > 0 ? (
+          <ol class="home-top-contributors">
+            {topContributors.map((contributor, index) => (
+              <li class="home-top-contributor-item">
+                <span class="home-rank">#{index + 1}</span>
+                <a class="user-chip user-link" href={getProfilePath(contributor.username)}>
+                  <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={64} class="avatar-sm" />
+                  <span class="user-handle">@{contributor.username}</span>
+                </a>
+                <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>{contributor.totalPoints}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p class="meta">Leaderboard data is not available yet.</p>
+        )}
+
+        <a class="community-link" href="/leaderboard">
+          Full leaderboard
+          <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+        </a>
+      </section>
+
+      <section class="community-block">
+        <h3 class="icon-label"><i class="ti ti-route icon-sm" aria-hidden="true"></i>How publishing works here</h3>
+        <ol class="home-process-list">
+          <li><strong>Draft:</strong> Add or improve a post as markdown in the repository.</li>
+          <li><strong>Review:</strong> Open a pull request and iterate with feedback.</li>
+          <li><strong>Publish:</strong> Merged PR updates the live blog and your public contribution history.</li>
+        </ol>
+        <a class="community-link" href="/how-to-contribute">
+          Contribution guide
+          <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+        </a>
+      </section>
+    </div>
+  </section>
+
   <script is:inline>
     (function () {
       var cards = Array.from(document.querySelectorAll('[data-home-post-card]'));
       if (cards.length === 0) return;
-      var grid = document.querySelector('.post-grid');
+
+      var grid = document.querySelector('[data-home-post-grid]');
+      if (!grid) return;
 
       cards.sort(function (a, b) {
         var aDate = a.getAttribute('data-post-date') || '';
@@ -117,13 +387,11 @@ const structuredData = [
         return aHref.localeCompare(bHref);
       });
 
-      if (grid) {
-        cards.forEach(function (card) {
-          grid.appendChild(card);
-        });
-      }
+      cards.forEach(function (card) {
+        grid.appendChild(card);
+      });
 
-      var perPage = Number((grid && grid.getAttribute('data-home-posts-per-page')) || '6');
+      var perPage = Number(grid.getAttribute('data-home-posts-per-page') || '6');
       var pages = Math.max(1, Math.ceil(cards.length / perPage));
       var pageInfo = document.getElementById('home-posts-page-info');
       var prev = document.getElementById('home-posts-prev');
@@ -247,6 +515,357 @@ const structuredData = [
   </script>
 
   <style>
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      gap: 0.85rem;
+    }
+
+    .hero-main h1 {
+      margin-bottom: 0.55rem;
+    }
+
+    .hero-actions {
+      margin-top: 0.9rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .home-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid var(--primary);
+      background: var(--primary);
+      color: #fff;
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0.5rem 0.7rem;
+      text-decoration: none;
+    }
+
+    .home-cta:hover {
+      color: #fff;
+      background: var(--primary-strong);
+      border-color: var(--primary-strong);
+    }
+
+    .home-cta-soft {
+      border-color: var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+
+    .home-cta-soft:hover {
+      color: var(--text);
+      background: var(--surface);
+      border-color: var(--primary);
+    }
+
+    .hero-highlights {
+      list-style: none;
+      margin: 0.85rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 0.38rem;
+    }
+
+    .hero-highlight {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.32rem;
+      color: var(--muted);
+      font-family: var(--font-main);
+      font-size: 0.84rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .hero-side {
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      padding: 0.62rem;
+    }
+
+    .hero-side .stats {
+      margin-top: 0.45rem;
+      gap: 0.45rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hero-side .stat {
+      background: var(--surface);
+      padding: 0.52rem;
+    }
+
+    .hero-side .stat-value {
+      font-size: 1.05rem;
+    }
+
+    .home-jump-links {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.45rem;
+    }
+
+    .home-jump-links a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.32rem;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.76rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0.3rem 0.5rem;
+      text-decoration: none;
+    }
+
+    .home-jump-links a:hover {
+      border-color: var(--primary);
+      background: var(--surface);
+    }
+
+    .home-discovery-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 0.85rem;
+    }
+
+    .section-head {
+      display: grid;
+      gap: 0.32rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .section-head .meta {
+      margin: 0;
+      font-size: 0.82rem;
+    }
+
+    .section-head-inline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0;
+    }
+
+    .section-head-inline .meta {
+      margin-left: auto;
+    }
+
+    .home-posts-section {
+      gap: 0.65rem;
+    }
+
+    .home-categories,
+    .home-tags,
+    .home-quality-showcase,
+    .home-community {
+      display: grid;
+      gap: 0.62rem;
+    }
+
+    .category-insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      align-items: start;
+      gap: 0.5rem;
+    }
+
+    .category-insight-card {
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      padding: 0.5rem;
+      display: grid;
+      gap: 0.3rem;
+      min-width: 0;
+    }
+
+    .category-insight-card h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .category-insight-card .meta {
+      margin: 0;
+      font-size: 0.75rem;
+    }
+
+    .category-insight-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .quality-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      align-items: start;
+      gap: 0.52rem;
+    }
+
+    .quality-card {
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      padding: 0.55rem;
+      display: grid;
+      gap: 0.35rem;
+    }
+
+    .quality-card h3 {
+      margin: 0;
+      font-size: 1.05rem;
+    }
+
+    .quality-card .meta {
+      margin: 0;
+      font-size: 0.8rem;
+    }
+
+    .quality-meta {
+      gap: 0.45rem;
+    }
+
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.38rem;
+    }
+
+    .tag-cloud-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+      line-height: 1;
+      padding: 0.3rem 0.42rem;
+      text-decoration: none;
+    }
+
+    .tag-cloud-item .badge {
+      font-size: 0.68rem;
+      padding: 0.12rem 0.35rem;
+      background: var(--surface);
+    }
+
+    .tag-cloud-item:hover {
+      border-color: var(--primary);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .community-overview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .community-overview .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .community-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      align-items: start;
+      gap: 0.6rem;
+    }
+
+    .community-block {
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.42rem;
+      min-width: 0;
+    }
+
+    .community-block h3 {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .home-activity-list,
+    .home-top-contributors,
+    .home-process-list {
+      margin: 0;
+      padding-left: 1.05rem;
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .home-activity-item,
+    .home-top-contributor-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.3rem;
+      min-width: 0;
+    }
+
+    .home-rank {
+      font-family: var(--font-main);
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 1.9rem;
+    }
+
+    .home-process-list {
+      padding-left: 1.15rem;
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .community-link {
+      margin-top: 0.15rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .home-empty-state {
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      padding: 0.75rem;
+    }
+
+    .home-empty-state h2 {
+      margin: 0 0 0.35rem;
+    }
+
+    .home-empty-state .meta {
+      margin: 0;
+    }
+
     .leaderboard-pagination {
       margin-top: 0.45rem;
       display: flex;
@@ -293,9 +912,46 @@ const structuredData = [
       pointer-events: none;
     }
 
+    @media (max-width: 1080px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .community-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .home-discovery-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 860px) {
       .leaderboard-pagination {
         justify-content: center;
+      }
+
+      .home-jump-links {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .hero-side .stats,
+      .quality-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head h2 {
+        font-size: 1.15rem;
+      }
+
+      .section-head-inline .meta {
+        margin-left: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .home-jump-links {
+        grid-template-columns: 1fr;
       }
     }
   </style>
