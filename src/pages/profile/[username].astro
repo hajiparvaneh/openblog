@@ -305,7 +305,7 @@ const structuredData = {
     .profile-avatar {
       width: 8rem;
       height: 8rem;
-      border-radius: 0;
+      border-radius: 50%;
     }
 
     .profile-avatar-link {
@@ -326,7 +326,7 @@ const structuredData = {
       background: color-mix(in srgb, var(--text) 55%, transparent);
       opacity: 0;
       transition: opacity 140ms ease;
-      border-radius: 0;
+      border-radius: 50%;
     }
 
     .profile-avatar-link:hover .profile-avatar-overlay,
@@ -388,19 +388,22 @@ const structuredData = {
       min-width: 2rem;
       min-height: 2rem;
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       color: var(--text);
-      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-family: var(--font-main);
       font-size: 0.82rem;
-      font-weight: 700;
+      font-weight: 600;
       line-height: 1;
       padding: 0.35rem 0.55rem;
       text-decoration: none;
     }
 
     .page-link.is-active {
-      text-decoration: underline;
-      text-underline-offset: 0.2em;
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      color: var(--primary);
+      text-decoration: none;
     }
 
     .page-control.is-disabled {

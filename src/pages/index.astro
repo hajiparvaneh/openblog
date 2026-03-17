@@ -646,12 +646,13 @@ const structuredData = [
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      border: 1px solid var(--primary);
-      background: var(--primary);
+      border: 1px solid var(--success);
+      border-radius: var(--radius-sm);
+      background: var(--success);
       color: #fff;
       font-family: var(--font-main);
       font-size: 0.82rem;
-      font-weight: 700;
+      font-weight: 600;
       line-height: 1;
       padding: 0.5rem 0.7rem;
       text-decoration: none;
@@ -659,19 +660,19 @@ const structuredData = [
 
     .home-cta:hover {
       color: #fff;
-      background: var(--primary-strong);
-      border-color: var(--primary-strong);
+      background: var(--success-strong);
+      border-color: var(--success-strong);
     }
 
     .home-cta-soft {
       border-color: var(--border);
-      background: var(--surface-soft);
+      background: var(--surface);
       color: var(--text);
     }
 
     .home-cta-soft:hover {
       color: var(--text);
-      background: var(--surface);
+      background: var(--surface-soft);
       border-color: var(--primary);
     }
 
@@ -696,10 +697,12 @@ const structuredData = [
 
     .hero-side {
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       padding: 0.62rem;
       display: grid;
       gap: 0.52rem;
+      box-shadow: var(--shadow-xs);
     }
 
     .hero-side .stats {
@@ -739,7 +742,7 @@ const structuredData = [
       display: inline-flex;
       border: 1px solid var(--border);
       border-radius: 9999px;
-      background: var(--surface);
+      background: var(--surface-raised);
       padding: 0.08rem;
     }
 
@@ -769,11 +772,12 @@ const structuredData = [
       justify-content: center;
       gap: 0.32rem;
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       color: var(--text);
       font-family: var(--font-main);
       font-size: 0.76rem;
-      font-weight: 700;
+      font-weight: 600;
       line-height: 1;
       padding: 0.3rem 0.5rem;
       text-decoration: none;
@@ -781,7 +785,7 @@ const structuredData = [
 
     .home-jump-links a:hover {
       border-color: var(--primary);
-      background: var(--surface);
+      background: var(--surface-soft);
     }
 
     .home-faq {
@@ -866,7 +870,8 @@ const structuredData = [
 
     .category-insight-card {
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       padding: 0.5rem;
       display: grid;
       gap: 0.3rem;
@@ -911,11 +916,12 @@ const structuredData = [
       align-items: center;
       gap: 0.38rem;
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       color: var(--text);
       font-family: var(--font-main);
       font-size: 0.82rem;
-      font-weight: 700;
+      font-weight: 600;
       line-height: 1;
       padding: 0.3rem 0.42rem;
       text-decoration: none;
@@ -929,7 +935,7 @@ const structuredData = [
 
     .tag-cloud-item:hover {
       border-color: var(--primary);
-      background: var(--surface);
+      background: var(--surface-soft);
       color: var(--text);
     }
 
@@ -947,7 +953,8 @@ const structuredData = [
 
     .community-block {
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       padding: 0.5rem;
       display: flex;
       flex-direction: column;
@@ -1039,7 +1046,8 @@ const structuredData = [
 
     .faq-item {
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       padding: 0.5rem 0.62rem;
     }
 
@@ -1065,7 +1073,8 @@ const structuredData = [
 
     .home-empty-state {
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       padding: 0.75rem;
     }
 
@@ -1103,19 +1112,22 @@ const structuredData = [
       min-width: 2rem;
       min-height: 2rem;
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       color: var(--text);
-      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-family: var(--font-main);
       font-size: 0.82rem;
-      font-weight: 700;
+      font-weight: 600;
       line-height: 1;
       padding: 0.35rem 0.55rem;
       text-decoration: none;
     }
 
     .page-link.is-active {
-      text-decoration: underline;
-      text-underline-offset: 0.2em;
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      color: var(--primary);
+      text-decoration: none;
     }
 
     .page-control.is-disabled {
