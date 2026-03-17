@@ -59,12 +59,12 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
     <title>{title}</title>
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
-    <meta name="theme-color" content="#f6f7fa" />
+    <meta name="theme-color" content="#f6f8fa" />
     <meta name="application-name" content="OpenBlog" />
     <meta name="apple-mobile-web-app-title" content="OpenBlog" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="msapplication-TileColor" content="#f6f7fa" />
+    <meta name="msapplication-TileColor" content="#f6f8fa" />
     <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" href={faviconIcoHref} sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href={favicon32Href} />
@@ -271,7 +271,7 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
           document.documentElement.setAttribute('data-theme', theme);
           document.documentElement.style.colorScheme = theme;
           if (themeColor) {
-            themeColor.setAttribute('content', theme === 'dark' ? '#0f172a' : '#f6f7fa');
+            themeColor.setAttribute('content', theme === 'dark' ? '#0d1117' : '#f6f8fa');
           }
           if (label) {
             label.textContent = theme === 'dark' ? 'Theme: Dark' : 'Theme: Light';

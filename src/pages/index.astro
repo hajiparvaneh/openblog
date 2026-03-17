@@ -3,12 +3,29 @@ import BaseLayout from '../layouts/BaseLayout.astro';
 import FeaturedPostsSlider from '../components/FeaturedPostsSlider.astro';
 import LatestPostCard from '../components/LatestPostCard.astro';
 import PostCard from '../components/PostCard.astro';
-import { getPosts } from '../lib/openblog';
+import UserAvatar from '../components/UserAvatar.astro';
+import {
+  formatPostDate,
+  getCategoryPath,
+  getLatestContributors,
+  getLeaderboard,
+  getPosts,
+  getProfilePath,
+  getRecentEvents,
+  getTagPath,
+  getTagRecords
+} from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
 
 const posts = getPosts();
 const latestPost = posts[0];
+const CATEGORY_INSIGHTS_LIMIT = 8;
+const TAGS_LIMIT = 20;
+const TOP_CONTRIBUTORS_LIMIT = 5;
+const LATEST_CONTRIBUTORS_LIMIT = 8;
+const RECENT_EVENTS_LIMIT = 8;
+const HOME_EVENTS_WINDOW_LIMIT = 24;
 const remainingPosts = posts
   .slice(1)
   .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
@@ -16,6 +33,78 @@ const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(remainingPosts.length / postsPerPage));
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
+const featuredPostCount = posts.filter((post) => post.featured).length;
+const tagRecords = getTagRecords().sort((a, b) => b.postCount - a.postCount || a.label.localeCompare(b.label));
+const topTags = tagRecords.slice(0, TAGS_LIMIT);
+const tagCount = tagRecords.length;
+const leaderboard = getLeaderboard();
+const totalContributors = leaderboard.length;
+const topContributors = leaderboard.slice(0, TOP_CONTRIBUTORS_LIMIT);
+const latestContributors = getLatestContributors(LATEST_CONTRIBUTORS_LIMIT);
+const allRecentEvents = getRecentEvents(HOME_EVENTS_WINDOW_LIMIT);
+const recentEvents = allRecentEvents.slice(0, RECENT_EVENTS_LIMIT);
+const recentEventPoints = recentEvents.reduce((sum, event) => sum + event.points, 0);
+const postBySlug = new Map(posts.map((post) => [post.slug, post]));
+
+const categoryInsightsMap = new Map<string, {
+  key: string;
+  label: string;
+  postCount: number;
+  featuredCount: number;
+  latestDate: string;
+}>();
+
+for (const post of posts) {
+  const current = categoryInsightsMap.get(post.category) ?? {
+    key: post.category,
+    label: post.categoryLabel,
+    postCount: 0,
+    featuredCount: 0,
+    latestDate: post.date
+  };
+
+  current.postCount += 1;
+  if (post.featured) current.featuredCount += 1;
+  if (post.date > current.latestDate) current.latestDate = post.date;
+
+  categoryInsightsMap.set(post.category, current);
+}
+
+const categoryInsights = [...categoryInsightsMap.values()]
+  .sort((a, b) => b.postCount - a.postCount || a.label.localeCompare(b.label))
+  .slice(0, CATEGORY_INSIGHTS_LIMIT);
+const hiddenCategoryCount = Math.max(0, categoryInsightsMap.size - categoryInsights.length);
+const hiddenTagCount = Math.max(0, tagRecords.length - topTags.length);
+const hiddenContributorCount = Math.max(0, totalContributors - topContributors.length);
+const faqEntries = [
+  {
+    question: 'Do I need to be an advanced writer to publish here?',
+    answer:
+      'No. Draft clarity matters more than perfection. Reviews happen through pull requests, so you can iterate with feedback before your contribution is merged.'
+  },
+  {
+    question: 'What types of improvements are accepted?',
+    answer:
+      'New tutorials, better explanations, fixes to outdated snippets, and stronger references are all valuable. Small quality upgrades are welcome.'
+  },
+  {
+    question: 'How is contribution impact measured?',
+    answer:
+      'Accepted pull requests are scored with transparent labels. Your points and accepted PRs appear on public profile and leaderboard pages.'
+  },
+  {
+    question: 'Can I contribute without writing a full new post?',
+    answer:
+      'Yes. You can refine structure, add examples, improve language, and update technical details in existing posts. Those improvements are tracked too.'
+  }
+] as const;
+
+const getPostPath = (slug: string): string =>
+  `/posts/${slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
+
+const getPullRequestUrl = (prNumber: number): string =>
+  `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
+
 const pageDescription =
   'OpenBlog is a free collaborative technical blog where developers publish with pull requests, build a visible GitHub portfolio, and improve hiring reputation.';
 const canonicalPath = '/';
@@ -35,39 +124,201 @@ const structuredData = [
     name: 'OpenBlog Home',
     description: pageDescription,
     url: canonicalUrl
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: 'OpenBlog Top Categories',
+    itemListElement: categoryInsights.slice(0, 6).map((category, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: toAbsoluteUrl(getCategoryPath(category.key), siteUrl),
+      name: category.label
+    }))
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'FAQPage',
+    mainEntity: faqEntries.map((entry) => ({
+      '@type': 'Question',
+      name: entry.question,
+      acceptedAnswer: {
+        '@type': 'Answer',
+        text: entry.answer
+      }
+    }))
   }
 ];
 ---
 <BaseLayout title="OpenBlog | Free Collaborative Blog for GitHub Portfolio Growth" description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
   <section class="card hero">
-    <p class="kicker icon-label"><i class="ti ti-news icon-sm" aria-hidden="true"></i>Open source publication</p>
-    <h1>Write together and grow your GitHub reputation.</h1>
-    <p class="meta">Every accepted pull request improves content and creates visible proof of teamwork, consistency, and technical communication.</p>
-    <div class="stats">
-      <div class="stat">
-        <span class="stat-value stat-head"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>{posts.length}</span>
-        <span class="stat-label">Published posts</span>
+    <div class="hero-main">
+      <p class="kicker icon-label"><i class="ti ti-news icon-sm" aria-hidden="true"></i>Open source publication</p>
+      <h1>Write together and grow your GitHub reputation.</h1>
+      <p class="meta">Every accepted pull request improves content and creates visible proof of teamwork, consistency, and technical communication.</p>
+      <div class="hero-actions">
+        <a class="home-cta" href="/how-to-contribute">
+          <i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>
+          Start contributing
+        </a>
+        <a class="home-cta home-cta-soft" href="/leaderboard">
+          <i class="ti ti-trophy icon-sm" aria-hidden="true"></i>
+          View leaderboard
+        </a>
       </div>
-      <div class="stat">
-        <span class="stat-value stat-head"><i class="ti ti-category icon-sm" aria-hidden="true"></i>{categoryCount}</span>
-        <span class="stat-label">Active categories</span>
+      <ul class="hero-highlights">
+        <li class="hero-highlight"><i class="ti ti-badge-check icon-sm" aria-hidden="true"></i>Editorial reviews through pull requests</li>
+        <li class="hero-highlight"><i class="ti ti-certificate icon-sm" aria-hidden="true"></i>Public proof-of-work tied to your GitHub profile</li>
+        <li class="hero-highlight"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>Cross-category collaboration with visible contribution history</li>
+      </ul>
+    </div>
+
+    <div class="hero-side">
+      <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Community snapshot</p>
+      <div class="stats">
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>{posts.length}</span>
+          <span class="stat-label">Published posts</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-category icon-sm" aria-hidden="true"></i>{categoryCount}</span>
+          <span class="stat-label">Active categories</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{totalContributors}</span>
+          <span class="stat-label">Scored contributors</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-star-filled icon-sm" aria-hidden="true"></i>{featuredPostCount}</span>
+          <span class="stat-label">Featured stories</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>{tagCount}</span>
+          <span class="stat-label">Indexed tags</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-sparkles icon-sm" aria-hidden="true"></i>{recentEventPoints}</span>
+          <span class="stat-label">Recent points</span>
+        </div>
       </div>
-      <div class="stat">
-        <span class="stat-value stat-head"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>PR-based</span>
-        <span class="stat-label">Contribution model</span>
-      </div>
+      {latestContributors.length > 0 && (
+        <div class="hero-side-foot">
+          <p class="meta icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Recently active</p>
+          <div class="hero-side-avatars">
+            {latestContributors.slice(0, LATEST_CONTRIBUTORS_LIMIT).map((contributor) => (
+              <a
+                class="hero-side-avatar-link"
+                href={getProfilePath(contributor.username)}
+                aria-label={`@${contributor.username}`}
+                title={`@${contributor.username}`}
+              >
+                <UserAvatar
+                  username={contributor.username}
+                  avatarUrl={contributor.avatarUrl}
+                  size={64}
+                  class="hero-side-avatar"
+                  alt=""
+                  width={28}
+                  height={28}
+                />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   </section>
+
+  <nav class="card home-jump-links" aria-label="Homepage sections">
+    <a href="#home-categories"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Explore categories</a>
+    <a href="#home-tags"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</a>
+    <a href="#home-posts"><i class="ti ti-list icon-sm" aria-hidden="true"></i>All stories</a>
+    <a href="#home-community"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i>Community pulse</a>
+    <a href="#home-faq"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Contributor FAQ</a>
+  </nav>
 
   <FeaturedPostsSlider posts={posts} limit={5} class="card" />
 
   {latestPost ? <LatestPostCard post={latestPost} /> : null}
 
+  <div class="home-discovery-grid">
+    <section id="home-categories" class="card home-categories">
+      <div class="section-head">
+        <div>
+          <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Explore by category</p>
+          <h2>Pick a topic and dive deeper</h2>
+        </div>
+        <p class="meta">Sorted by post volume, with featured depth signals.</p>
+      </div>
+
+      <div class="category-insights-grid">
+        {categoryInsights.map((category) => (
+          <article class="category-insight-card">
+            <h3>
+              <a href={getCategoryPath(category.key)}>{category.label}</a>
+            </h3>
+            <div class="category-insight-stats">
+              <span class="category-insight-stat">
+                <i class="ti ti-notes icon-sm" aria-hidden="true"></i>
+                {category.postCount} post{category.postCount > 1 ? 's' : ''}
+              </span>
+              <span class="category-insight-stat">
+                <i class="ti ti-star-filled icon-sm" aria-hidden="true"></i>
+                {category.featuredCount} featured
+              </span>
+            </div>
+          </article>
+        ))}
+      </div>
+      {hiddenCategoryCount > 0 ? (
+        <p class="meta list-limit-note icon-label">
+          <i class="ti ti-layout-grid icon-sm" aria-hidden="true"></i>
+          +{hiddenCategoryCount} more categories available in the sidebar
+        </p>
+      ) : null}
+    </section>
+
+    {topTags.length > 0 && (
+      <div class="home-discovery-side">
+        <section id="home-tags" class="card home-tags">
+          <div class="section-head">
+            <div>
+              <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
+              <h2>Explore recurring technologies</h2>
+            </div>
+            <p class="meta">Tag volume shows where contributors are actively sharing implementation details and best practices.</p>
+          </div>
+
+          <div class="tag-cloud" role="list">
+            {topTags.map((tag) => (
+              <a role="listitem" class="tag-cloud-item" href={getTagPath(tag.label)}>
+                <span>{tag.label}</span>
+                <span class="badge">{tag.postCount}</span>
+              </a>
+            ))}
+          </div>
+          {hiddenTagCount > 0 ? (
+            <p class="meta list-limit-note icon-label">
+              <i class="ti ti-tags icon-sm" aria-hidden="true"></i>
+              +{hiddenTagCount} more tags
+            </p>
+          ) : null}
+        </section>
+      </div>
+    )}
+  </div>
+
   {remainingPosts.length > 0 ? (
-    <section class="list paginated-list">
-      <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
-      <p id="home-posts-page-info" class="meta pagination-info">Showing {postsPerPage} posts per page</p>
-      <div class="post-grid" data-home-posts-per-page={postsPerPage}>
+    <section id="home-posts" class="card list paginated-list home-posts-section">
+      <div class="section-head section-head-inline">
+        <div>
+          <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
+          <h2>Complete post archive</h2>
+        </div>
+        <p id="home-posts-page-info" class="meta pagination-info">Showing {postsPerPage} posts per page</p>
+      </div>
+
+      <div class="post-grid" data-home-post-grid data-home-posts-per-page={postsPerPage}>
         {remainingPosts.map((post) => (
           <PostCard
             post={post}
@@ -92,20 +343,148 @@ const structuredData = [
       )}
     </section>
   ) : (
-    <section class="list">
+    <section id="home-posts" class="card list home-posts-section">
       <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
-      <article class="card">
+      <article class="home-empty-state">
         <h2>More stories are on the way</h2>
         <p class="meta">Only one post is available right now. More coming soon.</p>
       </article>
     </section>
   )}
 
+
+  <section id="home-community" class="card home-community">
+    <div class="section-head">
+      <div>
+        <p class="kicker icon-label"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i>Community pulse</p>
+        <h2>See what is being improved right now</h2>
+      </div>
+      <p class="meta">Recent accepted pull requests and active contributors, all visible in public GitHub history.</p>
+    </div>
+
+    <div class="community-overview">
+      <span class="badge"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>{recentEvents.length} latest accepted contributions</span>
+      <span class="badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>{recentEventPoints} points in recent activity</span>
+      <span class="badge"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{latestContributors.length} recently active contributors</span>
+    </div>
+
+    <div class="community-layout">
+      <section class="community-block community-block-primary">
+        <h3 class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>Latest accepted PR activity</h3>
+        {recentEvents.length > 0 ? (
+          <ul class="home-activity-list">
+            {recentEvents.map((event) => {
+              const eventPost = postBySlug.get(event.postSlug);
+              return (
+                <li class="home-activity-item">
+                  <a class="user-chip user-link" href={getProfilePath(event.username)}>
+                    <UserAvatar username={event.username} avatarUrl={event.userAvatarUrl} size={64} class="avatar-sm" />
+                    <span class="user-handle">@{event.username}</span>
+                  </a>
+                  <span class="meta">opened</span>
+                  <a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a>
+                  <span class="meta">for</span>
+                  {eventPost ? (
+                    <a href={getPostPath(eventPost.slug)}>{eventPost.title}</a>
+                  ) : (
+                    <span>{event.postSlug}</span>
+                  )}
+                  <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{event.points}</span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p class="meta">No contribution activity found yet.</p>
+        )}
+      </section>
+
+      <div class="community-side">
+      <section class="community-block">
+        <h3 class="icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Top contributors</h3>
+        <p class="meta list-limit-note">Ranked by points.</p>
+        {topContributors.length > 0 ? (
+          <ol class="home-top-contributors">
+            {topContributors.map((contributor, index) => (
+              <li class="home-top-contributor-item">
+                <span class="home-rank">#{index + 1}</span>
+                <a class="user-chip user-link" href={getProfilePath(contributor.username)}>
+                  <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={64} class="avatar-sm" />
+                  <span class="user-handle">@{contributor.username}</span>
+                </a>
+                <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>{contributor.totalPoints}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p class="meta">Leaderboard data is not available yet.</p>
+        )}
+
+        <a class="community-link" href="/leaderboard">
+          Full leaderboard
+          <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+        </a>
+        {hiddenContributorCount > 0 ? <p class="meta list-limit-note">+{hiddenContributorCount} more contributors on leaderboard</p> : null}
+      </section>
+
+      <section class="community-block">
+        <h3 class="icon-label"><i class="ti ti-route icon-sm" aria-hidden="true"></i>How publishing works here</h3>
+        <ol class="home-process-list">
+          <li><strong>Draft:</strong> Add or improve a post as markdown in the repository.</li>
+          <li><strong>Review:</strong> Open a pull request and iterate with feedback.</li>
+          <li><strong>Publish:</strong> Merged PR updates the live blog and your public contribution history.</li>
+        </ol>
+        <a class="community-link" href="/how-to-contribute">
+          Contribution guide
+          <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+        </a>
+      </section>
+
+      {latestContributors.length > 0 && (
+        <section class="community-block">
+          <h3 class="icon-label"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>Recently active contributors</h3>
+          <ul class="home-latest-contributors">
+            {latestContributors.slice(0, LATEST_CONTRIBUTORS_LIMIT).map((contributor) => (
+              <li>
+                <a class="user-chip user-link" href={getProfilePath(contributor.username)}>
+                  <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={64} class="avatar-sm" />
+                  <span class="user-handle">@{contributor.username}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      </div>
+    </div>
+  </section>
+
+  <section id="home-faq" class="card home-faq">
+    <div class="section-head">
+      <div>
+        <p class="kicker icon-label"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Contributor FAQ</p>
+        <h2>Common questions before your first pull request</h2>
+      </div>
+      <p class="meta">Short answers for contributors who want to move fast without missing project expectations.</p>
+    </div>
+
+    <div class="faq-list">
+      {faqEntries.map((entry, index) => (
+        <details class="faq-item" open={index === 0}>
+          <summary>{entry.question}</summary>
+          <p class="meta">{entry.answer}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+
   <script is:inline>
     (function () {
       var cards = Array.from(document.querySelectorAll('[data-home-post-card]'));
       if (cards.length === 0) return;
-      var grid = document.querySelector('.post-grid');
+
+      var grid = document.querySelector('[data-home-post-grid]');
+      if (!grid) return;
 
       cards.sort(function (a, b) {
         var aDate = a.getAttribute('data-post-date') || '';
@@ -117,13 +496,11 @@ const structuredData = [
         return aHref.localeCompare(bHref);
       });
 
-      if (grid) {
-        cards.forEach(function (card) {
-          grid.appendChild(card);
-        });
-      }
+      cards.forEach(function (card) {
+        grid.appendChild(card);
+      });
 
-      var perPage = Number((grid && grid.getAttribute('data-home-posts-per-page')) || '6');
+      var perPage = Number(grid.getAttribute('data-home-posts-per-page') || '6');
       var pages = Math.max(1, Math.ceil(cards.length / perPage));
       var pageInfo = document.getElementById('home-posts-page-info');
       var prev = document.getElementById('home-posts-prev');
@@ -247,6 +624,468 @@ const structuredData = [
   </script>
 
   <style>
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 0.85rem;
+    }
+
+    .hero-main h1 {
+      margin-bottom: 0.55rem;
+    }
+
+    .hero-actions {
+      margin-top: 0.9rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+    }
+
+    .home-cta {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 1px solid var(--success);
+      border-radius: var(--radius-sm);
+      background: var(--success);
+      color: #fff;
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.5rem 0.7rem;
+      text-decoration: none;
+    }
+
+    .home-cta:hover {
+      color: #fff;
+      background: var(--success-strong);
+      border-color: var(--success-strong);
+    }
+
+    .home-cta-soft {
+      border-color: var(--border);
+      background: var(--surface);
+      color: var(--text);
+    }
+
+    .home-cta-soft:hover {
+      color: var(--text);
+      background: var(--surface-soft);
+      border-color: var(--primary);
+    }
+
+    .hero-highlights {
+      list-style: none;
+      margin: 0.85rem 0 0;
+      padding: 0;
+      display: grid;
+      gap: 0.38rem;
+    }
+
+    .hero-highlight {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.32rem;
+      color: var(--muted);
+      font-family: var(--font-main);
+      font-size: 0.84rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+
+    .hero-side {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 0.62rem;
+      display: grid;
+      gap: 0.52rem;
+      box-shadow: var(--shadow-xs);
+    }
+
+    .hero-side .stats {
+      margin-top: 0.45rem;
+      gap: 0.45rem;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .hero-side .stat {
+      background: var(--surface);
+      padding: 0.52rem;
+    }
+
+    .hero-side .stat-value {
+      font-size: 1.05rem;
+    }
+
+    .hero-side-foot {
+      display: grid;
+      gap: 0.35rem;
+      border-top: 1px solid var(--border);
+      padding-top: 0.45rem;
+    }
+
+    .hero-side-foot .meta {
+      margin: 0;
+      font-size: 0.76rem;
+    }
+
+    .hero-side-avatars {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.28rem;
+    }
+
+    .hero-side-avatar-link {
+      display: inline-flex;
+      border: 1px solid var(--border);
+      border-radius: 9999px;
+      background: var(--surface-raised);
+      padding: 0.08rem;
+    }
+
+    .hero-side-avatar {
+      width: 1.4rem;
+      height: 1.4rem;
+      border: 0;
+    }
+
+    .hero-side-avatar-link:hover {
+      border-color: var(--primary);
+    }
+
+    [id^='home-'] {
+      scroll-margin-top: 1rem;
+    }
+
+    .home-jump-links {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(135px, 1fr));
+      gap: 0.45rem;
+    }
+
+    .home-jump-links a {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.32rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.76rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.3rem 0.5rem;
+      text-decoration: none;
+    }
+
+    .home-jump-links a:hover {
+      border-color: var(--primary);
+      background: var(--surface-soft);
+    }
+
+    .home-faq {
+      display: grid;
+      gap: 0.62rem;
+    }
+
+    .home-discovery-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
+      align-items: stretch;
+      gap: 0.85rem;
+    }
+
+    .home-discovery-side {
+      display: grid;
+      gap: 0;
+      align-content: stretch;
+      height: 100%;
+    }
+
+    .home-categories,
+    .home-tags {
+      height: 100%;
+    }
+
+    .home-tags {
+      align-content: start;
+    }
+
+    .section-head {
+      display: grid;
+      gap: 0.32rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .section-head h2 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .section-head .meta {
+      margin: 0;
+      font-size: 0.82rem;
+    }
+
+    .section-head-inline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0;
+    }
+
+    .section-head-inline .meta {
+      margin-left: auto;
+    }
+
+    .home-posts-section {
+      gap: 0.65rem;
+    }
+
+    .list-limit-note {
+      margin: 0.05rem 0 0;
+      font-size: 0.76rem;
+      line-height: 1.25;
+    }
+
+    .home-categories,
+    .home-community {
+      display: grid;
+      gap: 0.62rem;
+    }
+
+    .category-insights-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      align-items: start;
+      gap: 0.5rem;
+    }
+
+    .category-insight-card {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 0.5rem;
+      display: grid;
+      gap: 0.3rem;
+      min-width: 0;
+    }
+
+    .category-insight-card h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .category-insight-card .meta {
+      margin: 0;
+      font-size: 0.75rem;
+    }
+
+    .category-insight-stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.45rem;
+    }
+
+    .category-insight-stat {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.22rem;
+      color: var(--muted);
+      font-family: var(--font-main);
+      font-size: 0.72rem;
+      font-weight: 400;
+      line-height: 1.2;
+    }
+
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.38rem;
+    }
+
+    .tag-cloud-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.3rem 0.42rem;
+      text-decoration: none;
+    }
+
+    .tag-cloud-item .badge {
+      font-size: 0.68rem;
+      padding: 0.12rem 0.35rem;
+      background: var(--surface);
+    }
+
+    .tag-cloud-item:hover {
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+
+    .community-overview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .community-overview .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .community-block {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.42rem;
+      min-width: 0;
+    }
+
+    .community-block-primary {
+      min-height: 100%;
+    }
+
+    .community-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 0.6rem;
+    }
+
+    .community-side {
+      display: grid;
+      gap: 0.6rem;
+      align-content: start;
+    }
+
+    .community-block h3 {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .home-activity-list,
+    .home-top-contributors,
+    .home-process-list,
+    .home-latest-contributors {
+      margin: 0;
+      padding-left: 1.05rem;
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .home-activity-item,
+    .home-top-contributor-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.3rem;
+      min-width: 0;
+    }
+
+    .home-rank {
+      font-family: var(--font-main);
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 1.9rem;
+    }
+
+    .home-process-list {
+      padding-left: 1.15rem;
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .community-link {
+      margin-top: 0.15rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .home-community .user-handle {
+      font-weight: 400;
+    }
+
+    .home-latest-contributors {
+      padding-left: 0;
+      list-style: none;
+      gap: 0.3rem;
+    }
+
+    .faq-list {
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 0.5rem 0.62rem;
+    }
+
+    .faq-item[open] {
+      border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+      background: var(--surface);
+    }
+
+    .faq-item summary {
+      cursor: pointer;
+      font-family: var(--font-main);
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--text);
+    }
+
+    .faq-item .meta {
+      margin: 0.42rem 0 0;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .home-empty-state {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 0.75rem;
+    }
+
+    .home-empty-state h2 {
+      margin: 0 0 0.35rem;
+    }
+
+    .home-empty-state .meta {
+      margin: 0;
+    }
+
     .leaderboard-pagination {
       margin-top: 0.45rem;
       display: flex;
@@ -273,19 +1112,22 @@ const structuredData = [
       min-width: 2rem;
       min-height: 2rem;
       border: 1px solid var(--border);
-      background: var(--surface-soft);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
       color: var(--text);
-      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      font-family: var(--font-main);
       font-size: 0.82rem;
-      font-weight: 700;
+      font-weight: 600;
       line-height: 1;
       padding: 0.35rem 0.55rem;
       text-decoration: none;
     }
 
     .page-link.is-active {
-      text-decoration: underline;
-      text-underline-offset: 0.2em;
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      color: var(--primary);
+      text-decoration: none;
     }
 
     .page-control.is-disabled {
@@ -293,9 +1135,46 @@ const structuredData = [
       pointer-events: none;
     }
 
+    @media (max-width: 1080px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .home-discovery-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .community-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
     @media (max-width: 860px) {
       .leaderboard-pagination {
         justify-content: center;
+      }
+
+      .home-jump-links {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .hero-side .stats,
+      .home-discovery-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .section-head h2 {
+        font-size: 1.15rem;
+      }
+
+      .section-head-inline .meta {
+        margin-left: 0;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .home-jump-links {
+        grid-template-columns: 1fr;
       }
     }
   </style>

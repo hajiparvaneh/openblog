@@ -333,14 +333,15 @@ const rootClass = `featured-slider ${className}`.trim();
     min-width: 2rem;
     min-height: 2rem;
     border: 1px solid var(--border);
-    background: var(--surface-soft);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
     color: var(--text);
     padding: 0.35rem;
     cursor: pointer;
   }
 
   .featured-slider-control:hover {
-    background: var(--surface);
+    background: var(--surface-soft);
   }
 
   .featured-slider-viewport {
@@ -367,15 +368,18 @@ const rootClass = `featured-slider ${className}`.trim();
     grid-template-columns: minmax(200px, 0.9fr) minmax(0, 1.3fr);
     align-items: stretch;
     border: 1px solid var(--border);
-    background: var(--surface-soft);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
     min-height: 100%;
+    box-shadow: var(--shadow-xs);
+    overflow: hidden;
   }
 
   .featured-slide-image-link {
     display: block;
     height: 100%;
     border-right: 1px solid var(--border);
-    background: var(--surface);
+    background: var(--surface-soft);
     overflow: hidden;
   }
 
