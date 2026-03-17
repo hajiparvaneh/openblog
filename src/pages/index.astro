@@ -757,13 +757,23 @@ const structuredData = [
     .home-discovery-grid {
       display: grid;
       grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr);
-      align-items: start;
+      align-items: stretch;
       gap: 0.85rem;
     }
 
     .home-discovery-side {
       display: grid;
       gap: 0;
+      align-content: stretch;
+      height: 100%;
+    }
+
+    .home-categories,
+    .home-tags {
+      height: 100%;
+    }
+
+    .home-tags {
       align-content: start;
     }
 
@@ -807,7 +817,6 @@ const structuredData = [
     }
 
     .home-categories,
-    .home-tags,
     .home-quality-showcase,
     .home-community {
       display: grid;
@@ -1006,6 +1015,10 @@ const structuredData = [
       font-family: var(--font-main);
       font-size: 0.82rem;
       font-weight: 700;
+    }
+
+    .home-community .user-handle {
+      font-weight: 400;
     }
 
     .home-latest-contributors {
