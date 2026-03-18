@@ -46,8 +46,17 @@ const logoDarkSrc = '/openblog-logo-dark.png';
 const logoLightSrc = '/openblog-logo-light.png';
 const jsonLdEntries = Array.isArray(structuredData) ? structuredData : structuredData ? [structuredData] : [];
 const serializedStructuredData = jsonLdEntries.map((entry) => JSON.stringify(entry).replace(/</g, '\\u003c'));
-const categories = [...new Map(getPosts().map((post) => [post.category, post.categoryLabel])).entries()]
-  .sort((a, b) => a[1].localeCompare(b[1]));
+const posts = getPosts();
+const categories = [...posts.reduce((map, post) => {
+  const current = map.get(post.category);
+  if (current) {
+    current.postCount += 1;
+  } else {
+    map.set(post.category, { label: post.categoryLabel, postCount: 1 });
+  }
+  return map;
+}, new Map<string, { label: string; postCount: number }>()).entries()]
+  .sort((a, b) => b[1].postCount - a[1].postCount || a[1].label.localeCompare(b[1].label));
 const latestContributors = getLatestContributors(10);
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
@@ -185,8 +194,11 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
             <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Categories</p>
             <nav aria-label="Post categories">
               <div class="category-links category-links-sidebar">
-                {categories.map(([category, categoryLabel]) => (
-                  <a class="category-link" href={getCategoryPath(category)}>{categoryLabel}</a>
+                {categories.map(([category, categoryMeta]) => (
+                  <a class="category-link" href={getCategoryPath(category)}>
+                    <span>{categoryMeta.label}</span>
+                    <span class="badge">{categoryMeta.postCount}</span>
+                  </a>
                 ))}
               </div>
             </nav>

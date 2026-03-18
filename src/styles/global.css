@@ -430,9 +430,17 @@ p {
 }
 
 .category-links-sidebar .category-link {
-  display: block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.45rem;
   font-size: 0.83rem;
   padding: 0.35rem 0.55rem;
+}
+
+.category-links-sidebar .category-link .badge {
+  font-size: 0.7rem;
+  padding: 0.12rem 0.38rem;
 }
 
 .category-link:hover {
