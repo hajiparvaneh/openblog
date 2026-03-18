@@ -182,14 +182,6 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
             </section>
 
             <hr class="sidebar-sep" />
-
-            {hasSidebarExtra && (
-              <>
-                <slot name="sidebar-extra" />
-                <hr class="sidebar-sep" />
-              </>
-            )}
-
             <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Categories</p>
             <nav aria-label="Post categories">
               <div class="category-links category-links-sidebar">
@@ -198,6 +190,13 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
                 ))}
               </div>
             </nav>
+
+            {hasSidebarExtra && (
+              <>
+                <hr class="sidebar-sep" />
+                <slot name="sidebar-extra" />
+              </>
+            )}
 
             {latestContributors.length > 0 && (
               <>

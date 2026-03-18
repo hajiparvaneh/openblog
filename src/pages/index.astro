@@ -5,7 +5,6 @@ import LatestPostCard from '../components/LatestPostCard.astro';
 import PostCard from '../components/PostCard.astro';
 import UserAvatar from '../components/UserAvatar.astro';
 import {
-  formatPostDate,
   getCategoryPath,
   getLatestContributors,
   getLeaderboard,
@@ -73,7 +72,6 @@ for (const post of posts) {
 const categoryInsights = [...categoryInsightsMap.values()]
   .sort((a, b) => b.postCount - a.postCount || a.label.localeCompare(b.label))
   .slice(0, CATEGORY_INSIGHTS_LIMIT);
-const hiddenCategoryCount = Math.max(0, categoryInsightsMap.size - categoryInsights.length);
 const hiddenTagCount = Math.max(0, tagRecords.length - topTags.length);
 const hiddenContributorCount = Math.max(0, totalContributors - topContributors.length);
 const faqEntries = [
@@ -230,8 +228,6 @@ const structuredData = [
   </section>
 
   <nav class="card home-jump-links" aria-label="Homepage sections">
-    <a href="#home-categories"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Explore categories</a>
-    <a href="#home-tags"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</a>
     <a href="#home-posts"><i class="ti ti-list icon-sm" aria-hidden="true"></i>All stories</a>
     <a href="#home-community"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i>Community pulse</a>
     <a href="#home-faq"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Contributor FAQ</a>
@@ -241,72 +237,27 @@ const structuredData = [
 
   {latestPost ? <LatestPostCard post={latestPost} /> : null}
 
-  <div class="home-discovery-grid">
-    <section id="home-categories" class="card home-categories">
-      <div class="section-head">
-        <div>
-          <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Explore by category</p>
-          <h2>Pick a topic and dive deeper</h2>
+  {topTags.length > 0 && (
+    <Fragment slot="sidebar-extra">
+      <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
+      <nav aria-label="Popular tags">
+        <div class="tag-cloud" role="list">
+          {topTags.map((tag) => (
+            <a role="listitem" class="tag-cloud-item" href={getTagPath(tag.label)}>
+              <span>{tag.label}</span>
+              <span class="badge">{tag.postCount}</span>
+            </a>
+          ))}
         </div>
-        <p class="meta">Sorted by post volume, with featured depth signals.</p>
-      </div>
-
-      <div class="category-insights-grid">
-        {categoryInsights.map((category) => (
-          <article class="category-insight-card">
-            <h3>
-              <a href={getCategoryPath(category.key)}>{category.label}</a>
-            </h3>
-            <div class="category-insight-stats">
-              <span class="category-insight-stat">
-                <i class="ti ti-notes icon-sm" aria-hidden="true"></i>
-                {category.postCount} post{category.postCount > 1 ? 's' : ''}
-              </span>
-              <span class="category-insight-stat">
-                <i class="ti ti-star-filled icon-sm" aria-hidden="true"></i>
-                {category.featuredCount} featured
-              </span>
-            </div>
-          </article>
-        ))}
-      </div>
-      {hiddenCategoryCount > 0 ? (
+      </nav>
+      {hiddenTagCount > 0 ? (
         <p class="meta list-limit-note icon-label">
-          <i class="ti ti-layout-grid icon-sm" aria-hidden="true"></i>
-          +{hiddenCategoryCount} more categories available in the sidebar
+          <i class="ti ti-tags icon-sm" aria-hidden="true"></i>
+          +{hiddenTagCount} more tags
         </p>
       ) : null}
-    </section>
-
-    {topTags.length > 0 && (
-      <div class="home-discovery-side">
-        <section id="home-tags" class="card home-tags">
-          <div class="section-head">
-            <div>
-              <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
-              <h2>Explore recurring technologies</h2>
-            </div>
-            <p class="meta">Tag volume shows where contributors are actively sharing implementation details and best practices.</p>
-          </div>
-
-          <div class="tag-cloud" role="list">
-            {topTags.map((tag) => (
-              <a role="listitem" class="tag-cloud-item" href={getTagPath(tag.label)}>
-                <span>{tag.label}</span>
-                <span class="badge">{tag.postCount}</span>
-              </a>
-            ))}
-          </div>
-          {hiddenTagCount > 0 ? (
-            <p class="meta list-limit-note icon-label">
-              <i class="ti ti-tags icon-sm" aria-hidden="true"></i>
-              +{hiddenTagCount} more tags
-            </p>
-          ) : null}
-        </section>
-      </div>
-    )}
-  </div>
+    </Fragment>
+  )}
 
   {remainingPosts.length > 0 ? (
     <section id="home-posts" class="card list paginated-list home-posts-section">
