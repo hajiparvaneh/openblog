@@ -1,6 +1,6 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import PostCard from '../../components/PostCard.astro';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import PostCard from '../../../../components/PostCard.astro';
 import {
   getContributedPostSlugsByUser,
   getKnownContributors,
@@ -8,12 +8,32 @@ import {
   getProfileContributionsPath,
   getProfilePath,
   getUserProfile
-} from '../../lib/openblog';
-import { toAbsoluteUrl } from '../../lib/seo';
-import { getSiteUrl } from '../../lib/site';
+} from '../../../../lib/openblog';
+import { toAbsoluteUrl } from '../../../../lib/seo';
+import { getSiteUrl } from '../../../../lib/site';
 
 export function getStaticPaths() {
-  return getKnownContributors().map((username) => ({ params: { username: `@${username}` } }));
+  const postsPerPage = 6;
+  const paths: Array<{ params: { username: string; page: string } }> = [];
+
+  for (const username of getKnownContributors()) {
+    const profile = getUserProfile(username);
+    if (!profile) continue;
+
+    const postsCount = getContributedPostSlugsByUser(profile.username).length;
+    const totalPages = Math.max(1, Math.ceil(postsCount / postsPerPage));
+
+    for (let page = 2; page <= totalPages; page += 1) {
+      paths.push({
+        params: {
+          username: `@${profile.username}`,
+          page: String(page)
+        }
+      });
+    }
+  }
+
+  return paths;
 }
 
 const routeUsername = Astro.params.username ?? '';
@@ -30,7 +50,14 @@ const latestPosts = getContributedPostSlugsByUser(profile.username)
 
 const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(latestPosts.length / postsPerPage));
-const currentPage = 1;
+const rawCurrentPage = Number(Astro.params.page ?? '1');
+if (!Number.isFinite(rawCurrentPage) || rawCurrentPage < 2) {
+  throw new Error('Invalid page number');
+}
+const currentPage = Math.floor(rawCurrentPage);
+if (currentPage > postsTotalPages) {
+  throw new Error('Page not found');
+}
 const pageStart = (currentPage - 1) * postsPerPage;
 const paginatedPosts = latestPosts.slice(pageStart, pageStart + postsPerPage);
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
@@ -41,14 +68,14 @@ const formatDate = (isoDate: string | null) => {
 };
 const profileBasePath = getProfilePath(profile.username);
 const getProfilePagePath = (page: number): string => (page <= 1 ? profileBasePath : `${profileBasePath}/page/${page}`);
-const canonicalPath = profileBasePath;
+const canonicalPath = getProfilePagePath(currentPage);
 const pageDescription = `View @${profile.username}'s OpenBlog profile, including contribution stats and latest posts.`;
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'ProfilePage',
-  name: `@${profile.username} | OpenBlog`,
+  name: `@${profile.username} | OpenBlog | Page ${currentPage}`,
   description: pageDescription,
   url: canonicalUrl,
   mainEntity: {
@@ -61,7 +88,7 @@ const structuredData = {
 };
 ---
 <BaseLayout
-  title={`@${profile.username} | OpenBlog`}
+  title={`@${profile.username} | OpenBlog | Page ${currentPage}`}
   description={pageDescription}
   canonicalPath={canonicalPath}
   ogType="profile"
@@ -180,25 +207,6 @@ const structuredData = {
       </>
     )}
   </section>
-
-  <script is:inline>
-    (function () {
-      var basePath = window.location.pathname;
-      if (!basePath || basePath.indexOf('/profile/@') !== 0) return;
-      var params = new URLSearchParams(window.location.search);
-      if (!params.has('page')) return;
-      var requestedPage = Number(params.get('page') || '1');
-      if (!Number.isFinite(requestedPage) || requestedPage < 1) return;
-      var maxPage = Math.max(1, document.querySelectorAll('.page-link').length);
-      var normalizedPage = Math.floor(requestedPage);
-      if (normalizedPage > maxPage) normalizedPage = maxPage;
-      if (normalizedPage <= 1) {
-        window.location.replace(basePath + window.location.hash);
-        return;
-      }
-      window.location.replace(basePath + '/page/' + normalizedPage + window.location.hash);
-    })();
-  </script>
 
   <style>
     .profile-head {

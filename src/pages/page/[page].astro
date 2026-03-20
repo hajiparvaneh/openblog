@@ -1,0 +1,524 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import UserAvatar from '../../components/UserAvatar.astro';
+import {
+  getLatestContributors,
+  getLeaderboard,
+  getPosts,
+  getProfilePath,
+  getRecentEvents
+} from '../../lib/openblog';
+import { toAbsoluteUrl } from '../../lib/seo';
+import { getSiteUrl } from '../../lib/site';
+
+export function getStaticPaths() {
+  const postsPerPage = 6;
+  const remainingPosts = getPosts()
+    .slice(1)
+    .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
+  const totalPages = Math.max(1, Math.ceil(remainingPosts.length / postsPerPage));
+  const routePages = Array.from({ length: Math.max(0, totalPages - 1) }, (_, index) => index + 2);
+  return routePages.map((page) => ({
+    params: { page: String(page) }
+  }));
+}
+
+const posts = getPosts();
+const remainingPosts = posts
+  .slice(1)
+  .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
+const postsPerPage = 6;
+const postsTotalPages = Math.max(1, Math.ceil(remainingPosts.length / postsPerPage));
+const TOP_CONTRIBUTORS_LIMIT = 5;
+const LATEST_CONTRIBUTORS_LIMIT = 8;
+const RECENT_EVENTS_LIMIT = 8;
+const HOME_EVENTS_WINDOW_LIMIT = 24;
+const rawCurrentPage = Number(Astro.params.page ?? '1');
+
+if (!Number.isFinite(rawCurrentPage) || rawCurrentPage < 2) {
+  throw new Error('Invalid page number');
+}
+
+const currentPage = Math.floor(rawCurrentPage);
+if (currentPage > postsTotalPages) {
+  throw new Error('Page not found');
+}
+
+const pageStart = (currentPage - 1) * postsPerPage;
+const paginatedPosts = remainingPosts.slice(pageStart, pageStart + postsPerPage);
+const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
+const getHomePagePath = (page: number): string => (page <= 1 ? '/' : `/page/${page}`);
+const getPostPath = (slug: string): string =>
+  `/posts/${slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
+const getPullRequestUrl = (prNumber: number): string =>
+  `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
+
+const leaderboard = getLeaderboard();
+const totalContributors = leaderboard.length;
+const topContributors = leaderboard.slice(0, TOP_CONTRIBUTORS_LIMIT);
+const latestContributors = getLatestContributors(LATEST_CONTRIBUTORS_LIMIT);
+const allRecentEvents = getRecentEvents(HOME_EVENTS_WINDOW_LIMIT);
+const recentEvents = allRecentEvents.slice(0, RECENT_EVENTS_LIMIT);
+const recentEventPoints = recentEvents.reduce((sum, event) => sum + event.points, 0);
+const postBySlug = new Map(posts.map((post) => [post.slug, post]));
+const hiddenContributorCount = Math.max(0, totalContributors - topContributors.length);
+const faqEntries = [
+  {
+    question: 'Do I need to be an advanced writer to publish here?',
+    answer:
+      'No. Draft clarity matters more than perfection. Reviews happen through pull requests, so you can iterate with feedback before your contribution is merged.'
+  },
+  {
+    question: 'What types of improvements are accepted?',
+    answer:
+      'New tutorials, better explanations, fixes to outdated snippets, and stronger references are all valuable. Small quality upgrades are welcome.'
+  },
+  {
+    question: 'How is contribution impact measured?',
+    answer:
+      'Accepted pull requests are scored with transparent labels. Your points and accepted PRs appear on public profile and leaderboard pages.'
+  },
+  {
+    question: 'Can I contribute without writing a full new post?',
+    answer:
+      'Yes. You can refine structure, add examples, improve language, and update technical details in existing posts. Those improvements are tracked too.'
+  }
+] as const;
+
+const canonicalPath = `/page/${currentPage}`;
+const pageDescription =
+  `Browse OpenBlog archive page ${currentPage} with ${remainingPosts.length} published posts.`;
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'CollectionPage',
+  name: `OpenBlog Archive Page ${currentPage}`,
+  description: pageDescription,
+  url: canonicalUrl
+};
+---
+<BaseLayout title={`OpenBlog | Page ${currentPage}`} description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
+  <section id="home-posts" class="card list paginated-list home-posts-section">
+    <div class="section-head section-head-inline">
+      <div>
+        <p class="kicker">Browse all stories</p>
+        <h1>Complete post archive</h1>
+      </div>
+      <p class="meta pagination-info">Page {currentPage} of {postsTotalPages} ({remainingPosts.length} posts)</p>
+    </div>
+
+    <div class="post-grid">
+      {paginatedPosts.map((post) => (
+        <PostCard post={post} />
+      ))}
+    </div>
+
+    {postsTotalPages > 1 && (
+      <nav class="leaderboard-pagination" aria-label="Homepage posts pages">
+        <a
+          id="home-posts-prev"
+          class:list={['page-control', currentPage <= 1 && 'is-disabled']}
+          href={getHomePagePath(Math.max(1, currentPage - 1))}
+          aria-disabled={currentPage <= 1 ? 'true' : undefined}
+        >
+          Previous
+        </a>
+        <ul class="page-links" aria-label="Page numbers">
+          {postPageNumbers.map((page) => (
+            <li>
+              <a
+                class:list={['page-link', page === currentPage && 'is-active']}
+                href={getHomePagePath(page)}
+                aria-current={page === currentPage ? 'page' : undefined}
+              >
+                {page}
+              </a>
+            </li>
+          ))}
+        </ul>
+        <a
+          id="home-posts-next"
+          class:list={['page-control', currentPage >= postsTotalPages && 'is-disabled']}
+          href={getHomePagePath(Math.min(postsTotalPages, currentPage + 1))}
+          aria-disabled={currentPage >= postsTotalPages ? 'true' : undefined}
+        >
+          Next
+        </a>
+      </nav>
+    )}
+  </section>
+
+  <section id="home-community" class="card home-community">
+    <div class="section-head">
+      <div>
+        <p class="kicker icon-label"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i>Community pulse</p>
+        <h2>See what is being improved right now</h2>
+      </div>
+      <p class="meta">Recent accepted pull requests and active contributors, all visible in public GitHub history.</p>
+    </div>
+
+    <div class="community-overview">
+      <span class="badge"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>{recentEvents.length} latest accepted contributions</span>
+      <span class="badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>{recentEventPoints} points in recent activity</span>
+      <span class="badge"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{latestContributors.length} recently active contributors</span>
+    </div>
+
+    <div class="community-layout">
+      <section class="community-block community-block-primary">
+        <h3 class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>Latest accepted PR activity</h3>
+        {recentEvents.length > 0 ? (
+          <ul class="home-activity-list">
+            {recentEvents.map((event) => {
+              const eventPost = postBySlug.get(event.postSlug);
+              return (
+                <li class="home-activity-item">
+                  <a class="user-chip user-link" href={getProfilePath(event.username)}>
+                    <UserAvatar username={event.username} avatarUrl={event.userAvatarUrl} size={64} class="avatar-sm" />
+                    <span class="user-handle">@{event.username}</span>
+                  </a>
+                  <span class="meta">opened</span>
+                  <a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a>
+                  <span class="meta">for</span>
+                  {eventPost ? (
+                    <a href={getPostPath(eventPost.slug)}>{eventPost.title}</a>
+                  ) : (
+                    <span>{event.postSlug}</span>
+                  )}
+                  <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{event.points}</span>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p class="meta">No contribution activity found yet.</p>
+        )}
+      </section>
+
+      <div class="community-side">
+      <section class="community-block">
+        <h3 class="icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Top contributors</h3>
+        <p class="meta list-limit-note">Ranked by points.</p>
+        {topContributors.length > 0 ? (
+          <ol class="home-top-contributors">
+            {topContributors.map((contributor, index) => (
+              <li class="home-top-contributor-item">
+                <span class="home-rank">#{index + 1}</span>
+                <a class="user-chip user-link" href={getProfilePath(contributor.username)}>
+                  <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={64} class="avatar-sm" />
+                  <span class="user-handle">@{contributor.username}</span>
+                </a>
+                <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>{contributor.totalPoints}</span>
+              </li>
+            ))}
+          </ol>
+        ) : (
+          <p class="meta">Leaderboard data is not available yet.</p>
+        )}
+
+        <a class="community-link" href="/leaderboard">
+          Full leaderboard
+          <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+        </a>
+        {hiddenContributorCount > 0 ? <p class="meta list-limit-note">+{hiddenContributorCount} more contributors on leaderboard</p> : null}
+      </section>
+
+      <section class="community-block">
+        <h3 class="icon-label"><i class="ti ti-route icon-sm" aria-hidden="true"></i>How publishing works here</h3>
+        <ol class="home-process-list">
+          <li><strong>Draft:</strong> Add or improve a post as markdown in the repository.</li>
+          <li><strong>Review:</strong> Open a pull request and iterate with feedback.</li>
+          <li><strong>Publish:</strong> Merged PR updates the live blog and your public contribution history.</li>
+        </ol>
+        <a class="community-link" href="/how-to-contribute">
+          Contribution guide
+          <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+        </a>
+      </section>
+
+      {latestContributors.length > 0 && (
+        <section class="community-block">
+          <h3 class="icon-label"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>Recently active contributors</h3>
+          <ul class="home-latest-contributors">
+            {latestContributors.slice(0, LATEST_CONTRIBUTORS_LIMIT).map((contributor) => (
+              <li>
+                <a class="user-chip user-link" href={getProfilePath(contributor.username)}>
+                  <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={64} class="avatar-sm" />
+                  <span class="user-handle">@{contributor.username}</span>
+                </a>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+      </div>
+    </div>
+  </section>
+
+  <section id="home-faq" class="card home-faq">
+    <div class="section-head">
+      <div>
+        <p class="kicker icon-label"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Contributor FAQ</p>
+        <h2>Common questions before your first pull request</h2>
+      </div>
+      <p class="meta">Short answers for contributors who want to move fast without missing project expectations.</p>
+    </div>
+
+    <div class="faq-list">
+      {faqEntries.map((entry, index) => (
+        <details class="faq-item" open={index === 0}>
+          <summary>{entry.question}</summary>
+          <p class="meta">{entry.answer}</p>
+        </details>
+      ))}
+    </div>
+  </section>
+
+  <style>
+    .section-head {
+      display: grid;
+      gap: 0.32rem;
+      margin-bottom: 0.55rem;
+    }
+
+    .section-head h1 {
+      margin: 0;
+      font-size: 1.35rem;
+    }
+
+    .section-head-inline {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: end;
+      justify-content: space-between;
+      gap: 0.5rem;
+      margin-bottom: 0;
+    }
+
+    .section-head-inline .meta {
+      margin-left: auto;
+    }
+
+    .home-posts-section {
+      gap: 0.65rem;
+    }
+
+    .home-faq {
+      display: grid;
+      gap: 0.62rem;
+    }
+
+    .home-community {
+      display: grid;
+      gap: 0.62rem;
+    }
+
+    .community-overview {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+
+    .community-overview .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+    }
+
+    .community-block {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 0.5rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.42rem;
+      min-width: 0;
+    }
+
+    .community-block-primary {
+      min-height: 100%;
+    }
+
+    .community-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+      align-items: start;
+      gap: 0.6rem;
+    }
+
+    .community-side {
+      display: grid;
+      gap: 0.6rem;
+      align-content: start;
+    }
+
+    .community-block h3 {
+      margin: 0;
+      font-size: 0.92rem;
+    }
+
+    .home-activity-list,
+    .home-top-contributors,
+    .home-process-list,
+    .home-latest-contributors {
+      margin: 0;
+      padding-left: 1.05rem;
+      display: grid;
+      gap: 0.4rem;
+    }
+
+    .home-activity-item,
+    .home-top-contributor-item {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.3rem;
+      min-width: 0;
+    }
+
+    .home-rank {
+      font-family: var(--font-main);
+      font-size: 0.74rem;
+      font-weight: 700;
+      color: var(--muted);
+      min-width: 1.9rem;
+    }
+
+    .home-process-list {
+      padding-left: 1.15rem;
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.84rem;
+      line-height: 1.45;
+    }
+
+    .community-link {
+      margin-top: 0.15rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.2rem;
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 700;
+    }
+
+    .home-community .user-handle {
+      font-weight: 400;
+    }
+
+    .home-latest-contributors {
+      padding-left: 0;
+      list-style: none;
+      gap: 0.3rem;
+    }
+
+    .list-limit-note {
+      margin: 0.05rem 0 0;
+      font-size: 0.76rem;
+      line-height: 1.25;
+    }
+
+    .faq-list {
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .faq-item {
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      padding: 0.5rem 0.62rem;
+    }
+
+    .faq-item[open] {
+      border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+      background: var(--surface);
+    }
+
+    .faq-item summary {
+      cursor: pointer;
+      font-family: var(--font-main);
+      font-size: 0.88rem;
+      font-weight: 700;
+      line-height: 1.35;
+      color: var(--text);
+    }
+
+    .faq-item .meta {
+      margin: 0.42rem 0 0;
+      font-size: 0.8rem;
+      line-height: 1.45;
+    }
+
+    .leaderboard-pagination {
+      margin-top: 0.45rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .page-links {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .page-control,
+    .page-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      min-height: 2rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.35rem 0.55rem;
+      text-decoration: none;
+    }
+
+    .page-link.is-active {
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .page-control.is-disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    @media (max-width: 1080px) {
+      .community-layout {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 860px) {
+      .leaderboard-pagination {
+        justify-content: center;
+      }
+
+      .section-head h1 {
+        font-size: 1.15rem;
+      }
+
+      .section-head-inline .meta {
+        margin-left: 0;
+      }
+    }
+  </style>
+</BaseLayout>

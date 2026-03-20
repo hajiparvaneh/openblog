@@ -66,6 +66,14 @@ type EventRecord = {
   mergedAt: string;
 };
 
+type GeneratedUserRecord = {
+  username: string;
+  profileUrl?: string;
+  avatarUrl?: string | null;
+  lastUpdatedAt?: string;
+  lastContribution?: { mergedAt?: string } | null;
+};
+
 type UserRecord = { username: string; avatarUrl?: string | null; totalPoints: number; acceptedPrs: number };
 export type CategoryLeaderboardRecord = UserRecord & {
   totalContributions: number;
@@ -142,6 +150,161 @@ const GENERATED_USERS_DIR = path.join(ROOT, 'openblog/generated/users');
 const GENERATED_CATEGORIES_DIR = path.join(ROOT, 'openblog/generated/categories');
 const EVENTS_DIR = path.join(ROOT, 'openblog/events');
 
+type CacheEntry<T> = {
+  signature: string;
+  value: T;
+};
+
+type PostsSnapshotCategory = {
+  rawCategory: string;
+  categoryDir: string;
+  postPaths: string[];
+};
+
+type PostsSnapshot = {
+  signature: string;
+  rootMarkdownFiles: string[];
+  categories: PostsSnapshotCategory[];
+};
+
+type FlatJsonSnapshot = {
+  signature: string;
+  files: string[];
+};
+
+let postsCache: CacheEntry<Post[]> | null = null;
+let postsSnapshotSignatureCache: string | null = null;
+let postsIndexCache: CacheEntry<{ bySlug: Map<string, Post>; knownSlugs: Set<string> }> | null = null;
+let tagRecordsCache: CacheEntry<TagRecord[]> | null = null;
+let eventsCache: CacheEntry<RawEventRecord[]> | null = null;
+let generatedUsersCache: CacheEntry<GeneratedUserRecord[]> | null = null;
+let leaderboardCache: CacheEntry<UserRecord[]> | null = null;
+const categoryLeaderboardCache = new Map<string, CacheEntry<CategoryLeaderboardRecord[]>>();
+
+function toSignaturePart(filePath: string): string {
+  const stats = fs.statSync(filePath);
+  return `${filePath}:${stats.mtimeMs}:${stats.size}`;
+}
+
+function getFlatJsonSnapshot(directory: string): FlatJsonSnapshot {
+  if (!fs.existsSync(directory)) {
+    return {
+      signature: `missing:${directory}`,
+      files: []
+    };
+  }
+
+  const files = fs
+    .readdirSync(directory, { withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.json'))
+    .map((entry) => path.join(directory, entry.name))
+    .sort((a, b) => a.localeCompare(b));
+
+  const signature = files.map((filePath) => toSignaturePart(filePath)).join('|');
+  return {
+    signature,
+    files
+  };
+}
+
+function getPostsSnapshot(): PostsSnapshot {
+  if (!fs.existsSync(POSTS_DIR)) {
+    return {
+      signature: `missing:${POSTS_DIR}`,
+      rootMarkdownFiles: [],
+      categories: []
+    };
+  }
+
+  const entries = fs.readdirSync(POSTS_DIR, { withFileTypes: true });
+  const rootMarkdownFiles = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith('.md'))
+    .map((entry) => entry.name)
+    .sort((a, b) => a.localeCompare(b));
+
+  const categories: PostsSnapshotCategory[] = [];
+  const signatureParts = entries
+    .map((entry) => {
+      const entryPath = path.join(POSTS_DIR, entry.name);
+      return `${entry.isDirectory() ? 'd' : entry.isFile() ? 'f' : 'o'}:${toSignaturePart(entryPath)}`;
+    });
+
+  for (const categoryEntry of entries) {
+    if (!categoryEntry.isDirectory()) continue;
+
+    const rawCategory = categoryEntry.name;
+    const categoryDir = path.join(POSTS_DIR, rawCategory);
+    const postEntries = fs.readdirSync(categoryDir, { withFileTypes: true });
+    const postPaths: string[] = [];
+
+    for (const postEntry of postEntries) {
+      const postPath = path.join(categoryDir, postEntry.name);
+      signatureParts.push(`${postEntry.isDirectory() ? 'd' : postEntry.isFile() ? 'f' : 'o'}:${toSignaturePart(postPath)}`);
+      if (postEntry.isFile() && postEntry.name.endsWith('.md')) {
+        postPaths.push(postPath);
+      }
+    }
+
+    postPaths.sort((a, b) => a.localeCompare(b));
+    categories.push({
+      rawCategory,
+      categoryDir,
+      postPaths
+    });
+  }
+
+  categories.sort((a, b) => a.rawCategory.localeCompare(b.rawCategory));
+  signatureParts.sort((a, b) => a.localeCompare(b));
+
+  return {
+    signature: signatureParts.join('|'),
+    rootMarkdownFiles,
+    categories
+  };
+}
+
+function getPostsIndex(): { bySlug: Map<string, Post>; knownSlugs: Set<string> } {
+  const posts = getPosts();
+  const signature = postsSnapshotSignatureCache ?? `len:${posts.length}`;
+  if (postsIndexCache && postsIndexCache.signature === signature) {
+    return postsIndexCache.value;
+  }
+
+  const bySlug = new Map(posts.map((post) => [post.slug, post]));
+  const knownSlugs = new Set(posts.map((post) => post.slug));
+  const value = { bySlug, knownSlugs };
+  postsIndexCache = { signature, value };
+  return value;
+}
+
+function getEventRecords(): RawEventRecord[] {
+  const snapshot = getFlatJsonSnapshot(EVENTS_DIR);
+  if (eventsCache && eventsCache.signature === snapshot.signature) {
+    return eventsCache.value;
+  }
+
+  const records = snapshot.files.map((filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8')) as RawEventRecord);
+  eventsCache = {
+    signature: snapshot.signature,
+    value: records
+  };
+  return records;
+}
+
+function getGeneratedUserRecords(): GeneratedUserRecord[] {
+  const snapshot = getFlatJsonSnapshot(GENERATED_USERS_DIR);
+  if (generatedUsersCache && generatedUsersCache.signature === snapshot.signature) {
+    return generatedUsersCache.value;
+  }
+
+  const records = snapshot.files.map((filePath) => JSON.parse(fs.readFileSync(filePath, 'utf8')) as GeneratedUserRecord);
+  generatedUsersCache = {
+    signature: snapshot.signature,
+    value: records
+  };
+  return records;
+}
+
 export function normalizeCategoryKey(category: string): string {
   return category.trim().toLowerCase().replace(/[\s_]+/g, '-');
 }
@@ -194,13 +357,12 @@ export function getProfileContributionsPath(username: string): string {
 
 export function getContributedPostSlugsByUser(usernameOrHandle: string): string[] {
   const normalizedLookup = normalizeUsernameHandle(usernameOrHandle).toLowerCase();
-  if (!normalizedLookup || !fs.existsSync(EVENTS_DIR)) return [];
-  const knownSlugs = new Set(getPosts().map((post) => post.slug));
+  if (!normalizedLookup) return [];
+  const { knownSlugs } = getPostsIndex();
+  if (knownSlugs.size === 0 && getEventRecords().length === 0) return [];
   const latestByPost = new Map<string, string>();
 
-  for (const file of fs.readdirSync(EVENTS_DIR)) {
-    if (!file.endsWith('.json')) continue;
-    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+  for (const event of getEventRecords()) {
     if (!event.username || !event.mergedAt) continue;
     if (event.username.toLowerCase() !== normalizedLookup) continue;
 
@@ -433,37 +595,38 @@ function getEventContributions(event: RawEventRecord): EventContributionRecord[]
 }
 
 export function getPosts(): Post[] {
-  if (!fs.existsSync(POSTS_DIR)) return [];
+  const snapshot = getPostsSnapshot();
+  if (postsCache && postsCache.signature === snapshot.signature) {
+    return postsCache.value;
+  }
 
-  const entries = fs.readdirSync(POSTS_DIR, { withFileTypes: true });
-  const rootMarkdownFiles = entries.filter((entry) => entry.isFile() && entry.name.endsWith('.md'));
+  const rootMarkdownFiles = snapshot.rootMarkdownFiles;
   if (rootMarkdownFiles.length > 0) {
-    const fileList = rootMarkdownFiles.map((file) => file.name).join(', ');
+    const fileList = rootMarkdownFiles.join(', ');
     throw new Error(`Posts must be stored under content/posts/<category>/<post>.md. Move: ${fileList}`);
   }
 
   const posts: Post[] = [];
 
-  for (const categoryEntry of entries) {
-    if (!categoryEntry.isDirectory()) continue;
-
-    const rawCategory = categoryEntry.name;
+  for (const categorySnapshot of snapshot.categories) {
+    const { rawCategory, categoryDir } = categorySnapshot;
     const category = normalizeCategoryKey(rawCategory);
     const categoryLabel = formatCategoryLabel(rawCategory);
-    const categoryDir = path.join(POSTS_DIR, rawCategory);
-    for (const postEntry of fs.readdirSync(categoryDir, { withFileTypes: true })) {
+
+    const categoryEntries = fs.readdirSync(categoryDir, { withFileTypes: true });
+    for (const postEntry of categoryEntries) {
       if (postEntry.isDirectory()) {
         throw new Error(
           `Nested folders are not supported in content/posts. Found: ${rawCategory}/${postEntry.name}`
         );
       }
+    }
 
-      if (!postEntry.isFile() || !postEntry.name.endsWith('.md')) continue;
-
-      const postPath = path.join(categoryDir, postEntry.name);
+    for (const postPath of categorySnapshot.postPaths) {
+      const postNameWithExt = path.basename(postPath);
+      const postName = postNameWithExt.replace(/\.md$/, '');
       const raw = fs.readFileSync(postPath, 'utf8');
       const { data, content } = matter(raw);
-      const postName = postEntry.name.replace(/\.md$/, '');
       const body = content.trim();
       const quality = evaluatePostQuality(body);
       const draft = toBoolean(data.draft, false);
@@ -497,7 +660,15 @@ export function getPosts(): Post[] {
     }
   }
 
-  return posts.sort((a, b) => b.date.localeCompare(a.date));
+  const sortedPosts = posts.sort((a, b) => b.date.localeCompare(a.date));
+  postsCache = {
+    signature: snapshot.signature,
+    value: sortedPosts
+  };
+  postsSnapshotSignatureCache = snapshot.signature;
+  postsIndexCache = null;
+  tagRecordsCache = null;
+  return sortedPosts;
 }
 
 export function getPostBySlug(slug: string): Post | undefined {
@@ -514,6 +685,11 @@ export function getPostsByTagSlug(tagSlug: string): Post[] {
 }
 
 export function getTagRecords(): TagRecord[] {
+  const signature = postsSnapshotSignatureCache ?? `len:${getPosts().length}`;
+  if (tagRecordsCache && tagRecordsCache.signature === signature) {
+    return tagRecordsCache.value;
+  }
+
   const tagMap = new Map<string, TagRecord>();
 
   for (const post of getPosts()) {
@@ -534,7 +710,12 @@ export function getTagRecords(): TagRecord[] {
     }
   }
 
-  return [...tagMap.values()].sort((a, b) => a.label.localeCompare(b.label));
+  const records = [...tagMap.values()].sort((a, b) => a.label.localeCompare(b.label));
+  tagRecordsCache = {
+    signature,
+    value: records
+  };
+  return records;
 }
 
 export function getTagLabelBySlug(tagSlug: string): string | undefined {
@@ -547,32 +728,47 @@ export function getTagLabelBySlug(tagSlug: string): string | undefined {
 export function getLeaderboard(): UserRecord[] {
   const p = path.join(ROOT, 'openblog/generated/leaderboard.json');
   if (!fs.existsSync(p)) return [];
+  const signature = toSignaturePart(p);
+  if (leaderboardCache && leaderboardCache.signature === signature) {
+    return leaderboardCache.value;
+  }
+
   const data = JSON.parse(fs.readFileSync(p, 'utf8'));
-  return data.leaderboard ?? [];
+  const leaderboard = data.leaderboard ?? [];
+  leaderboardCache = {
+    signature,
+    value: leaderboard
+  };
+  return leaderboard;
 }
 
 export function getCategoryLeaderboard(category: string): CategoryLeaderboardRecord[] {
   const normalizedCategory = normalizeCategoryKey(category);
   const categoryLeaderboardPath = path.join(GENERATED_CATEGORIES_DIR, `${normalizedCategory}.json`);
   if (!fs.existsSync(categoryLeaderboardPath)) return [];
+  const signature = toSignaturePart(categoryLeaderboardPath);
+  const cached = categoryLeaderboardCache.get(normalizedCategory);
+  if (cached && cached.signature === signature) {
+    return cached.value;
+  }
 
   const data = JSON.parse(fs.readFileSync(categoryLeaderboardPath, 'utf8'));
   if (!Array.isArray(data.leaderboard)) return [];
 
-  return data.leaderboard.filter((entry: unknown): entry is CategoryLeaderboardRecord =>
+  const leaderboard = data.leaderboard.filter((entry: unknown): entry is CategoryLeaderboardRecord =>
     isCategoryLeaderboardRecord(entry)
   );
+  categoryLeaderboardCache.set(normalizedCategory, {
+    signature,
+    value: leaderboard
+  });
+  return leaderboard;
 }
 
 export function getUserPostContributionCounts(): Record<string, number> {
-  if (!fs.existsSync(EVENTS_DIR)) return {};
-
   const counts: Record<string, number> = {};
 
-  for (const file of fs.readdirSync(EVENTS_DIR)) {
-    if (!file.endsWith('.json')) continue;
-
-    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+  for (const event of getEventRecords()) {
     if (!event.username) continue;
 
     const contributions = getEventContributions(event);
@@ -591,15 +787,11 @@ export function getKnownContributors(): string[] {
     byLowercase.set(user.username.toLowerCase(), user.username);
   }
 
-  if (fs.existsSync(EVENTS_DIR)) {
-    for (const file of fs.readdirSync(EVENTS_DIR)) {
-      if (!file.endsWith('.json')) continue;
-      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
-      if (!event.username) continue;
-      const key = event.username.toLowerCase();
-      if (!byLowercase.has(key)) {
-        byLowercase.set(key, event.username);
-      }
+  for (const event of getEventRecords()) {
+    if (!event.username) continue;
+    const key = event.username.toLowerCase();
+    if (!byLowercase.has(key)) {
+      byLowercase.set(key, event.username);
     }
   }
 
@@ -613,11 +805,10 @@ export function getUserProfile(usernameOrHandle: string): UserProfileRecord | nu
   const normalizedLookup = normalizedInput.toLowerCase();
   const leaderboardEntry = getLeaderboard().find((entry) => entry.username.toLowerCase() === normalizedLookup);
 
-  const posts = getPosts();
-  const postBySlug = new Map(posts.map((post) => [post.slug, post]));
-  const knownSlugs = new Set(posts.map((post) => post.slug));
+  const { bySlug: postBySlug, knownSlugs } = getPostsIndex();
+  const eventRecords = getEventRecords();
 
-  if (!fs.existsSync(EVENTS_DIR) && !leaderboardEntry) return null;
+  if (eventRecords.length === 0 && !leaderboardEntry) return null;
 
   let canonicalUsername = leaderboardEntry?.username ?? normalizedInput;
   let avatarUrl = leaderboardEntry?.avatarUrl ?? null;
@@ -635,55 +826,50 @@ export function getUserProfile(usernameOrHandle: string): UserProfileRecord | nu
     lastContributedAt: string;
   }>();
 
-  if (fs.existsSync(EVENTS_DIR)) {
-    for (const file of fs.readdirSync(EVENTS_DIR)) {
-      if (!file.endsWith('.json')) continue;
+  for (const event of eventRecords) {
+    if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) continue;
+    if (event.username.toLowerCase() !== normalizedLookup) continue;
 
-      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
-      if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) continue;
-      if (event.username.toLowerCase() !== normalizedLookup) continue;
+    canonicalUsername = event.username;
+    if (event.userAvatarUrl) {
+      avatarUrl = event.userAvatarUrl;
+    }
 
-      canonicalUsername = event.username;
-      if (event.userAvatarUrl) {
-        avatarUrl = event.userAvatarUrl;
+    const contributions = getEventContributions(event);
+    if (contributions.length === 0) continue;
+
+    if (!joinedAt || event.mergedAt < joinedAt) {
+      joinedAt = event.mergedAt;
+    }
+    if (!lastContributionAt || event.mergedAt > lastContributionAt) {
+      lastContributionAt = event.mergedAt;
+    }
+
+    acceptedPrNumbers.add(event.prNumber);
+    for (const contribution of contributions) {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
+      const current = contributionsByPost.get(resolvedPostSlug) ?? {
+        postSlug: resolvedPostSlug,
+        totalPoints: 0,
+        contributions: 0,
+        acceptedPrNumbers: new Set<number>(),
+        firstContributedAt: event.mergedAt,
+        lastContributedAt: event.mergedAt
+      };
+
+      current.totalPoints += contribution.points;
+      current.contributions += 1;
+      current.acceptedPrNumbers.add(event.prNumber);
+      if (event.mergedAt < current.firstContributedAt) {
+        current.firstContributedAt = event.mergedAt;
+      }
+      if (event.mergedAt > current.lastContributedAt) {
+        current.lastContributedAt = event.mergedAt;
       }
 
-      const contributions = getEventContributions(event);
-      if (contributions.length === 0) continue;
-
-      if (!joinedAt || event.mergedAt < joinedAt) {
-        joinedAt = event.mergedAt;
-      }
-      if (!lastContributionAt || event.mergedAt > lastContributionAt) {
-        lastContributionAt = event.mergedAt;
-      }
-
-      acceptedPrNumbers.add(event.prNumber);
-      for (const contribution of contributions) {
-        const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
-        const current = contributionsByPost.get(resolvedPostSlug) ?? {
-          postSlug: resolvedPostSlug,
-          totalPoints: 0,
-          contributions: 0,
-          acceptedPrNumbers: new Set<number>(),
-          firstContributedAt: event.mergedAt,
-          lastContributedAt: event.mergedAt
-        };
-
-        current.totalPoints += contribution.points;
-        current.contributions += 1;
-        current.acceptedPrNumbers.add(event.prNumber);
-        if (event.mergedAt < current.firstContributedAt) {
-          current.firstContributedAt = event.mergedAt;
-        }
-        if (event.mergedAt > current.lastContributedAt) {
-          current.lastContributedAt = event.mergedAt;
-        }
-
-        contributionsByPost.set(resolvedPostSlug, current);
-        calculatedTotalPoints += contribution.points;
-        totalContributions += 1;
-      }
+      contributionsByPost.set(resolvedPostSlug, current);
+      calculatedTotalPoints += contribution.points;
+      totalContributions += 1;
     }
   }
 
@@ -727,8 +913,9 @@ export function getUserProfile(usernameOrHandle: string): UserProfileRecord | nu
 }
 
 export function getContributorsForPost(postSlug: string): PostContributorRecord[] {
-  if (!fs.existsSync(EVENTS_DIR)) return [];
-  const knownSlugs = new Set(getPosts().map((post) => post.slug));
+  const { knownSlugs } = getPostsIndex();
+  const eventRecords = getEventRecords();
+  if (eventRecords.length === 0) return [];
 
   const byUser = new Map<string, {
     avatarUrl: string | null;
@@ -744,9 +931,7 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
     }>;
   }>();
 
-  for (const file of fs.readdirSync(EVENTS_DIR)) {
-    if (!file.endsWith('.json')) continue;
-    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+  for (const event of eventRecords) {
     if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) continue;
     const contributions = getEventContributions(event);
 
@@ -820,14 +1005,12 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
 }
 
 export function getRecentEvents(limit = 10): EventRecord[] {
-  if (!fs.existsSync(EVENTS_DIR)) return [];
-  const knownSlugs = new Set(getPosts().map((post) => post.slug));
+  const { knownSlugs } = getPostsIndex();
+  const eventRecords = getEventRecords();
+  if (eventRecords.length === 0) return [];
 
-  return fs
-    .readdirSync(EVENTS_DIR)
-    .filter((file) => file.endsWith('.json'))
-    .flatMap((file) => {
-      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+  return eventRecords
+    .flatMap((event) => {
       if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) return [];
       return getEventContributions(event).map((contribution) => {
         const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
@@ -846,21 +1029,11 @@ export function getRecentEvents(limit = 10): EventRecord[] {
     .slice(0, limit);
 }
 
-type GeneratedUserRecord = {
-  username: string;
-  profileUrl?: string;
-  avatarUrl?: string | null;
-  lastUpdatedAt?: string;
-  lastContribution?: { mergedAt?: string } | null;
-};
-
 export function getLatestContributors(limit = 8): LatestContributorRecord[] {
   const users: LatestContributorRecord[] = [];
-  if (fs.existsSync(GENERATED_USERS_DIR)) {
-    for (const file of fs.readdirSync(GENERATED_USERS_DIR)) {
-      if (!file.endsWith('.json')) continue;
-
-      const raw = JSON.parse(fs.readFileSync(path.join(GENERATED_USERS_DIR, file), 'utf8')) as GeneratedUserRecord;
+  const generatedUsers = getGeneratedUserRecords();
+  if (generatedUsers.length > 0) {
+    for (const raw of generatedUsers) {
       if (!raw.username) continue;
 
       const lastContributionAt = raw.lastContribution?.mergedAt ?? raw.lastUpdatedAt;
@@ -873,11 +1046,9 @@ export function getLatestContributors(limit = 8): LatestContributorRecord[] {
         lastContributionAt
       });
     }
-  } else if (fs.existsSync(EVENTS_DIR)) {
+  } else {
     const latestByUser = new Map<string, LatestContributorRecord>();
-    for (const file of fs.readdirSync(EVENTS_DIR)) {
-      if (!file.endsWith('.json')) continue;
-      const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+    for (const event of getEventRecords()) {
       if (!event.username || !event.mergedAt) continue;
 
       const current = latestByUser.get(event.username);
@@ -900,12 +1071,11 @@ export function getLatestContributors(limit = 8): LatestContributorRecord[] {
 
 export function getLatestContributorByPost(): Map<string, LatestContributorRecord> {
   const latestByPost = new Map<string, LatestContributorRecord>();
-  if (!fs.existsSync(EVENTS_DIR)) return latestByPost;
-  const knownSlugs = new Set(getPosts().map((post) => post.slug));
+  const { knownSlugs } = getPostsIndex();
+  const eventRecords = getEventRecords();
+  if (eventRecords.length === 0) return latestByPost;
 
-  for (const file of fs.readdirSync(EVENTS_DIR)) {
-    if (!file.endsWith('.json')) continue;
-    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+  for (const event of eventRecords) {
     if (!event.username || !event.mergedAt) continue;
 
     for (const contribution of getEventContributions(event)) {
@@ -932,13 +1102,12 @@ export function getLatestContributorByPost(): Map<string, LatestContributorRecor
 }
 
 export function getLatestContributorsForPost(postSlug: string, limit = 5): LatestContributorRecord[] {
-  if (!fs.existsSync(EVENTS_DIR)) return [];
-  const knownSlugs = new Set(getPosts().map((post) => post.slug));
+  const { knownSlugs } = getPostsIndex();
+  const eventRecords = getEventRecords();
+  if (eventRecords.length === 0) return [];
   const latestByUser = new Map<string, LatestContributorRecord>();
 
-  for (const file of fs.readdirSync(EVENTS_DIR)) {
-    if (!file.endsWith('.json')) continue;
-    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+  for (const event of eventRecords) {
     if (!event.username || !event.mergedAt) continue;
 
     const hasContributionForPost = getEventContributions(event).some((contribution) => {
@@ -964,11 +1133,10 @@ export function getLatestContributorsForPost(postSlug: string, limit = 5): Lates
 }
 
 export function getLatestContributorsForCategory(category: string, limit = 6): LatestCategoryContributorRecord[] {
-  if (!fs.existsSync(EVENTS_DIR)) return [];
+  const eventRecords = getEventRecords();
+  if (eventRecords.length === 0) return [];
   const normalizedCategory = normalizeCategoryKey(category);
-  const posts = getPosts();
-  const postBySlug = new Map(posts.map((post) => [post.slug, post]));
-  const knownSlugs = new Set(postBySlug.keys());
+  const { bySlug: postBySlug, knownSlugs } = getPostsIndex();
   const latestByUser = new Map<
     string,
     {
@@ -982,9 +1150,7 @@ export function getLatestContributorsForCategory(category: string, limit = 6): L
     }
   >();
 
-  for (const file of fs.readdirSync(EVENTS_DIR)) {
-    if (!file.endsWith('.json')) continue;
-    const event = JSON.parse(fs.readFileSync(path.join(EVENTS_DIR, file), 'utf8')) as RawEventRecord;
+  for (const event of eventRecords) {
     if (!event.username || !event.mergedAt) continue;
 
     for (const contribution of getEventContributions(event)) {

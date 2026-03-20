@@ -1,11 +1,17 @@
 ---
-import BaseLayout from '../../layouts/BaseLayout.astro';
-import FeaturedPostsSlider from '../../components/FeaturedPostsSlider.astro';
-import PostCard from '../../components/PostCard.astro';
-import UserAvatar from '../../components/UserAvatar.astro';
-import { getCategoryLeaderboard, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
-import { toAbsoluteUrl } from '../../lib/seo';
-import { getSiteUrl } from '../../lib/site';
+import BaseLayout from '../../../../layouts/BaseLayout.astro';
+import FeaturedPostsSlider from '../../../../components/FeaturedPostsSlider.astro';
+import PostCard from '../../../../components/PostCard.astro';
+import UserAvatar from '../../../../components/UserAvatar.astro';
+import {
+  getCategoryLeaderboard,
+  getCategoryPath,
+  getPosts,
+  getProfilePath,
+  normalizeCategoryKey
+} from '../../../../lib/openblog';
+import { toAbsoluteUrl } from '../../../../lib/seo';
+import { getSiteUrl } from '../../../../lib/site';
 
 export function getStaticPaths() {
   const categoryMap = new Map<string, string>();
@@ -15,10 +21,26 @@ export function getStaticPaths() {
     }
   }
 
-  return [...categoryMap.entries()].map(([category, categoryLabel]) => ({
-    params: { category: encodeURIComponent(category) },
-    props: { categoryLabel }
-  }));
+  const postsPerPage = 6;
+  const allPosts = getPosts();
+  const paths: Array<{ params: { category: string; page: string }; props: { categoryLabel: string } }> = [];
+
+  for (const [category, categoryLabel] of categoryMap.entries()) {
+    const categoryPostsCount = allPosts.filter((post) => post.category === category).length;
+    const totalPages = Math.max(1, Math.ceil(categoryPostsCount / postsPerPage));
+
+    for (let page = 2; page <= totalPages; page += 1) {
+      paths.push({
+        params: {
+          category: encodeURIComponent(category),
+          page: String(page)
+        },
+        props: { categoryLabel }
+      });
+    }
+  }
+
+  return paths;
 }
 
 const categoryParam = Astro.params.category ?? '';
@@ -27,14 +49,21 @@ const posts = getPosts().filter((post) => post.category === category);
 const categoryLeaderboard = getCategoryLeaderboard(category);
 const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(posts.length / postsPerPage));
-const currentPage = 1;
+const rawCurrentPage = Number(Astro.params.page ?? '1');
+if (!Number.isFinite(rawCurrentPage) || rawCurrentPage < 2) {
+  throw new Error('Invalid page number');
+}
+const currentPage = Math.floor(rawCurrentPage);
+if (currentPage > postsTotalPages) {
+  throw new Error('Page not found');
+}
 const pageStart = (currentPage - 1) * postsPerPage;
 const paginatedPosts = posts.slice(pageStart, pageStart + postsPerPage);
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
 const categoryBasePath = getCategoryPath(category);
 const getCategoryPagePath = (page: number): string => (page <= 1 ? categoryBasePath : `${categoryBasePath}/page/${page}`);
-const canonicalPath = categoryBasePath;
+const canonicalPath = getCategoryPagePath(currentPage);
 const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on OpenBlog and see the top contributors for this category.`;
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
@@ -42,7 +71,7 @@ const structuredData = [
   {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
-    name: `${categoryLabel} posts`,
+    name: `${categoryLabel} posts - page ${currentPage}`,
     description: pageDescription,
     url: canonicalUrl
   },
@@ -71,7 +100,7 @@ if (posts.length === 0) {
 }
 ---
 <BaseLayout
-  title={`${categoryLabel} | Categories | OpenBlog`}
+  title={`${categoryLabel} | Categories | Page ${currentPage} | OpenBlog`}
   description={pageDescription}
   canonicalPath={canonicalPath}
   structuredData={structuredData}
@@ -169,25 +198,6 @@ if (posts.length === 0) {
       </table>
     )}
   </section>
-
-  <script is:inline>
-    (function () {
-      var basePath = window.location.pathname;
-      if (!basePath || basePath.indexOf('/categories/') !== 0) return;
-      var params = new URLSearchParams(window.location.search);
-      if (!params.has('page')) return;
-      var requestedPage = Number(params.get('page') || '1');
-      if (!Number.isFinite(requestedPage) || requestedPage < 1) return;
-      var maxPage = Math.max(1, document.querySelectorAll('.page-link').length);
-      var normalizedPage = Math.floor(requestedPage);
-      if (normalizedPage > maxPage) normalizedPage = maxPage;
-      if (normalizedPage <= 1) {
-        window.location.replace(basePath + window.location.hash);
-        return;
-      }
-      window.location.replace(basePath + '/page/' + normalizedPage + window.location.hash);
-    })();
-  </script>
 
   <style>
     .leaderboard-pagination {
