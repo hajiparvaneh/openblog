@@ -1,0 +1,99 @@
+<script is:inline>
+  (function () {
+    var analyticsMeasurementId = 'G-QXDRD6YDFE';
+    var analyticsDisableKey = 'ga-disable-' + analyticsMeasurementId;
+    var consentStorageKey = 'openblog-cookie-consent-v1';
+    var analyticsLoaded = false;
+
+    var normalizeConsent = function (value) {
+      if (!value || typeof value !== 'object') return null;
+      if (typeof value.analytics !== 'boolean') return null;
+      return {
+        version: 1,
+        essential: true,
+        analytics: value.analytics,
+        updatedAt: typeof value.updatedAt === 'string' ? value.updatedAt : new Date().toISOString()
+      };
+    };
+
+    var getConsent = function () {
+      try {
+        var raw = localStorage.getItem(consentStorageKey);
+        if (!raw) return null;
+        return normalizeConsent(JSON.parse(raw));
+      } catch (_) {
+        return null;
+      }
+    };
+
+    var emitConsentChanged = function (consent) {
+      window.dispatchEvent(new CustomEvent('openblog:consent-changed', { detail: consent }));
+    };
+
+    var loadAnalytics = function () {
+      if (analyticsLoaded) return;
+      analyticsLoaded = true;
+
+      window.dataLayer = window.dataLayer || [];
+      window.gtag = window.gtag || function () {
+        window.dataLayer.push(arguments);
+      };
+      window.gtag('js', new Date());
+      window.gtag('config', analyticsMeasurementId);
+
+      var existing = document.querySelector('script[data-openblog-analytics="google"]');
+      if (existing) return;
+
+      var script = document.createElement('script');
+      script.async = true;
+      script.src = 'https://www.googletagmanager.com/gtag/js?id=' + encodeURIComponent(analyticsMeasurementId);
+      script.setAttribute('data-openblog-analytics', 'google');
+      document.head.appendChild(script);
+    };
+
+    var applyConsent = function (consent) {
+      if (!consent) return;
+      if (consent.analytics) {
+        window[analyticsDisableKey] = false;
+        loadAnalytics();
+        return;
+      }
+      window[analyticsDisableKey] = true;
+      if (typeof window.gtag === 'function') {
+        window.gtag('consent', 'update', {
+          analytics_storage: 'denied',
+          ad_storage: 'denied',
+          ad_user_data: 'denied',
+          ad_personalization: 'denied'
+        });
+      }
+    };
+
+    var setConsent = function (value) {
+      var normalized = normalizeConsent({
+        analytics: Boolean(value && value.analytics),
+        updatedAt: new Date().toISOString()
+      });
+      if (!normalized) return null;
+      try {
+        localStorage.setItem(consentStorageKey, JSON.stringify(normalized));
+      } catch (_) {}
+      applyConsent(normalized);
+      emitConsentChanged(normalized);
+      return normalized;
+    };
+
+    window.openblogConsent = {
+      getConsent: getConsent,
+      hasDecision: function () {
+        return Boolean(getConsent());
+      },
+      setConsent: setConsent,
+      openPreferences: function () {
+        window.dispatchEvent(new Event('openblog:open-consent-preferences'));
+      }
+    };
+
+    applyConsent(getConsent());
+  })();
+</script>

@@ -1,5 +1,7 @@
 ---
 import '../styles/global.css';
+import CookieConsentHead from '../components/CookieConsentHead.astro';
+import CookieConsentManager from '../components/CookieConsentManager.astro';
 import UserAvatar from '../components/UserAvatar.astro';
 import { getCategoryPath, getLatestContributors, getPosts, getProfilePath } from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
@@ -103,15 +105,7 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
       <script type="application/ld+json" set:html={item} />
     ))}
 
-    <!-- Google tag (gtag.js) -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=G-QXDRD6YDFE"></script>
-    <script is:inline>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-
-      gtag('config', 'G-QXDRD6YDFE');
-    </script>
+    <CookieConsentHead />
 
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
@@ -266,6 +260,9 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
           <i class="ti ti-edit icon-sm" aria-hidden="true"></i>
           Built by contributors in public. Improve a post, open a PR, and strengthen your portfolio visibility.
         </span>
+        <button class="cookie-settings-button" id="cookie-settings-button" type="button">
+          Cookie settings
+        </button>
       </footer>
     </div>
     <script is:inline type="text/javascript">
@@ -286,6 +283,7 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
         <img src="//sstatic1.histats.com/0.gif?5015609&amp;101" alt="website hit counter" border="0" />
       </a>
     </noscript>
+    <CookieConsentManager />
     <script is:inline>
       (function () {
         var storageKey = 'openblog-theme';

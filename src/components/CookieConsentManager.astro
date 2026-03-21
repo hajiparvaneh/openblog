@@ -1,0 +1,159 @@
+<section class="cookie-consent-banner" id="cookie-consent-banner" aria-label="Cookie consent" hidden>
+  <div class="cookie-consent-panel card">
+    <p class="kicker icon-label"><i class="ti ti-cookie icon-sm" aria-hidden="true"></i>Cookie preferences</p>
+    <p class="cookie-consent-copy">
+      We use essential storage for core site functions (like theme preference). Analytics is optional and helps us improve the site.
+    </p>
+    <div class="cookie-consent-actions">
+      <button class="cookie-btn cookie-btn-muted" id="cookie-reject-btn" type="button">Reject non-essential</button>
+      <button class="cookie-btn cookie-btn-muted" id="cookie-customize-btn" type="button">Customize</button>
+      <button class="cookie-btn cookie-btn-primary" id="cookie-accept-btn" type="button">Accept all</button>
+    </div>
+  </div>
+</section>
+<section class="cookie-preferences-modal" id="cookie-preferences-modal" hidden>
+  <button class="cookie-preferences-backdrop" id="cookie-modal-close-backdrop" type="button" aria-label="Close cookie settings"></button>
+  <div
+    class="cookie-preferences-dialog card"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="cookie-preferences-title"
+    aria-describedby="cookie-preferences-desc"
+  >
+    <h2 id="cookie-preferences-title">Cookie preferences</h2>
+    <p class="meta cookie-preferences-desc" id="cookie-preferences-desc">
+      Choose which categories you allow. Essential is always enabled because the site relies on it.
+    </p>
+    <div class="cookie-category">
+      <div class="cookie-category-copy">
+        <h3>Essential</h3>
+        <p class="meta">Required for core functions, including your theme preference and saved consent choice.</p>
+      </div>
+      <span class="cookie-always-on">Always active</span>
+    </div>
+    <label class="cookie-category cookie-category-toggle" for="cookie-analytics-toggle">
+      <div class="cookie-category-copy">
+        <h3>Analytics</h3>
+        <p class="meta">Measures traffic and page usage with Google Analytics.</p>
+      </div>
+      <input id="cookie-analytics-toggle" type="checkbox" />
+    </label>
+    <div class="cookie-modal-actions">
+      <button class="cookie-btn cookie-btn-muted" id="cookie-modal-reject-btn" type="button">Reject non-essential</button>
+      <button class="cookie-btn cookie-btn-muted" id="cookie-modal-save-btn" type="button">Save preferences</button>
+      <button class="cookie-btn cookie-btn-primary" id="cookie-modal-accept-btn" type="button">Accept all</button>
+    </div>
+  </div>
+</section>
+<script is:inline>
+  (function () {
+    var consentApi = window.openblogConsent;
+    if (!consentApi) return;
+
+    var banner = document.getElementById('cookie-consent-banner');
+    var modal = document.getElementById('cookie-preferences-modal');
+    var settingsButton = document.getElementById('cookie-settings-button');
+    var analyticsToggle = document.getElementById('cookie-analytics-toggle');
+    var acceptBtn = document.getElementById('cookie-accept-btn');
+    var rejectBtn = document.getElementById('cookie-reject-btn');
+    var customizeBtn = document.getElementById('cookie-customize-btn');
+    var modalAcceptBtn = document.getElementById('cookie-modal-accept-btn');
+    var modalRejectBtn = document.getElementById('cookie-modal-reject-btn');
+    var modalSaveBtn = document.getElementById('cookie-modal-save-btn');
+    var modalBackdrop = document.getElementById('cookie-modal-close-backdrop');
+
+    if (!banner || !modal || !analyticsToggle) return;
+
+    var syncToggle = function () {
+      var currentConsent = consentApi.getConsent();
+      analyticsToggle.checked = Boolean(currentConsent && currentConsent.analytics);
+    };
+
+    var closeModal = function () {
+      modal.hidden = true;
+      document.body.classList.remove('cookie-modal-open');
+    };
+
+    var openModal = function () {
+      syncToggle();
+      modal.hidden = false;
+      document.body.classList.add('cookie-modal-open');
+      if (analyticsToggle instanceof HTMLElement) {
+        analyticsToggle.focus();
+      }
+    };
+
+    var applyChoice = function (analyticsEnabled) {
+      consentApi.setConsent({ analytics: analyticsEnabled });
+      banner.hidden = true;
+      syncToggle();
+    };
+
+    if (consentApi.hasDecision()) {
+      banner.hidden = true;
+    } else {
+      banner.hidden = false;
+    }
+
+    if (acceptBtn) {
+      acceptBtn.addEventListener('click', function () {
+        applyChoice(true);
+      });
+    }
+
+    if (rejectBtn) {
+      rejectBtn.addEventListener('click', function () {
+        applyChoice(false);
+      });
+    }
+
+    if (customizeBtn) {
+      customizeBtn.addEventListener('click', function () {
+        openModal();
+      });
+    }
+
+    if (settingsButton) {
+      settingsButton.addEventListener('click', function () {
+        openModal();
+      });
+    }
+
+    if (modalAcceptBtn) {
+      modalAcceptBtn.addEventListener('click', function () {
+        applyChoice(true);
+        closeModal();
+      });
+    }
+
+    if (modalRejectBtn) {
+      modalRejectBtn.addEventListener('click', function () {
+        applyChoice(false);
+        closeModal();
+      });
+    }
+
+    if (modalSaveBtn) {
+      modalSaveBtn.addEventListener('click', function () {
+        applyChoice(Boolean(analyticsToggle.checked));
+        closeModal();
+      });
+    }
+
+    if (modalBackdrop) {
+      modalBackdrop.addEventListener('click', function () {
+        closeModal();
+      });
+    }
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      if (modal.hidden) return;
+      closeModal();
+    });
+
+    window.addEventListener('openblog:open-consent-preferences', function () {
+      openModal();
+    });
+  })();
+</script>
