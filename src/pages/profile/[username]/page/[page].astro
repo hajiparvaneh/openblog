@@ -1,6 +1,8 @@
 ---
 import BaseLayout from '../../../../layouts/BaseLayout.astro';
 import PostCard from '../../../../components/PostCard.astro';
+import ContributionMilestones from '../../../../components/ContributionMilestones.astro';
+import UserEarnedBadgesRow from '../../../../components/UserEarnedBadgesRow.astro';
 import {
   getContributedPostSlugsByUser,
   getKnownContributors,
@@ -116,8 +118,8 @@ const structuredData = {
         </span>
       </a>
       <div class="profile-copy">
-        <p class="kicker icon-label"><i class="ti ti-user-circle icon-sm" aria-hidden="true"></i>Contributor profile</p>
         <h1>@{profile.username}</h1>
+        <UserEarnedBadgesRow userId={profile.username} href="#milestone-badges" class="profile-earned-badges" />
         <p class="meta profile-meta">
           <span class="icon-label"><i class="ti ti-calendar-plus icon-sm" aria-hidden="true"></i>Joined: {formatDate(profile.joinedAt)}</span>
           <span class="icon-label"><i class="ti ti-clock icon-sm" aria-hidden="true"></i>Last contribution: {formatDate(profile.lastContributionAt)}</span>
@@ -208,6 +210,12 @@ const structuredData = {
     )}
   </section>
 
+  <section id="milestone-badges" class="card">
+    <h2 class="icon-label"><i class="ti ti-award icon-sm" aria-hidden="true"></i>Milestone badges</h2>
+    <p class="meta">Low-friction contribution milestones, styled for GitHub-like progress tracking.</p>
+    <ContributionMilestones milestones={profile.milestones} />
+  </section>
+
   <style>
     .profile-head {
       display: flex;
@@ -256,6 +264,10 @@ const structuredData = {
 
     .profile-copy h1 {
       margin-bottom: 0;
+    }
+
+    .profile-earned-badges {
+      margin-top: 0.08rem;
     }
 
     .profile-meta {
