@@ -1,0 +1,99 @@
+---
+type Props = {
+  icon: string;
+  color: string;
+  earned?: boolean;
+  size?: 's' | 'm' | 'l';
+  class?: string;
+};
+
+const {
+  icon,
+  color,
+  earned = false,
+  size = 'm',
+  class: className = ''
+} = Astro.props as Props;
+
+const rootClass = `milestone-medal milestone-medal--${size} ${earned ? 'is-earned' : 'is-locked'} ${className}`.trim();
+---
+
+<span class={rootClass} style={`--milestone-medal-color: ${color};`} aria-hidden="true">
+  <i class={`ti ti-${icon} milestone-medal-icon`} aria-hidden="true"></i>
+</span>
+
+<style>
+  .milestone-medal {
+    --medal-size: 1.62rem;
+    --medal-icon-size: 1.08rem;
+    --medal-border-width: 2px;
+    --medal-inset-border-width: 2px;
+    --medal-band-width: 0.9rem;
+    --medal-band-height: 0.38rem;
+    --medal-band-top: -0.46rem;
+    position: relative;
+    width: var(--medal-size);
+    height: var(--medal-size);
+    border: var(--medal-border-width) solid color-mix(in srgb, var(--milestone-medal-color) 58%, var(--border));
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(
+      circle at 30% 28%,
+      color-mix(in srgb, #ffffff 82%, var(--surface)) 0%,
+      color-mix(in srgb, var(--milestone-medal-color) 15%, var(--surface)) 48%,
+      color-mix(in srgb, var(--milestone-medal-color) 32%, var(--surface)) 100%
+    );
+    flex: 0 0 auto;
+    overflow: visible;
+    box-shadow:
+      inset 0 0 0 var(--medal-inset-border-width) color-mix(in srgb, var(--surface) 78%, transparent),
+      0 1px 0 color-mix(in srgb, var(--milestone-medal-color) 24%, transparent);
+  }
+
+  .milestone-medal--s {
+    --medal-size: 1.44rem;
+    --medal-icon-size: 0.94rem;
+    --medal-border-width: 2px;
+    --medal-inset-border-width: 1px;
+    --medal-band-width: 0.78rem;
+    --medal-band-height: 0.3rem;
+    --medal-band-top: -0.36rem;
+  }
+
+  .milestone-medal--l {
+    --medal-size: 1.92rem;
+    --medal-icon-size: 1.24rem;
+    --medal-border-width: 2px;
+    --medal-inset-border-width: 2px;
+    --medal-band-width: 1.06rem;
+    --medal-band-height: 0.46rem;
+    --medal-band-top: -0.56rem;
+  }
+
+  .milestone-medal::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: var(--medal-band-top);
+    width: var(--medal-band-width);
+    height: var(--medal-band-height);
+    transform: translateX(-50%);
+    border: 1px solid color-mix(in srgb, var(--milestone-medal-color) 52%, var(--border));
+    border-radius: 0;
+    background: color-mix(in srgb, var(--milestone-medal-color) 82%, #2f343b);
+    clip-path: polygon(0 0, 100% 0, 86% 100%, 50% 62%, 14% 100%);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--milestone-medal-color) 22%, transparent);
+  }
+
+  .milestone-medal.is-locked::after {
+    opacity: 0.62;
+  }
+
+  .milestone-medal-icon {
+    color: var(--milestone-medal-color);
+    font-size: var(--medal-icon-size);
+    text-shadow: 0 1px 0 color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+</style>

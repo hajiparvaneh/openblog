@@ -1,5 +1,6 @@
 ---
 import type { ContributionMilestoneBadge } from '../lib/openblog';
+import MilestoneMedalIcon from './MilestoneMedalIcon.astro';
 
 type Props = {
   milestones: ContributionMilestoneBadge[];
@@ -28,9 +29,7 @@ const formatDate = (isoDate: string | null): string | null => {
       return (
         <li class:list={['profile-milestone-item', milestone.earned && 'is-earned']} style={`--milestone-color: ${milestone.color};`}>
           <div class="profile-milestone-head">
-            <span class="profile-milestone-icon-wrap" aria-hidden="true">
-              <i class={`ti ti-${milestone.icon} profile-milestone-icon`} aria-hidden="true"></i>
-            </span>
+            <MilestoneMedalIcon icon={milestone.icon} color={milestone.color} earned={milestone.earned} />
             <strong class="profile-milestone-name">{milestone.name}</strong>
             <span
               class:list={['profile-milestone-status', 'badge', milestone.earned ? 'is-earned' : 'is-locked']}
@@ -94,53 +93,6 @@ const formatDate = (isoDate: string | null): string | null => {
     align-items: center;
     gap: 0.55rem;
     min-width: 0;
-  }
-
-  .profile-milestone-icon-wrap {
-    position: relative;
-    width: 1.62rem;
-    height: 1.62rem;
-    border: 2px solid color-mix(in srgb, var(--milestone-color) 58%, var(--border));
-    border-radius: 999px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    background: radial-gradient(
-      circle at 30% 28%,
-      color-mix(in srgb, #ffffff 82%, var(--surface)) 0%,
-      color-mix(in srgb, var(--milestone-color) 15%, var(--surface)) 48%,
-      color-mix(in srgb, var(--milestone-color) 32%, var(--surface)) 100%
-    );
-    flex: 0 0 auto;
-    overflow: visible;
-    box-shadow:
-      inset 0 0 0 2px color-mix(in srgb, var(--surface) 78%, transparent),
-      0 1px 0 color-mix(in srgb, var(--milestone-color) 24%, transparent);
-  }
-
-  .profile-milestone-icon-wrap::after {
-    content: '';
-    position: absolute;
-    left: 50%;
-    top: -0.46rem;
-    width: 0.9rem;
-    height: 0.38rem;
-    transform: translateX(-50%);
-    border: 1px solid color-mix(in srgb, var(--milestone-color) 52%, var(--border));
-    border-radius: 0;
-    background: color-mix(in srgb, var(--milestone-color) 82%, #2f343b);
-    clip-path: polygon(0 0, 100% 0, 86% 100%, 50% 62%, 14% 100%);
-    box-shadow: 0 1px 0 color-mix(in srgb, var(--milestone-color) 22%, transparent);
-  }
-
-  .profile-milestone-item:not(.is-earned) .profile-milestone-icon-wrap::after {
-    opacity: 0.62;
-  }
-
-  .profile-milestone-icon {
-    color: var(--milestone-color);
-    font-size: 1.08rem;
-    text-shadow: 0 1px 0 color-mix(in srgb, var(--surface) 70%, transparent);
   }
 
   .profile-milestone-name {
