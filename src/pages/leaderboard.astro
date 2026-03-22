@@ -90,86 +90,47 @@ const structuredData = [
 ---
 <BaseLayout title="Leaderboard | OpenBlog" description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
   <div class="leaderboard-seasons" data-leaderboard-seasons>
-    <section class="card leaderboard-hero">
-      <div class="leaderboard-hero-copy">
-        <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Community scoreboard</p>
-        <h1>Leaderboard</h1>
-        <p class="meta leaderboard-hero-meta">
-          Switch between all time, this month, and this week. Every season is ranked by points first, then merged PR count.
+    <section class="card leaderboard-toolbar">
+      <div class="leaderboard-toolbar-head">
+        <h1 class="icon-label">
+          <i class="ti ti-trophy icon-sm" aria-hidden="true"></i>
+          Leaderboard
+        </h1>
+        <p class="meta leaderboard-toolbar-copy">
+          Season: <strong data-active-season-label>{seasonViews[0]?.meta.label ?? 'All time'}</strong>
         </p>
       </div>
-      <div class="leaderboard-hero-note" aria-label="Leaderboard season notes">
-        <span class="leaderboard-note-badge icon-label"><i class="ti ti-calendar-stats icon-sm" aria-hidden="true"></i>Fresh race windows</span>
-        <p class="meta">Monthly and weekly standings are recalculated from merged PR timestamps, so new contributors always have an active race to join.</p>
-      </div>
-    </section>
-
-    <section class="card leaderboard-season-overview" data-leaderboard-overview>
-      <div class="leaderboard-season-overview-head">
-        <div>
-          <p class="kicker icon-label"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i><span data-active-season-kicker>{seasonViews[0]?.meta.label ?? 'All time'} standings</span></p>
-          <h2 data-active-season-heading>{seasonViews[0]?.meta.label ?? 'All time'}</h2>
-          <p class="meta" data-active-season-description>{seasonViews[0]?.meta.description ?? ''}</p>
+      <div class="leaderboard-toolbar-controls">
+        <div class="leaderboard-season-tabs" role="tablist" aria-label="Leaderboard season views">
+          {seasonViews.map((view) => (
+            <button
+              type="button"
+              role="tab"
+              class:list={['leaderboard-season-tab', view.key === 'all' && 'is-active']}
+              aria-selected={view.key === 'all' ? 'true' : 'false'}
+              aria-controls={`leaderboard-panel-${view.key}`}
+              id={`leaderboard-tab-${view.key}`}
+              data-leaderboard-season-tab={view.key}
+              data-season-label={view.meta.label}
+              data-season-range={formatDateRange(view.meta.startsAt, view.meta.endsAt)}
+              data-season-contributors={String(view.leaderboard.length)}
+              data-season-points={String(view.totalPoints)}
+              tabindex={view.key === 'all' ? '0' : '-1'}
+            >
+              <i class={`ti ti-${getSeasonIcon(view.key)} icon-sm leaderboard-season-tab-icon`} aria-hidden="true"></i>
+              <span class="leaderboard-season-tab-label">{view.meta.label}</span>
+            </button>
+          ))}
         </div>
-        <div class="leaderboard-season-controls">
-          <div class="leaderboard-season-tabs" role="tablist" aria-label="Leaderboard season views">
-            {seasonViews.map((view) => (
-              <button
-                type="button"
-                role="tab"
-                class:list={['leaderboard-season-tab', view.key === 'all' && 'is-active']}
-                aria-selected={view.key === 'all' ? 'true' : 'false'}
-                aria-controls={`leaderboard-panel-${view.key}`}
-                id={`leaderboard-tab-${view.key}`}
-                data-leaderboard-season-tab={view.key}
-                data-season-label={view.meta.label}
-                data-season-heading={`${view.meta.label} standings`}
-                data-season-description={view.meta.description}
-                data-season-range={formatDateRange(view.meta.startsAt, view.meta.endsAt)}
-                data-season-contributors={String(view.leaderboard.length)}
-                data-season-points={String(view.totalPoints)}
-                data-season-prs={String(view.totalAcceptedPrs)}
-                data-season-top-name={view.topContributor ? `@${view.topContributor.username}` : 'Open spot'}
-                data-season-top-value={view.topContributor ? `${view.topContributor.totalPoints} points` : 'No scored merges yet'}
-                tabindex={view.key === 'all' ? '0' : '-1'}
-              >
-                <i class={`ti ti-${getSeasonIcon(view.key)} icon-sm leaderboard-season-tab-icon`} aria-hidden="true"></i>
-                <span class="leaderboard-season-tab-label">{view.meta.label}</span>
-                <PointsBadge points={view.totalPoints} />
-              </button>
-            ))}
-          </div>
-          <span class="leaderboard-season-range icon-label">
-            <i class="ti ti-calendar-time icon-sm" aria-hidden="true"></i>
-            <span data-active-season-range-text>{formatDateRange(seasonViews[0]?.meta.startsAt ?? null, seasonViews[0]?.meta.endsAt ?? null)}</span>
-          </span>
-        </div>
-      </div>
-
-      <div class="stats leaderboard-season-stats">
-        <div class="stat">
-          <span class="stat-value stat-head"><i class="ti ti-users icon-sm" aria-hidden="true"></i><span data-active-season-contributors>{seasonViews[0]?.leaderboard.length ?? 0}</span></span>
-          <span class="stat-label">Active contributors</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value">
-            <PointsBadge points={seasonViews[0]?.totalPoints ?? 0} valueDataAttribute="data-active-season-points" />
-          </span>
-          <span class="stat-label">Points awarded</span>
-        </div>
-        <div class="stat">
-          <span class="stat-value stat-head"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i><span data-active-season-prs>{seasonViews[0]?.totalAcceptedPrs ?? 0}</span></span>
-          <span class="stat-label">Merged PRs</span>
-        </div>
-        <div class="stat stat-leader">
-          <span class="stat-value stat-head">
-            <i class="ti ti-crown icon-sm" aria-hidden="true"></i>
-            <span data-active-season-top-name>{seasonViews[0]?.topContributor ? `@${seasonViews[0].topContributor.username}` : 'Open spot'}</span>
-          </span>
-          <span class="stat-label" data-active-season-top-value>
-            {seasonViews[0]?.topContributor ? `${seasonViews[0].topContributor.totalPoints} points` : 'No scored merges yet'}
-          </span>
-        </div>
+        <span class="leaderboard-season-range icon-label">
+          <i class="ti ti-calendar-time icon-sm" aria-hidden="true"></i>
+          <span data-active-season-range-text>{formatDateRange(seasonViews[0]?.meta.startsAt ?? null, seasonViews[0]?.meta.endsAt ?? null)}</span>
+        </span>
+        <span class="badge leaderboard-toolbar-chip icon-label">
+          <i class="ti ti-users icon-sm" aria-hidden="true"></i>
+          <span data-active-season-contributors>{seasonViews[0]?.leaderboard.length ?? 0}</span>
+        </span>
+        <PointsBadge points={seasonViews[0]?.totalPoints ?? 0} valueDataAttribute="data-active-season-points" class="leaderboard-toolbar-chip" />
       </div>
     </section>
 
@@ -199,7 +160,7 @@ const structuredData = [
             </div>
           ) : (
             <>
-              <table class="table" data-leaderboard-table data-per-page={rowsPerPage}>
+              <table class="table leaderboard-table" data-leaderboard-table data-per-page={rowsPerPage}>
                 <thead>
                   <tr>
                     <th scope="col" data-sort-column="rank">
@@ -231,13 +192,16 @@ const structuredData = [
                 <tbody>
                   {view.leaderboard.map((user, index) => (
                     <tr
+                      class="leaderboard-row"
                       data-leaderboard-row
                       data-rank={index + 1}
                       data-user={user.username.toLowerCase()}
                       data-points={user.totalPoints}
                       data-posts={user.totalPostsContributed}
                     >
-                      <td>#{index + 1}</td>
+                      <td>
+                        <span class="badge leaderboard-rank-badge">#{index + 1}</span>
+                      </td>
                       <td>
                         <a class="user-chip user-link" href={getProfileUrl(user.username)}>
                           <UserAvatar username={user.username} avatarUrl={user.avatarUrl} size={80} />
@@ -245,12 +209,9 @@ const structuredData = [
                         </a>
                       </td>
                       <td>
-                        <span class="points-inline">
-                          <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
-                          {user.totalPoints}
-                        </span>
+                        <PointsBadge points={user.totalPoints} class="leaderboard-table-points" />
                       </td>
-                      <td>{user.totalPostsContributed}</td>
+                      <td><span class="leaderboard-count-chip">{user.totalPostsContributed}</span></td>
                     </tr>
                   ))}
                 </tbody>
@@ -317,15 +278,10 @@ const structuredData = [
       var collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
       var tabs = Array.from(root.querySelectorAll('[data-leaderboard-season-tab]'));
       var panels = Array.from(root.querySelectorAll('[data-leaderboard-season-panel]'));
-      var activeSeasonKicker = root.querySelector('[data-active-season-kicker]');
-      var activeSeasonHeading = root.querySelector('[data-active-season-heading]');
-      var activeSeasonDescription = root.querySelector('[data-active-season-description]');
+      var activeSeasonLabel = root.querySelector('[data-active-season-label]');
       var activeSeasonRangeText = root.querySelector('[data-active-season-range-text]');
       var activeSeasonContributors = root.querySelector('[data-active-season-contributors]');
       var activeSeasonPoints = root.querySelector('[data-active-season-points]');
-      var activeSeasonPrs = root.querySelector('[data-active-season-prs]');
-      var activeSeasonTopName = root.querySelector('[data-active-season-top-name]');
-      var activeSeasonTopValue = root.querySelector('[data-active-season-top-value]');
       var controllers = {};
       var activeSeason = 'all';
 
@@ -538,14 +494,8 @@ const structuredData = [
           return tab.getAttribute('data-leaderboard-season-tab') === activeSeason;
         });
         if (activeTab) {
-          if (activeSeasonKicker) {
-            activeSeasonKicker.textContent = activeTab.getAttribute('data-season-heading') || 'All time standings';
-          }
-          if (activeSeasonHeading) {
-            activeSeasonHeading.textContent = activeTab.getAttribute('data-season-label') || 'All time';
-          }
-          if (activeSeasonDescription) {
-            activeSeasonDescription.textContent = activeTab.getAttribute('data-season-description') || '';
+          if (activeSeasonLabel) {
+            activeSeasonLabel.textContent = activeTab.getAttribute('data-season-label') || 'All time';
           }
           if (activeSeasonRangeText) {
             activeSeasonRangeText.textContent = activeTab.getAttribute('data-season-range') || 'All scored history';
@@ -555,15 +505,6 @@ const structuredData = [
           }
           if (activeSeasonPoints) {
             activeSeasonPoints.textContent = activeTab.getAttribute('data-season-points') || '0';
-          }
-          if (activeSeasonPrs) {
-            activeSeasonPrs.textContent = activeTab.getAttribute('data-season-prs') || '0';
-          }
-          if (activeSeasonTopName) {
-            activeSeasonTopName.textContent = activeTab.getAttribute('data-season-top-name') || 'Open spot';
-          }
-          if (activeSeasonTopValue) {
-            activeSeasonTopValue.textContent = activeTab.getAttribute('data-season-top-value') || 'No scored merges yet';
           }
         }
 
@@ -605,38 +546,54 @@ const structuredData = [
     .leaderboard-seasons,
     .leaderboard-season-panel {
       display: grid;
-      gap: 1rem;
+      gap: 0.75rem;
     }
 
-    .leaderboard-hero {
+    .leaderboard-toolbar {
       display: grid;
-      grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.9fr);
-      gap: 1rem;
-      align-items: start;
+      gap: 0.5rem;
+      padding: 0.62rem 0.72rem;
     }
 
-    .leaderboard-hero-meta {
-      margin-bottom: 0;
-      max-width: 60ch;
+    .leaderboard-toolbar-head {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 0.35rem 0.65rem;
     }
 
-    .leaderboard-hero-note {
-      display: grid;
-      gap: 0.55rem;
-      padding: 0.95rem;
-      border: 1px solid var(--border);
-      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 74%, var(--primary) 6%), var(--surface-soft));
+    .leaderboard-toolbar-head h1 {
+      margin: 0;
+      font-size: 1.08rem;
+      line-height: 1.15;
     }
 
-    .leaderboard-note-badge,
+    .leaderboard-toolbar-copy {
+      margin: 0;
+      font-size: 0.8rem;
+    }
+
+    .leaderboard-toolbar-copy strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+
+    .leaderboard-toolbar-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
     .leaderboard-season-range {
       width: fit-content;
       border: 1px solid var(--border);
       background: var(--surface);
       color: var(--text);
-      font-size: 0.82rem;
+      font-size: 0.74rem;
       font-weight: 600;
-      padding: 0.35rem 0.55rem;
+      padding: 0.2rem 0.46rem;
     }
 
     .leaderboard-season-tabs {
@@ -695,58 +652,16 @@ const structuredData = [
       color: currentColor;
     }
 
-    .leaderboard-season-overview {
-      display: grid;
-      gap: 0.65rem;
-      padding: 0.75rem;
+    .leaderboard-toolbar-chip {
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.18rem 0.42rem;
+      line-height: 1;
+      white-space: nowrap;
     }
 
-    .leaderboard-season-overview h2 {
-      margin: 0;
-      font-size: 1.06rem;
-      line-height: 1.2;
-    }
-
-    .leaderboard-season-overview .kicker {
-      margin-bottom: 0.1rem;
-    }
-
-    .leaderboard-season-overview .meta {
-      margin-bottom: 0;
-    }
-
-    .leaderboard-season-overview-head {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      gap: 0.6rem;
-      align-items: start;
-    }
-
-    .leaderboard-season-controls {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 0.45rem;
-    }
-
-    .leaderboard-season-stats {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-      margin-top: 0;
-      gap: 0.42rem;
-    }
-
-    .leaderboard-season-stats .stat {
-      padding: 0.45rem 0.52rem;
-    }
-
-    .leaderboard-season-stats .stat-value {
-      font-size: 1rem;
-    }
-
-    .leaderboard-season-stats .stat-label {
-      font-size: 0.75rem;
+    .leaderboard-toolbar-chip.points-badge {
+      gap: 0.2rem;
     }
 
     .stat-leader .stat-label {
@@ -773,6 +688,70 @@ const structuredData = [
 
     .leaderboard-section-note {
       margin-bottom: 0;
+    }
+
+    .leaderboard-table {
+      min-width: 560px;
+    }
+
+    .leaderboard-table th:nth-child(1),
+    .leaderboard-table td:nth-child(1),
+    .leaderboard-table th:nth-child(3),
+    .leaderboard-table td:nth-child(3),
+    .leaderboard-table th:nth-child(4),
+    .leaderboard-table td:nth-child(4) {
+      text-align: center;
+      white-space: nowrap;
+    }
+
+    .leaderboard-table tbody tr {
+      transition: background-color 120ms ease;
+    }
+
+    .leaderboard-table tbody tr:hover {
+      background: color-mix(in srgb, var(--primary) 4%, var(--surface));
+    }
+
+    .leaderboard-rank-badge {
+      min-width: 2.35rem;
+      text-align: center;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      background: color-mix(in srgb, var(--surface) 85%, var(--surface-soft));
+    }
+
+    .leaderboard-table .leaderboard-row[data-rank='1'] .leaderboard-rank-badge {
+      border-color: color-mix(in srgb, var(--points-gold) 46%, var(--border));
+      background: color-mix(in srgb, var(--points-gold) 12%, var(--surface));
+    }
+
+    .leaderboard-table .leaderboard-row[data-rank='2'] .leaderboard-rank-badge,
+    .leaderboard-table .leaderboard-row[data-rank='3'] .leaderboard-rank-badge {
+      border-color: color-mix(in srgb, var(--primary) 35%, var(--border));
+      background: color-mix(in srgb, var(--primary) 7%, var(--surface));
+    }
+
+    .leaderboard-table-points {
+      justify-content: center;
+      min-width: 3.85rem;
+      font-size: 0.76rem;
+      padding: 0.16rem 0.42rem;
+      border-color: color-mix(in srgb, var(--points-gold) 28%, var(--border));
+      background: color-mix(in srgb, var(--points-gold) 9%, var(--surface));
+    }
+
+    .leaderboard-count-chip {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      padding: 0.14rem 0.38rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-soft);
+      font-size: 0.75rem;
+      font-weight: 700;
+      line-height: 1.15;
     }
 
     .leaderboard-empty-state {
@@ -858,29 +837,30 @@ const structuredData = [
       cursor: default;
     }
 
-    @media (max-width: 1080px) {
-      .leaderboard-hero {
-        grid-template-columns: 1fr;
-      }
-
-      .leaderboard-season-stats {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-      }
-    }
-
     @media (max-width: 860px) {
       .leaderboard-pagination,
-      .leaderboard-section-head,
-      .leaderboard-season-overview-head {
-        justify-content: center;
+      .leaderboard-section-head {
+        justify-content: flex-start;
       }
 
-      .leaderboard-season-controls {
-        justify-content: center;
+      .leaderboard-toolbar-head {
+        align-items: flex-start;
+      }
+
+      .leaderboard-toolbar-controls {
+        justify-content: flex-start;
       }
     }
 
     @media (max-width: 640px) {
+      .leaderboard-toolbar {
+        gap: 0.45rem;
+      }
+
+      .leaderboard-toolbar-head h1 {
+        font-size: 1rem;
+      }
+
       .leaderboard-season-tabs {
         display: grid;
         grid-template-columns: 1fr;
@@ -895,10 +875,6 @@ const structuredData = [
 
       .leaderboard-season-tab:last-child {
         border-bottom: 0;
-      }
-
-      .leaderboard-season-stats {
-        grid-template-columns: 1fr;
       }
     }
   </style>
