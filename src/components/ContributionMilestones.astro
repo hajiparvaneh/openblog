@@ -130,29 +130,24 @@ const formatDate = (isoDate: string | null): string | null => {
     content: '';
     position: absolute;
     left: 50%;
-    bottom: -0.6rem;
-    width: 1.22rem;
-    height: 0.92rem;
+    top: -0.42rem;
+    width: 1.04rem;
+    height: 0.3rem;
     transform: translateX(-50%);
-    background: linear-gradient(
-      90deg,
-      color-mix(in srgb, var(--milestone-color) 78%, #3a3a3a) 0% 44%,
-      transparent 44% 56%,
-      color-mix(in srgb, var(--milestone-color) 78%, #3a3a3a) 56% 100%
-    );
-    clip-path: polygon(0 0, 100% 0, 100% 72%, 78% 100%, 50% 74%, 22% 100%, 0 72%);
-    filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--milestone-color) 30%, transparent));
-    z-index: -1;
+    border: 1px solid color-mix(in srgb, var(--milestone-color) 52%, var(--border));
+    border-radius: 0;
+    background: color-mix(in srgb, var(--milestone-color) 82%, #2f343b);
+    box-shadow: 0 1px 0 color-mix(in srgb, var(--milestone-color) 22%, transparent);
+  }
+
+  .profile-milestone-item:not(.is-earned) .profile-milestone-icon-wrap::after {
+    opacity: 0.62;
   }
 
   .profile-milestone-icon {
     color: var(--milestone-color);
     font-size: 0.9rem;
     text-shadow: 0 1px 0 color-mix(in srgb, var(--surface) 70%, transparent);
-  }
-
-  .profile-milestone-item:not(.is-earned) .profile-milestone-icon-wrap::after {
-    opacity: 0.45;
   }
 
   .profile-milestone-name {
