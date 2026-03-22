@@ -98,8 +98,8 @@ const formatDate = (isoDate: string | null): string | null => {
 
   .profile-milestone-icon-wrap {
     position: relative;
-    width: 2rem;
-    height: 2rem;
+    width: 1.62rem;
+    height: 1.62rem;
     border: 2px solid color-mix(in srgb, var(--milestone-color) 58%, var(--border));
     border-radius: 999px;
     display: inline-flex;
@@ -118,21 +118,13 @@ const formatDate = (isoDate: string | null): string | null => {
       0 1px 0 color-mix(in srgb, var(--milestone-color) 24%, transparent);
   }
 
-  .profile-milestone-icon-wrap::before {
-    content: '';
-    position: absolute;
-    inset: 0.2rem;
-    border: 1px dashed color-mix(in srgb, var(--milestone-color) 52%, var(--border));
-    border-radius: 999px;
-  }
-
   .profile-milestone-icon-wrap::after {
     content: '';
     position: absolute;
     left: 50%;
-    top: -0.42rem;
-    width: 1.04rem;
-    height: 0.3rem;
+    top: -0.46rem;
+    width: 0.9rem;
+    height: 0.38rem;
     transform: translateX(-50%);
     border: 1px solid color-mix(in srgb, var(--milestone-color) 52%, var(--border));
     border-radius: 0;
@@ -146,7 +138,7 @@ const formatDate = (isoDate: string | null): string | null => {
 
   .profile-milestone-icon {
     color: var(--milestone-color);
-    font-size: 0.9rem;
+    font-size: 1.08rem;
     text-shadow: 0 1px 0 color-mix(in srgb, var(--surface) 70%, transparent);
   }
 
