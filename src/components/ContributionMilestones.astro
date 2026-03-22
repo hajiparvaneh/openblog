@@ -1,0 +1,218 @@
+---
+import type { ContributionMilestoneBadge } from '../lib/openblog';
+
+type Props = {
+  milestones: ContributionMilestoneBadge[];
+  class?: string;
+};
+
+const { milestones, class: className = '' } = Astro.props as Props;
+const rootClass = `profile-milestones ${className}`.trim();
+const earnedCount = milestones.filter((milestone) => milestone.earned).length;
+
+const formatDate = (isoDate: string | null): string | null => {
+  if (!isoDate) return null;
+  const parsed = new Date(isoDate);
+  return Number.isNaN(parsed.getTime()) ? isoDate : parsed.toISOString().slice(0, 10);
+};
+---
+
+<div class={rootClass}>
+  <p class="meta profile-milestones-summary">
+    Unlocked {earnedCount}/{milestones.length} badges
+  </p>
+  <ul class="profile-milestone-grid">
+    {milestones.map((milestone) => {
+      const unlockedAt = formatDate(milestone.earnedAt);
+
+      return (
+        <li class:list={['profile-milestone-item', milestone.earned && 'is-earned']} style={`--milestone-color: ${milestone.color};`}>
+          <div class="profile-milestone-head">
+            <span class="profile-milestone-icon-wrap" aria-hidden="true">
+              <i class={`ti ti-${milestone.icon} profile-milestone-icon`} aria-hidden="true"></i>
+            </span>
+            <strong class="profile-milestone-name">{milestone.name}</strong>
+            <span
+              class:list={['profile-milestone-status', 'badge', milestone.earned ? 'is-earned' : 'is-locked']}
+              aria-label={milestone.earned ? 'Unlocked' : 'Locked'}
+              title={milestone.earned ? 'Unlocked' : 'Locked'}
+            >
+              <i class={`ti ${milestone.earned ? 'ti-circle-check' : 'ti-lock'}`} aria-hidden="true"></i>
+            </span>
+          </div>
+          <p class="profile-milestone-description">{milestone.description}</p>
+          <div class="profile-milestone-meta">
+            <span>{milestone.progressLabel}</span>
+            {unlockedAt ? <span>Earned: {unlockedAt}</span> : null}
+          </div>
+        </li>
+      );
+    })}
+  </ul>
+</div>
+
+<style>
+  .profile-milestones {
+    display: grid;
+    gap: 0.6rem;
+  }
+
+  .profile-milestones-summary {
+    margin: 0;
+    font-size: 0.82rem;
+  }
+
+  .profile-milestone-grid {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  }
+
+  .profile-milestone-item {
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    padding: 0.58rem 0.62rem;
+    display: grid;
+    gap: 0.36rem;
+    min-width: 0;
+    transition: border-color 140ms ease, background-color 140ms ease;
+  }
+
+  .profile-milestone-item.is-earned {
+    border-color: color-mix(in srgb, var(--milestone-color) 34%, var(--border));
+    border-left-color: var(--milestone-color);
+    background: color-mix(in srgb, var(--milestone-color) 8%, var(--surface));
+  }
+
+  .profile-milestone-head {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    min-width: 0;
+  }
+
+  .profile-milestone-icon-wrap {
+    position: relative;
+    width: 2rem;
+    height: 2rem;
+    border: 2px solid color-mix(in srgb, var(--milestone-color) 58%, var(--border));
+    border-radius: 999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: radial-gradient(
+      circle at 30% 28%,
+      color-mix(in srgb, #ffffff 82%, var(--surface)) 0%,
+      color-mix(in srgb, var(--milestone-color) 15%, var(--surface)) 48%,
+      color-mix(in srgb, var(--milestone-color) 32%, var(--surface)) 100%
+    );
+    flex: 0 0 auto;
+    overflow: visible;
+    box-shadow:
+      inset 0 0 0 2px color-mix(in srgb, var(--surface) 78%, transparent),
+      0 1px 0 color-mix(in srgb, var(--milestone-color) 24%, transparent);
+  }
+
+  .profile-milestone-icon-wrap::before {
+    content: '';
+    position: absolute;
+    inset: 0.2rem;
+    border: 1px dashed color-mix(in srgb, var(--milestone-color) 52%, var(--border));
+    border-radius: 999px;
+  }
+
+  .profile-milestone-icon-wrap::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: -0.6rem;
+    width: 1.22rem;
+    height: 0.92rem;
+    transform: translateX(-50%);
+    background: linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--milestone-color) 78%, #3a3a3a) 0% 44%,
+      transparent 44% 56%,
+      color-mix(in srgb, var(--milestone-color) 78%, #3a3a3a) 56% 100%
+    );
+    clip-path: polygon(0 0, 100% 0, 100% 72%, 78% 100%, 50% 74%, 22% 100%, 0 72%);
+    filter: drop-shadow(0 1px 0 color-mix(in srgb, var(--milestone-color) 30%, transparent));
+    z-index: -1;
+  }
+
+  .profile-milestone-icon {
+    color: var(--milestone-color);
+    font-size: 0.9rem;
+    text-shadow: 0 1px 0 color-mix(in srgb, var(--surface) 70%, transparent);
+  }
+
+  .profile-milestone-item:not(.is-earned) .profile-milestone-icon-wrap::after {
+    opacity: 0.45;
+  }
+
+  .profile-milestone-name {
+    font-size: 0.83rem;
+    line-height: 1.2;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .profile-milestone-status {
+    margin-left: auto;
+    font-size: 0.76rem;
+    font-weight: 700;
+    line-height: 1;
+    border-radius: 999px;
+    width: 1.4rem;
+    height: 1.4rem;
+    padding: 0;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .profile-milestone-status.is-earned {
+    border-color: color-mix(in srgb, var(--milestone-color) 45%, var(--border));
+    background: color-mix(in srgb, var(--milestone-color) 14%, var(--surface));
+    color: var(--text);
+  }
+
+  .profile-milestone-status.is-locked {
+    color: var(--muted);
+    background: var(--surface);
+  }
+
+  .profile-milestone-description {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .profile-milestone-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    align-items: center;
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 600;
+    border-top: 1px solid var(--border);
+    padding-top: 0.34rem;
+  }
+
+  .profile-milestone-meta span {
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface);
+    padding: 0.08rem 0.35rem;
+  }
+</style>

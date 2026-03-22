@@ -1,6 +1,7 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import PostCard from '../../components/PostCard.astro';
+import ContributionMilestones from '../../components/ContributionMilestones.astro';
 import {
   getContributedPostSlugsByUser,
   getKnownContributors,
@@ -133,6 +134,12 @@ const structuredData = {
         <span class="stat-label">Total contribution entries</span>
       </div>
     </div>
+  </section>
+
+  <section class="card">
+    <h2 class="icon-label"><i class="ti ti-award icon-sm" aria-hidden="true"></i>Milestone badges</h2>
+    <p class="meta">Low-friction contribution milestones, styled for GitHub-like progress tracking.</p>
+    <ContributionMilestones milestones={profile.milestones} />
   </section>
 
   <section class="list paginated-list">

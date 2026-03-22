@@ -122,6 +122,28 @@ export type UserProfileRecord = {
   joinedAt: string | null;
   lastContributionAt: string | null;
   contributedPosts: UserContributedPostRecord[];
+  milestones: ContributionMilestoneBadge[];
+};
+
+export type ContributionMilestoneBadgeKey =
+  | 'first-merged-pr'
+  | 'pr-streak-3'
+  | 'first-translation'
+  | 'source-provider'
+  | 'example-builder'
+  | 'precision-maker'
+  | 'metadata-corrector'
+  | 'typo-fixer';
+
+export type ContributionMilestoneBadge = {
+  key: ContributionMilestoneBadgeKey;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  earned: boolean;
+  earnedAt: string | null;
+  progressLabel: string;
 };
 
 export type LatestContributorRecord = {
@@ -149,6 +171,120 @@ type PostContributorRecord = UserRecord & {
   labels: string[];
   pullRequests: PostContributorPrRecord[];
 };
+
+type ProfileMilestoneContext = {
+  acceptedPrCount: number;
+  mergedPrDatesAsc: string[];
+  firstMergedAt: string | null;
+  labelCounts: Map<string, number>;
+  firstLabelSeenAt: Map<string, string>;
+};
+
+type LabelMilestoneDefinition = {
+  key: ContributionMilestoneBadgeKey;
+  name: string;
+  description: string;
+  icon: string;
+  color: string;
+  label: string;
+};
+
+const PROFILE_LABEL_MILESTONES: LabelMilestoneDefinition[] = [
+  {
+    key: 'first-translation',
+    name: 'First Translation',
+    description: 'First merged translation contribution.',
+    icon: 'language-katakana',
+    color: '#8250df',
+    label: 'translation'
+  },
+  {
+    key: 'source-provider',
+    name: 'Source Provider',
+    description: 'Merged a contribution that provides references.',
+    icon: 'books',
+    color: '#0969da',
+    label: 'source-added'
+  },
+  {
+    key: 'example-builder',
+    name: 'Example Builder',
+    description: 'Merged a contribution that adds a practical example.',
+    icon: 'test-pipe',
+    color: '#9a6700',
+    label: 'new-example'
+  },
+  {
+    key: 'precision-maker',
+    name: 'Precision Maker',
+    description: 'Merged an accuracy improvement.',
+    icon: 'target-arrow',
+    color: '#1f6feb',
+    label: 'fact-check'
+  },
+  {
+    key: 'metadata-corrector',
+    name: 'Metadata Corrector',
+    description: 'Merged metadata improvements.',
+    icon: 'file-info',
+    color: '#6f42c1',
+    label: 'fix-metadata'
+  },
+  {
+    key: 'typo-fixer',
+    name: 'Typo Fixer',
+    description: 'Merged typo fixes.',
+    icon: 'text-spellcheck',
+    color: '#57606a',
+    label: 'typo'
+  }
+];
+
+function toMilestoneProgressLabel(current: number, target: number, unit: string): string {
+  const cappedCurrent = Math.min(current, target);
+  return `${cappedCurrent}/${target} ${unit}`;
+}
+
+function buildProfileMilestones(context: ProfileMilestoneContext): ContributionMilestoneBadge[] {
+  const firstMergedBadge: ContributionMilestoneBadge = {
+    key: 'first-merged-pr',
+    name: 'First Merge',
+    description: 'First pull request merged into OpenBlog.',
+    icon: 'medal',
+    color: '#1f883d',
+    earned: context.acceptedPrCount >= 1,
+    earnedAt: context.firstMergedAt,
+    progressLabel: toMilestoneProgressLabel(context.acceptedPrCount, 1, 'PRs')
+  };
+
+  const thirdMergedAt = context.mergedPrDatesAsc[2] ?? null;
+  const threePrStreakBadge: ContributionMilestoneBadge = {
+    key: 'pr-streak-3',
+    name: 'PR Streak x3',
+    description: 'Three merged pull requests.',
+    icon: 'flame',
+    color: '#bf8700',
+    earned: context.acceptedPrCount >= 3,
+    earnedAt: thirdMergedAt,
+    progressLabel: toMilestoneProgressLabel(context.acceptedPrCount, 3, 'PRs')
+  };
+
+  const labelBadges = PROFILE_LABEL_MILESTONES.map((definition) => {
+    const count = context.labelCounts.get(definition.label) ?? 0;
+    return {
+      key: definition.key,
+      name: definition.name,
+      description: definition.description,
+      icon: definition.icon,
+      color: definition.color,
+      earned: count > 0,
+      earnedAt: context.firstLabelSeenAt.get(definition.label) ?? null,
+      progressLabel: toMilestoneProgressLabel(count, 1, 'merges')
+    } satisfies ContributionMilestoneBadge;
+  });
+
+  return [firstMergedBadge, threePrStreakBadge, ...labelBadges];
+}
 
 function isCategoryLeaderboardRecord(entry: unknown): entry is CategoryLeaderboardRecord {
   if (!entry || typeof entry !== 'object') return false;
@@ -1145,6 +1281,9 @@ export function getUserProfile(usernameOrHandle: string): UserProfileRecord | nu
   let calculatedTotalPoints = 0;
   let totalContributions = 0;
   const acceptedPrNumbers = new Set<number>();
+  const mergedAtByPrNumber = new Map<number, string>();
+  const labelCounts = new Map<string, number>();
+  const firstLabelSeenAt = new Map<string, string>();
   const contributionsByPost = new Map<string, {
     postSlug: string;
     totalPoints: number;
@@ -1174,6 +1313,10 @@ export function getUserProfile(usernameOrHandle: string): UserProfileRecord | nu
     }
 
     acceptedPrNumbers.add(event.prNumber);
+    const existingMergedAt = mergedAtByPrNumber.get(event.prNumber);
+    if (!existingMergedAt || event.mergedAt < existingMergedAt) {
+      mergedAtByPrNumber.set(event.prNumber, event.mergedAt);
+    }
     for (const contribution of contributions) {
       const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
       const current = contributionsByPost.get(resolvedPostSlug) ?? {
@@ -1198,6 +1341,20 @@ export function getUserProfile(usernameOrHandle: string): UserProfileRecord | nu
       contributionsByPost.set(resolvedPostSlug, current);
       calculatedTotalPoints += contribution.points;
       totalContributions += 1;
+
+      const normalizedLabels = new Set(
+        contribution.labels
+          .map((label) => label.trim().toLowerCase())
+          .filter((label) => label.length > 0)
+      );
+
+      for (const label of normalizedLabels) {
+        labelCounts.set(label, (labelCounts.get(label) ?? 0) + 1);
+        const existingFirstLabelSeenAt = firstLabelSeenAt.get(label);
+        if (!existingFirstLabelSeenAt || event.mergedAt < existingFirstLabelSeenAt) {
+          firstLabelSeenAt.set(label, event.mergedAt);
+        }
+      }
     }
   }
 
@@ -1225,18 +1382,30 @@ export function getUserProfile(usernameOrHandle: string): UserProfileRecord | nu
 
   if (!hasEventData && !leaderboardEntry) return null;
 
+  const resolvedTotalPoints = hasEventData ? calculatedTotalPoints : (leaderboardEntry?.totalPoints ?? 0);
+  const resolvedAcceptedPrs = hasEventData ? acceptedPrNumbers.size : (leaderboardEntry?.acceptedPrs ?? 0);
+  const mergedPrDatesAsc = [...mergedAtByPrNumber.values()].sort((a, b) => a.localeCompare(b));
+  const milestones = buildProfileMilestones({
+    acceptedPrCount: resolvedAcceptedPrs,
+    mergedPrDatesAsc,
+    firstMergedAt: joinedAt,
+    labelCounts,
+    firstLabelSeenAt
+  });
+
   return {
     username: canonicalUsername,
     profileUrl: `https://github.com/${canonicalUsername}`,
     avatarUrl,
-    totalPoints: hasEventData ? calculatedTotalPoints : (leaderboardEntry?.totalPoints ?? 0),
-    acceptedPrs: hasEventData ? acceptedPrNumbers.size : (leaderboardEntry?.acceptedPrs ?? 0),
+    totalPoints: resolvedTotalPoints,
+    acceptedPrs: resolvedAcceptedPrs,
     acceptedPrNumbers: [...acceptedPrNumbers].sort((a, b) => b - a),
     postsContributed: contributedPosts.length,
     totalContributions,
     joinedAt,
     lastContributionAt,
-    contributedPosts
+    contributedPosts,
+    milestones
   };
 }
 
