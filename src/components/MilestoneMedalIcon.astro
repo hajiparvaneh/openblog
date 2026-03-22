@@ -3,7 +3,7 @@ type Props = {
   icon: string;
   color: string;
   earned?: boolean;
-  size?: 'xs' | 's' | 'm' | 'l';
+  size?: 'xxs' | 'xs' | 's' | 'm' | 'l';
   title?: string;
   class?: string;
 };
@@ -72,6 +72,16 @@ const rootClass = `milestone-medal milestone-medal--${size} ${earned ? 'is-earne
     --medal-band-width: 0.58rem;
     --medal-band-height: 0.2rem;
     --medal-band-top: -0.24rem;
+  }
+
+  .milestone-medal--xxs {
+    --medal-size: 0.96rem;
+    --medal-icon-size: 0.62rem;
+    --medal-border-width: 1px;
+    --medal-inset-border-width: 1px;
+    --medal-band-width: 0.5rem;
+    --medal-band-height: 0.16rem;
+    --medal-band-top: -0.2rem;
   }
 
   .milestone-medal--l {

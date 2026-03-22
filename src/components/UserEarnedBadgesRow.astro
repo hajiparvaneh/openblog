@@ -1,0 +1,91 @@
+---
+import { getProfilePath, getUserProfile } from '../lib/openblog';
+import MilestoneMedalIcon from './MilestoneMedalIcon.astro';
+
+type MedalSize = 'xs' | 's' | 'm' | 'l';
+
+type Props = {
+  userId: string;
+  size?: MedalSize;
+  href?: string;
+  class?: string;
+};
+
+const {
+  userId,
+  size = 'xs',
+  href,
+  class: className = ''
+} = Astro.props as Props;
+
+const profile = getUserProfile(userId);
+const earnedMilestones = (profile?.milestones ?? []).filter((milestone) => milestone.earned);
+const rootClass = `earned-badges-row ${className}`.trim();
+const ariaLabelUsername = profile?.username ?? userId.replace(/^@+/, '');
+const profilePath = getProfilePath(ariaLabelUsername);
+const resolvedHref = href?.trim() ? href : profilePath;
+const isAnchorLink = resolvedHref.startsWith('#');
+const linkAriaLabel = isAnchorLink
+  ? 'Jump to Milestone badges section'
+  : `Open @${ariaLabelUsername} profile badges`;
+const linkTitle = isAnchorLink
+  ? 'Jump to Milestone badges section'
+  : `Open @${ariaLabelUsername} profile`;
+---
+
+{earnedMilestones.length > 0 ? (
+  <a
+    class="earned-badges-link"
+    href={resolvedHref}
+    aria-label={linkAriaLabel}
+    title={linkTitle}
+  >
+    <ul class={rootClass} aria-hidden="true">
+      {earnedMilestones.map((milestone) => (
+        <li class="earned-badges-item">
+          <MilestoneMedalIcon
+            icon={milestone.icon}
+            color={milestone.color}
+            earned={true}
+            size={size}
+            title={milestone.name}
+          />
+        </li>
+      ))}
+    </ul>
+  </a>
+) : null}
+
+<style>
+  .earned-badges-link {
+    display: inline-flex;
+    text-decoration: none;
+    line-height: 1;
+  }
+
+  .earned-badges-link:hover,
+  .earned-badges-link:focus-visible {
+    text-decoration: none;
+  }
+
+  .earned-badges-row {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.22rem;
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: thin;
+  }
+
+  .earned-badges-item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    padding-top: 0.32rem;
+  }
+</style>

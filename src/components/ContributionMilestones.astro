@@ -10,7 +10,6 @@ type Props = {
 const { milestones, class: className = '' } = Astro.props as Props;
 const rootClass = `profile-milestones ${className}`.trim();
 const earnedCount = milestones.filter((milestone) => milestone.earned).length;
-const sizePreviewMilestone = milestones[0] ?? null;
 
 const formatDate = (isoDate: string | null): string | null => {
   if (!isoDate) return null;
@@ -23,51 +22,6 @@ const formatDate = (isoDate: string | null): string | null => {
   <p class="meta profile-milestones-summary">
     Unlocked {earnedCount}/{milestones.length} badges
   </p>
-  {sizePreviewMilestone && (
-    <div class="profile-milestone-size-preview" aria-label="Badge size comparison">
-      <span class="profile-milestone-size-preview-title">Size test</span>
-      <span class="profile-milestone-size-preview-item">
-        <MilestoneMedalIcon
-          icon={sizePreviewMilestone.icon}
-          color={sizePreviewMilestone.color}
-          earned={sizePreviewMilestone.earned}
-          size="xs"
-          title={sizePreviewMilestone.name}
-        />
-        <span>XS</span>
-      </span>
-      <span class="profile-milestone-size-preview-item">
-        <MilestoneMedalIcon
-          icon={sizePreviewMilestone.icon}
-          color={sizePreviewMilestone.color}
-          earned={sizePreviewMilestone.earned}
-          size="s"
-          title={sizePreviewMilestone.name}
-        />
-        <span>S</span>
-      </span>
-      <span class="profile-milestone-size-preview-item">
-        <MilestoneMedalIcon
-          icon={sizePreviewMilestone.icon}
-          color={sizePreviewMilestone.color}
-          earned={sizePreviewMilestone.earned}
-          size="m"
-          title={sizePreviewMilestone.name}
-        />
-        <span>M</span>
-      </span>
-      <span class="profile-milestone-size-preview-item">
-        <MilestoneMedalIcon
-          icon={sizePreviewMilestone.icon}
-          color={sizePreviewMilestone.color}
-          earned={sizePreviewMilestone.earned}
-          size="l"
-          title={sizePreviewMilestone.name}
-        />
-        <span>L</span>
-      </span>
-    </div>
-  )}
   <ul class="profile-milestone-grid">
     {milestones.map((milestone) => {
       const unlockedAt = formatDate(milestone.earnedAt);
@@ -110,37 +64,6 @@ const formatDate = (isoDate: string | null): string | null => {
   .profile-milestones-summary {
     margin: 0;
     font-size: 0.82rem;
-  }
-
-  .profile-milestone-size-preview {
-    display: inline-flex;
-    align-items: center;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--surface);
-    padding: 0.35rem 0.45rem;
-  }
-
-  .profile-milestone-size-preview-title {
-    font-size: 0.74rem;
-    font-weight: 700;
-    color: var(--muted);
-    margin-right: 0.1rem;
-  }
-
-  .profile-milestone-size-preview-item {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.24rem;
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--muted);
-    border: 1px solid var(--border);
-    border-radius: 999px;
-    background: var(--surface-soft);
-    padding: 0.15rem 0.33rem;
   }
 
   .profile-milestone-grid {
