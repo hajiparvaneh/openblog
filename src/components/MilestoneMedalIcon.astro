@@ -3,7 +3,8 @@ type Props = {
   icon: string;
   color: string;
   earned?: boolean;
-  size?: 's' | 'm' | 'l';
+  size?: 'xs' | 's' | 'm' | 'l';
+  title?: string;
   class?: string;
 };
 
@@ -12,13 +13,14 @@ const {
   color,
   earned = false,
   size = 'm',
+  title,
   class: className = ''
 } = Astro.props as Props;
 
 const rootClass = `milestone-medal milestone-medal--${size} ${earned ? 'is-earned' : 'is-locked'} ${className}`.trim();
 ---
 
-<span class={rootClass} style={`--milestone-medal-color: ${color};`} aria-hidden="true">
+<span class={rootClass} style={`--milestone-medal-color: ${color};`} aria-hidden="true" title={title}>
   <i class={`ti ti-${icon} milestone-medal-icon`} aria-hidden="true"></i>
 </span>
 
@@ -53,13 +55,23 @@ const rootClass = `milestone-medal milestone-medal--${size} ${earned ? 'is-earne
   }
 
   .milestone-medal--s {
-    --medal-size: 1.44rem;
-    --medal-icon-size: 0.94rem;
-    --medal-border-width: 2px;
+    --medal-size: 1.28rem;
+    --medal-icon-size: 0.82rem;
+    --medal-border-width: 1.5px;
     --medal-inset-border-width: 1px;
-    --medal-band-width: 0.78rem;
-    --medal-band-height: 0.3rem;
-    --medal-band-top: -0.36rem;
+    --medal-band-width: 0.68rem;
+    --medal-band-height: 0.24rem;
+    --medal-band-top: -0.3rem;
+  }
+
+  .milestone-medal--xs {
+    --medal-size: 1.12rem;
+    --medal-icon-size: 0.72rem;
+    --medal-border-width: 1.25px;
+    --medal-inset-border-width: 1px;
+    --medal-band-width: 0.58rem;
+    --medal-band-height: 0.2rem;
+    --medal-band-top: -0.24rem;
   }
 
   .milestone-medal--l {
