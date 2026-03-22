@@ -79,6 +79,25 @@ export type CategoryLeaderboardRecord = UserRecord & {
   totalContributions: number;
   totalPostsContributed: number;
 };
+export type LeaderboardWindow = 'all' | 'month' | 'week';
+export type SeasonalLeaderboardRecord = UserRecord & {
+  totalContributions: number;
+  totalPostsContributed: number;
+  lastContributionAt: string | null;
+};
+export type LeaderboardWindowMeta = {
+  key: LeaderboardWindow;
+  label: string;
+  description: string;
+  startsAt: string | null;
+  endsAt: string | null;
+};
+export type WindowedLeaderboardResult<TRecord> = {
+  requestedWindow: LeaderboardWindow;
+  resolvedWindow: LeaderboardWindow;
+  isFallback: boolean;
+  entries: TRecord[];
+};
 
 export type UserContributedPostRecord = {
   postSlug: string;
@@ -594,6 +613,203 @@ function getEventContributions(event: RawEventRecord): EventContributionRecord[]
   return [];
 }
 
+function getValidReferenceDate(referenceDate?: Date): Date {
+  if (referenceDate instanceof Date && !Number.isNaN(referenceDate.getTime())) {
+    return referenceDate;
+  }
+
+  return new Date();
+}
+
+function getUtcDayStart(referenceDate: Date): Date {
+  return new Date(Date.UTC(referenceDate.getUTCFullYear(), referenceDate.getUTCMonth(), referenceDate.getUTCDate()));
+}
+
+function addUtcDays(referenceDate: Date, days: number): Date {
+  return new Date(referenceDate.getTime() + days * 24 * 60 * 60 * 1000);
+}
+
+function toIsoDateString(referenceDate: Date): string {
+  return referenceDate.toISOString().slice(0, 10);
+}
+
+function getLeaderboardWindowStart(window: LeaderboardWindow, referenceDate: Date): Date | null {
+  if (window === 'all') return null;
+
+  const utcDayStart = getUtcDayStart(referenceDate);
+
+  if (window === 'month') {
+    return new Date(Date.UTC(utcDayStart.getUTCFullYear(), utcDayStart.getUTCMonth(), 1));
+  }
+
+  const weekday = utcDayStart.getUTCDay();
+  const daysSinceMonday = (weekday + 6) % 7;
+  return addUtcDays(utcDayStart, -daysSinceMonday);
+}
+
+function isEventWithinLeaderboardWindow(
+  event: Pick<RawEventRecord, 'mergedAt'>,
+  window: LeaderboardWindow,
+  referenceDate?: Date
+): boolean {
+  if (window === 'all') return true;
+  if (typeof event.mergedAt !== 'string' || !event.mergedAt) return false;
+
+  const mergedAt = new Date(event.mergedAt);
+  if (Number.isNaN(mergedAt.getTime())) return false;
+
+  const now = getValidReferenceDate(referenceDate);
+  if (mergedAt.getTime() > now.getTime()) return false;
+
+  const startsAt = getLeaderboardWindowStart(window, now);
+  return startsAt ? mergedAt.getTime() >= startsAt.getTime() : true;
+}
+
+export function getLeaderboardWindowMeta(window: LeaderboardWindow, referenceDate = new Date()): LeaderboardWindowMeta {
+  const now = getValidReferenceDate(referenceDate);
+  const endsAt = toIsoDateString(getUtcDayStart(now));
+
+  if (window === 'all') {
+    return {
+      key: window,
+      label: 'All time',
+      description: 'Cumulative rankings across every scored merge in OpenBlog history.',
+      startsAt: null,
+      endsAt
+    };
+  }
+
+  if (window === 'month') {
+    const startsAt = toIsoDateString(getLeaderboardWindowStart(window, now) ?? now);
+    return {
+      key: window,
+      label: 'This month',
+      description: 'Fresh monthly standings based on PRs merged during the current calendar month.',
+      startsAt,
+      endsAt
+    };
+  }
+
+  const startsAt = toIsoDateString(getLeaderboardWindowStart(window, now) ?? now);
+  return {
+    key: window,
+    label: 'This week',
+    description: 'Fast weekly race using PRs merged during the current ISO week.',
+    startsAt,
+    endsAt
+  };
+}
+
+export function getLeaderboardByWindow(window: LeaderboardWindow, referenceDate = new Date()): SeasonalLeaderboardRecord[] {
+  const eventRecords = getEventRecords();
+  if (eventRecords.length === 0) {
+    if (window !== 'all') return [];
+
+    return getLeaderboard().map((entry) => ({
+      ...entry,
+      totalContributions: 0,
+      totalPostsContributed: 0,
+      lastContributionAt: null
+    }));
+  }
+
+  const { knownSlugs } = getPostsIndex();
+  const generatedLeaderboard = getLeaderboard();
+  const avatarByUsername = new Map(
+    generatedLeaderboard.map((entry) => [entry.username.toLowerCase(), entry.avatarUrl ?? null] as const)
+  );
+  const byUser = new Map<string, {
+    username: string;
+    avatarUrl: string | null;
+    totalPoints: number;
+    acceptedPrNumbers: Set<number>;
+    totalContributions: number;
+    postSlugs: Set<string>;
+    lastContributionAt: string | null;
+  }>();
+
+  for (const event of eventRecords) {
+    if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) continue;
+    if (!isEventWithinLeaderboardWindow(event, window, referenceDate)) continue;
+
+    const contributions = getEventContributions(event);
+    if (contributions.length === 0) continue;
+
+    const key = event.username.toLowerCase();
+    const current = byUser.get(key) ?? {
+      username: event.username,
+      avatarUrl: avatarByUsername.get(key) ?? null,
+      totalPoints: 0,
+      acceptedPrNumbers: new Set<number>(),
+      totalContributions: 0,
+      postSlugs: new Set<string>(),
+      lastContributionAt: null
+    };
+
+    current.username = event.username;
+    if (event.userAvatarUrl) {
+      current.avatarUrl = event.userAvatarUrl;
+    }
+
+    current.acceptedPrNumbers.add(event.prNumber);
+    current.totalContributions += contributions.length;
+    if (!current.lastContributionAt || event.mergedAt > current.lastContributionAt) {
+      current.lastContributionAt = event.mergedAt;
+    }
+
+    for (const contribution of contributions) {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
+      current.totalPoints += contribution.points;
+      current.postSlugs.add(resolvedPostSlug);
+    }
+
+    byUser.set(key, current);
+  }
+
+  return [...byUser.values()]
+    .map((entry) => ({
+      username: entry.username,
+      avatarUrl: entry.avatarUrl,
+      totalPoints: entry.totalPoints,
+      acceptedPrs: entry.acceptedPrNumbers.size,
+      totalContributions: entry.totalContributions,
+      totalPostsContributed: entry.postSlugs.size,
+      lastContributionAt: entry.lastContributionAt
+    }))
+    .sort(
+      (a, b) =>
+        b.totalPoints - a.totalPoints ||
+        b.acceptedPrs - a.acceptedPrs ||
+        b.totalPostsContributed - a.totalPostsContributed ||
+        a.username.localeCompare(b.username)
+    );
+}
+
+export function getLeaderboardByWindowWithFallback(
+  window: LeaderboardWindow,
+  referenceDate = new Date()
+): WindowedLeaderboardResult<SeasonalLeaderboardRecord> {
+  const entries = getLeaderboardByWindow(window, referenceDate);
+  if (window !== 'all' && entries.length === 0) {
+    const fallbackEntries = getLeaderboardByWindow('all', referenceDate);
+    if (fallbackEntries.length > 0) {
+      return {
+        requestedWindow: window,
+        resolvedWindow: 'all',
+        isFallback: true,
+        entries: fallbackEntries
+      };
+    }
+  }
+
+  return {
+    requestedWindow: window,
+    resolvedWindow: window,
+    isFallback: false,
+    entries
+  };
+}
+
 export function getPosts(): Post[] {
   const snapshot = getPostsSnapshot();
   if (postsCache && postsCache.signature === snapshot.signature) {
@@ -763,6 +979,118 @@ export function getCategoryLeaderboard(category: string): CategoryLeaderboardRec
     value: leaderboard
   });
   return leaderboard;
+}
+
+export function getCategoryLeaderboardByWindow(
+  category: string,
+  window: LeaderboardWindow = 'all',
+  referenceDate = new Date()
+): CategoryLeaderboardRecord[] {
+  const normalizedCategory = normalizeCategoryKey(category);
+  if (window === 'all') {
+    return getCategoryLeaderboard(normalizedCategory);
+  }
+
+  const eventRecords = getEventRecords();
+  if (eventRecords.length === 0) return [];
+
+  const { bySlug: postBySlug, knownSlugs } = getPostsIndex();
+  const allTimeCategoryLeaderboard = getCategoryLeaderboard(normalizedCategory);
+  const avatarByUsername = new Map(
+    allTimeCategoryLeaderboard.map((entry) => [entry.username.toLowerCase(), entry.avatarUrl ?? null] as const)
+  );
+  const byUser = new Map<string, {
+    username: string;
+    avatarUrl: string | null;
+    totalPoints: number;
+    acceptedPrNumbers: Set<number>;
+    totalContributions: number;
+    postSlugs: Set<string>;
+  }>();
+
+  for (const event of eventRecords) {
+    if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) continue;
+    if (!isEventWithinLeaderboardWindow(event, window, referenceDate)) continue;
+
+    const contributions = getEventContributions(event);
+    if (contributions.length === 0) continue;
+
+    const key = event.username.toLowerCase();
+    const current = byUser.get(key) ?? {
+      username: event.username,
+      avatarUrl: avatarByUsername.get(key) ?? null,
+      totalPoints: 0,
+      acceptedPrNumbers: new Set<number>(),
+      totalContributions: 0,
+      postSlugs: new Set<string>()
+    };
+
+    current.username = event.username;
+    if (event.userAvatarUrl) {
+      current.avatarUrl = event.userAvatarUrl;
+    }
+
+    let hasMatchedContribution = false;
+    for (const contribution of contributions) {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
+      const post = postBySlug.get(resolvedPostSlug);
+      if (!post || post.category !== normalizedCategory) continue;
+
+      hasMatchedContribution = true;
+      current.totalPoints += contribution.points;
+      current.totalContributions += 1;
+      current.postSlugs.add(resolvedPostSlug);
+    }
+
+    if (!hasMatchedContribution) continue;
+
+    current.acceptedPrNumbers.add(event.prNumber);
+    byUser.set(key, current);
+  }
+
+  return [...byUser.values()]
+    .map((entry) => ({
+      username: entry.username,
+      avatarUrl: entry.avatarUrl,
+      totalPoints: entry.totalPoints,
+      acceptedPrs: entry.acceptedPrNumbers.size,
+      totalContributions: entry.totalContributions,
+      totalPostsContributed: entry.postSlugs.size
+    }))
+    .sort(
+      (a, b) =>
+        b.totalPoints - a.totalPoints ||
+        b.acceptedPrs - a.acceptedPrs ||
+        b.totalContributions - a.totalContributions ||
+        b.totalPostsContributed - a.totalPostsContributed ||
+        a.username.localeCompare(b.username)
+    );
+}
+
+export function getCategoryLeaderboardByWindowWithFallback(
+  category: string,
+  window: LeaderboardWindow = 'all',
+  referenceDate = new Date()
+): WindowedLeaderboardResult<CategoryLeaderboardRecord> {
+  const entries = getCategoryLeaderboardByWindow(category, window, referenceDate);
+  if (window !== 'all' && entries.length === 0) {
+    const fallbackEntries = getCategoryLeaderboardByWindow(category, 'all', referenceDate);
+    if (fallbackEntries.length > 0) {
+      return {
+        requestedWindow: window,
+        resolvedWindow: 'all',
+        isFallback: true,
+        entries: fallbackEntries
+      };
+    }
+  }
+
+  return {
+    requestedWindow: window,
+    resolvedWindow: window,
+    isFallback: false,
+    entries
+  };
 }
 
 export function getUserPostContributionCounts(): Record<string, number> {
@@ -1004,7 +1332,11 @@ export function getContributorsForPost(postSlug: string): PostContributorRecord[
     .sort((a, b) => b.totalPoints - a.totalPoints || b.acceptedPrs - a.acceptedPrs || a.username.localeCompare(b.username));
 }
 
-export function getRecentEvents(limit = 10): EventRecord[] {
+export function getRecentEvents(
+  limit = 10,
+  options: { window?: LeaderboardWindow; referenceDate?: Date } = {}
+): EventRecord[] {
+  const { window = 'all', referenceDate } = options;
   const { knownSlugs } = getPostsIndex();
   const eventRecords = getEventRecords();
   if (eventRecords.length === 0) return [];
@@ -1012,6 +1344,7 @@ export function getRecentEvents(limit = 10): EventRecord[] {
   return eventRecords
     .flatMap((event) => {
       if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) return [];
+      if (!isEventWithinLeaderboardWindow(event, window, referenceDate)) return [];
       return getEventContributions(event).map((contribution) => {
         const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
         return {

@@ -1,0 +1,24 @@
+---
+type Props = {
+  points: number | string;
+  plus?: boolean;
+  class?: string;
+  valueDataAttribute?: string;
+};
+
+const {
+  points,
+  plus = false,
+  class: className = '',
+  valueDataAttribute
+} = Astro.props as Props;
+
+const rootClass = `badge points-badge ${className}`.trim();
+const displayValue = plus ? `+${points}` : `${points}`;
+const valueAttributes = valueDataAttribute ? { [valueDataAttribute]: '' } : {};
+---
+
+<span class={rootClass}>
+  <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
+  <span {...valueAttributes}>{displayValue}</span>
+</span>
