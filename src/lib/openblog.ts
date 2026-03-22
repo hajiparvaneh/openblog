@@ -92,6 +92,12 @@ export type LeaderboardWindowMeta = {
   startsAt: string | null;
   endsAt: string | null;
 };
+export type WindowedLeaderboardResult<TRecord> = {
+  requestedWindow: LeaderboardWindow;
+  resolvedWindow: LeaderboardWindow;
+  isFallback: boolean;
+  entries: TRecord[];
+};
 
 export type UserContributedPostRecord = {
   postSlug: string;
@@ -779,6 +785,31 @@ export function getLeaderboardByWindow(window: LeaderboardWindow, referenceDate 
     );
 }
 
+export function getLeaderboardByWindowWithFallback(
+  window: LeaderboardWindow,
+  referenceDate = new Date()
+): WindowedLeaderboardResult<SeasonalLeaderboardRecord> {
+  const entries = getLeaderboardByWindow(window, referenceDate);
+  if (window !== 'all' && entries.length === 0) {
+    const fallbackEntries = getLeaderboardByWindow('all', referenceDate);
+    if (fallbackEntries.length > 0) {
+      return {
+        requestedWindow: window,
+        resolvedWindow: 'all',
+        isFallback: true,
+        entries: fallbackEntries
+      };
+    }
+  }
+
+  return {
+    requestedWindow: window,
+    resolvedWindow: window,
+    isFallback: false,
+    entries
+  };
+}
+
 export function getPosts(): Post[] {
   const snapshot = getPostsSnapshot();
   if (postsCache && postsCache.signature === snapshot.signature) {
@@ -948,6 +979,118 @@ export function getCategoryLeaderboard(category: string): CategoryLeaderboardRec
     value: leaderboard
   });
   return leaderboard;
+}
+
+export function getCategoryLeaderboardByWindow(
+  category: string,
+  window: LeaderboardWindow = 'all',
+  referenceDate = new Date()
+): CategoryLeaderboardRecord[] {
+  const normalizedCategory = normalizeCategoryKey(category);
+  if (window === 'all') {
+    return getCategoryLeaderboard(normalizedCategory);
+  }
+
+  const eventRecords = getEventRecords();
+  if (eventRecords.length === 0) return [];
+
+  const { bySlug: postBySlug, knownSlugs } = getPostsIndex();
+  const allTimeCategoryLeaderboard = getCategoryLeaderboard(normalizedCategory);
+  const avatarByUsername = new Map(
+    allTimeCategoryLeaderboard.map((entry) => [entry.username.toLowerCase(), entry.avatarUrl ?? null] as const)
+  );
+  const byUser = new Map<string, {
+    username: string;
+    avatarUrl: string | null;
+    totalPoints: number;
+    acceptedPrNumbers: Set<number>;
+    totalContributions: number;
+    postSlugs: Set<string>;
+  }>();
+
+  for (const event of eventRecords) {
+    if (!event.username || !event.mergedAt || !Number.isFinite(event.prNumber)) continue;
+    if (!isEventWithinLeaderboardWindow(event, window, referenceDate)) continue;
+
+    const contributions = getEventContributions(event);
+    if (contributions.length === 0) continue;
+
+    const key = event.username.toLowerCase();
+    const current = byUser.get(key) ?? {
+      username: event.username,
+      avatarUrl: avatarByUsername.get(key) ?? null,
+      totalPoints: 0,
+      acceptedPrNumbers: new Set<number>(),
+      totalContributions: 0,
+      postSlugs: new Set<string>()
+    };
+
+    current.username = event.username;
+    if (event.userAvatarUrl) {
+      current.avatarUrl = event.userAvatarUrl;
+    }
+
+    let hasMatchedContribution = false;
+    for (const contribution of contributions) {
+      const resolvedPostSlug = resolvePostSlug(contribution.postSlug, knownSlugs) ?? contribution.postSlug;
+      const post = postBySlug.get(resolvedPostSlug);
+      if (!post || post.category !== normalizedCategory) continue;
+
+      hasMatchedContribution = true;
+      current.totalPoints += contribution.points;
+      current.totalContributions += 1;
+      current.postSlugs.add(resolvedPostSlug);
+    }
+
+    if (!hasMatchedContribution) continue;
+
+    current.acceptedPrNumbers.add(event.prNumber);
+    byUser.set(key, current);
+  }
+
+  return [...byUser.values()]
+    .map((entry) => ({
+      username: entry.username,
+      avatarUrl: entry.avatarUrl,
+      totalPoints: entry.totalPoints,
+      acceptedPrs: entry.acceptedPrNumbers.size,
+      totalContributions: entry.totalContributions,
+      totalPostsContributed: entry.postSlugs.size
+    }))
+    .sort(
+      (a, b) =>
+        b.totalPoints - a.totalPoints ||
+        b.acceptedPrs - a.acceptedPrs ||
+        b.totalContributions - a.totalContributions ||
+        b.totalPostsContributed - a.totalPostsContributed ||
+        a.username.localeCompare(b.username)
+    );
+}
+
+export function getCategoryLeaderboardByWindowWithFallback(
+  category: string,
+  window: LeaderboardWindow = 'all',
+  referenceDate = new Date()
+): WindowedLeaderboardResult<CategoryLeaderboardRecord> {
+  const entries = getCategoryLeaderboardByWindow(category, window, referenceDate);
+  if (window !== 'all' && entries.length === 0) {
+    const fallbackEntries = getCategoryLeaderboardByWindow(category, 'all', referenceDate);
+    if (fallbackEntries.length > 0) {
+      return {
+        requestedWindow: window,
+        resolvedWindow: 'all',
+        isFallback: true,
+        entries: fallbackEntries
+      };
+    }
+  }
+
+  return {
+    requestedWindow: window,
+    resolvedWindow: window,
+    isFallback: false,
+    entries
+  };
 }
 
 export function getUserPostContributionCounts(): Record<string, number> {

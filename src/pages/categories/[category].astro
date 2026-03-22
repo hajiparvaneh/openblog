@@ -3,7 +3,7 @@ import BaseLayout from '../../layouts/BaseLayout.astro';
 import FeaturedPostsSlider from '../../components/FeaturedPostsSlider.astro';
 import PostCard from '../../components/PostCard.astro';
 import UserAvatar from '../../components/UserAvatar.astro';
-import { getCategoryLeaderboard, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
+import { getCategoryLeaderboardByWindowWithFallback, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { getSiteUrl } from '../../lib/site';
 
@@ -24,7 +24,9 @@ export function getStaticPaths() {
 const categoryParam = Astro.params.category ?? '';
 const category = normalizeCategoryKey(decodeURIComponent(categoryParam));
 const posts = getPosts().filter((post) => post.category === category);
-const categoryLeaderboard = getCategoryLeaderboard(category);
+const categoryLeaderboardResult = getCategoryLeaderboardByWindowWithFallback(category, 'month');
+const categoryLeaderboard = categoryLeaderboardResult.entries;
+const categoryLeaderboardUsesFallback = categoryLeaderboardResult.resolvedWindow === 'all';
 const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(posts.length / postsPerPage));
 const currentPage = 1;
@@ -32,10 +34,16 @@ const pageStart = (currentPage - 1) * postsPerPage;
 const paginatedPosts = posts.slice(pageStart, pageStart + postsPerPage);
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
+const categoryLeaderboardTitle = categoryLeaderboardUsesFallback
+  ? `${categoryLabel} leaderboard (all time)`
+  : `${categoryLabel} monthly leaderboard`;
+const categoryLeaderboardEmptyState = categoryLeaderboardUsesFallback
+  ? 'No scored contributions for this category yet.'
+  : 'No scored contributions for this category this month.';
 const categoryBasePath = getCategoryPath(category);
 const getCategoryPagePath = (page: number): string => (page <= 1 ? categoryBasePath : `${categoryBasePath}/page/${page}`);
 const canonicalPath = categoryBasePath;
-const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on OpenBlog and see the top contributors for this category.`;
+const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on OpenBlog and see the top ${categoryLeaderboardUsesFallback ? 'contributors' : 'monthly contributors'} for this category.`;
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = [
@@ -133,9 +141,9 @@ if (posts.length === 0) {
   </section>
 
   <section class="card table-wrap">
-    <h2 class="icon-label"><i class="ti ti-trophy icon-sm" aria-hidden="true"></i>{categoryLabel} leaderboard</h2>
+    <h2 class="icon-label"><i class="ti ti-trophy icon-sm" aria-hidden="true"></i>{categoryLeaderboardTitle}</h2>
     {categoryLeaderboard.length === 0 ? (
-      <p class="meta">No scored contributions for this category yet.</p>
+      <p class="meta">{categoryLeaderboardEmptyState}</p>
     ) : (
       <table class="table">
         <thead>

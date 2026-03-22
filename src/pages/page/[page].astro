@@ -4,7 +4,7 @@ import PostCard from '../../components/PostCard.astro';
 import UserAvatar from '../../components/UserAvatar.astro';
 import {
   getLatestContributors,
-  getLeaderboard,
+  getLeaderboardByWindowWithFallback,
   getPosts,
   getProfilePath,
   getRecentEvents
@@ -54,7 +54,17 @@ const getPostPath = (slug: string): string =>
 const getPullRequestUrl = (prNumber: number): string =>
   `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 
-const leaderboard = getLeaderboard();
+const leaderboardResult = getLeaderboardByWindowWithFallback('month');
+const leaderboard = leaderboardResult.entries;
+const isAllTimeContributors = leaderboardResult.resolvedWindow === 'all';
+const topContributorsTitle = isAllTimeContributors ? 'Top contributors (all time)' : 'Top contributors this month';
+const topContributorsDescription = isAllTimeContributors
+  ? 'Ranked by points across all recorded contributions.'
+  : 'Ranked by points in the current month.';
+const topContributorsEmptyState = isAllTimeContributors
+  ? 'Leaderboard data is not available yet.'
+  : 'Monthly leaderboard data is not available yet.';
+const hiddenContributorsLabel = isAllTimeContributors ? 'more contributors overall' : 'more contributors this month';
 const totalContributors = leaderboard.length;
 const topContributors = leaderboard.slice(0, TOP_CONTRIBUTORS_LIMIT);
 const latestContributors = getLatestContributors(LATEST_CONTRIBUTORS_LIMIT);
@@ -198,8 +208,8 @@ const structuredData = {
 
       <div class="community-side">
       <section class="community-block">
-        <h3 class="icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Top contributors</h3>
-        <p class="meta list-limit-note">Ranked by points.</p>
+        <h3 class="icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{topContributorsTitle}</h3>
+        <p class="meta list-limit-note">{topContributorsDescription}</p>
         {topContributors.length > 0 ? (
           <ol class="home-top-contributors">
             {topContributors.map((contributor, index) => (
@@ -214,14 +224,14 @@ const structuredData = {
             ))}
           </ol>
         ) : (
-          <p class="meta">Leaderboard data is not available yet.</p>
+          <p class="meta">{topContributorsEmptyState}</p>
         )}
 
         <a class="community-link" href="/leaderboard">
           Full leaderboard
           <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
         </a>
-        {hiddenContributorCount > 0 ? <p class="meta list-limit-note">+{hiddenContributorCount} more contributors on leaderboard</p> : null}
+        {hiddenContributorCount > 0 ? <p class="meta list-limit-note">+{hiddenContributorCount} {hiddenContributorsLabel}</p> : null}
       </section>
 
       <section class="community-block">
