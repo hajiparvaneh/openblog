@@ -1,26 +1,72 @@
 ---
 import BaseLayout from '../layouts/BaseLayout.astro';
+import PointsBadge from '../components/PointsBadge.astro';
 import UserAvatar from '../components/UserAvatar.astro';
-import { getLeaderboard, getPosts, getRecentEvents, getUserPostContributionCounts } from '../lib/openblog';
+import {
+  getLeaderboardByWindow,
+  getLeaderboardWindowMeta,
+  getPosts,
+  getRecentEvents,
+  type LeaderboardWindow
+} from '../lib/openblog';
 import { toAbsoluteUrl } from '../lib/seo';
 import { getSiteUrl } from '../lib/site';
 
-const leaderboard = getLeaderboard();
-const recentEvents = getRecentEvents(10);
-const postSlugs = new Set(getPosts().map((post) => post.slug));
-const postContributionCounts = getUserPostContributionCounts();
+const seasonKeys: LeaderboardWindow[] = ['all', 'month', 'week'];
 const rowsPerPage = 10;
-const totalPages = Math.max(1, Math.ceil(leaderboard.length / rowsPerPage));
-const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+const postSlugs = new Set(getPosts().map((post) => post.slug));
 const getProfileUrl = (username: string) => `/profile/@${username}`;
 const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 const getPostUrl = (postSlug: string) => (postSlugs.has(postSlug) ? `/posts/${postSlug}` : null);
+const formatDateLabel = (value: string | null): string => {
+  if (!value) return 'OpenBlog launch';
+
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime())
+    ? value
+    : parsed.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        timeZone: 'UTC'
+      });
+};
+const formatDateRange = (startsAt: string | null, endsAt: string | null): string =>
+  startsAt ? `${formatDateLabel(startsAt)} - ${formatDateLabel(endsAt)}` : 'All scored history';
+const getSeasonIcon = (key: LeaderboardWindow): string => {
+  if (key === 'month') return 'calendar-month';
+  if (key === 'week') return 'calendar-week';
+  return 'trophy';
+};
+const seasonViews = seasonKeys.map((key) => {
+  const meta = getLeaderboardWindowMeta(key);
+  const leaderboard = getLeaderboardByWindow(key);
+  const recentEvents = getRecentEvents(10, { window: key });
+  const totalPages = Math.max(1, Math.ceil(leaderboard.length / rowsPerPage));
+  const pageNumbers = Array.from({ length: totalPages }, (_, index) => index + 1);
+  const totalPoints = leaderboard.reduce((sum, user) => sum + user.totalPoints, 0);
+  const totalAcceptedPrs = leaderboard.reduce((sum, user) => sum + user.acceptedPrs, 0);
+  const topContributor = leaderboard[0] ?? null;
+
+  return {
+    key,
+    meta,
+    leaderboard,
+    recentEvents,
+    totalPages,
+    pageNumbers,
+    totalPoints,
+    totalAcceptedPrs,
+    topContributor
+  };
+});
+const allTimeLeaderboard = seasonViews.find((view) => view.key === 'all')?.leaderboard ?? [];
+const topContributors = allTimeLeaderboard.slice(0, 10);
 const pageDescription =
-  'See the OpenBlog contributor leaderboard ranked by points and merged pull requests, plus the latest accepted contributions.';
+  'See the OpenBlog contributor leaderboard across all time, this month, and this week, plus the latest accepted contributions in each season.';
 const canonicalPath = '/leaderboard';
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
-const topContributors = leaderboard.slice(0, 10);
 const structuredData = [
   {
     '@context': 'https://schema.org',
@@ -43,320 +89,705 @@ const structuredData = [
 ];
 ---
 <BaseLayout title="Leaderboard | OpenBlog" description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
-  <section class="card">
-    <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Community scoreboard</p>
-    <h1>Leaderboard</h1>
-    <p class="meta">Ranks are sorted by total points, then merged PR count.</p>
-  </section>
+  <div class="leaderboard-seasons" data-leaderboard-seasons>
+    <section class="card leaderboard-hero">
+      <div class="leaderboard-hero-copy">
+        <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Community scoreboard</p>
+        <h1>Leaderboard</h1>
+        <p class="meta leaderboard-hero-meta">
+          Switch between all time, this month, and this week. Every season is ranked by points first, then merged PR count.
+        </p>
+      </div>
+      <div class="leaderboard-hero-note" aria-label="Leaderboard season notes">
+        <span class="leaderboard-note-badge icon-label"><i class="ti ti-calendar-stats icon-sm" aria-hidden="true"></i>Fresh race windows</span>
+        <p class="meta">Monthly and weekly standings are recalculated from merged PR timestamps, so new contributors always have an active race to join.</p>
+      </div>
+    </section>
 
-  <section class="card table-wrap">
-    <h2 class="icon-label"><i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>Contributor rankings</h2>
-    <p id="leaderboard-page-info" class="meta pagination-info">Showing {rowsPerPage} users per page</p>
+    <section class="card leaderboard-season-overview" data-leaderboard-overview>
+      <div class="leaderboard-season-overview-head">
+        <div>
+          <p class="kicker icon-label"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i><span data-active-season-kicker>{seasonViews[0]?.meta.label ?? 'All time'} standings</span></p>
+          <h2 data-active-season-heading>{seasonViews[0]?.meta.label ?? 'All time'}</h2>
+          <p class="meta" data-active-season-description>{seasonViews[0]?.meta.description ?? ''}</p>
+        </div>
+        <div class="leaderboard-season-controls">
+          <div class="leaderboard-season-tabs" role="tablist" aria-label="Leaderboard season views">
+            {seasonViews.map((view) => (
+              <button
+                type="button"
+                role="tab"
+                class:list={['leaderboard-season-tab', view.key === 'all' && 'is-active']}
+                aria-selected={view.key === 'all' ? 'true' : 'false'}
+                aria-controls={`leaderboard-panel-${view.key}`}
+                id={`leaderboard-tab-${view.key}`}
+                data-leaderboard-season-tab={view.key}
+                data-season-label={view.meta.label}
+                data-season-heading={`${view.meta.label} standings`}
+                data-season-description={view.meta.description}
+                data-season-range={formatDateRange(view.meta.startsAt, view.meta.endsAt)}
+                data-season-contributors={String(view.leaderboard.length)}
+                data-season-points={String(view.totalPoints)}
+                data-season-prs={String(view.totalAcceptedPrs)}
+                data-season-top-name={view.topContributor ? `@${view.topContributor.username}` : 'Open spot'}
+                data-season-top-value={view.topContributor ? `${view.topContributor.totalPoints} points` : 'No scored merges yet'}
+                tabindex={view.key === 'all' ? '0' : '-1'}
+              >
+                <i class={`ti ti-${getSeasonIcon(view.key)} icon-sm leaderboard-season-tab-icon`} aria-hidden="true"></i>
+                <span class="leaderboard-season-tab-label">{view.meta.label}</span>
+                <PointsBadge points={view.totalPoints} />
+              </button>
+            ))}
+          </div>
+          <span class="leaderboard-season-range icon-label">
+            <i class="ti ti-calendar-time icon-sm" aria-hidden="true"></i>
+            <span data-active-season-range-text>{formatDateRange(seasonViews[0]?.meta.startsAt ?? null, seasonViews[0]?.meta.endsAt ?? null)}</span>
+          </span>
+        </div>
+      </div>
 
-    <table class="table" id="leaderboard-table" data-per-page={rowsPerPage}>
-      <thead>
-        <tr>
-          <th scope="col" data-sort-column="rank">
-            <button class="table-sort-button" data-sort-key="rank" type="button">
-              Rank
-              <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
-            </button>
-          </th>
-          <th scope="col" data-sort-column="user">
-            <button class="table-sort-button" data-sort-key="user" type="button">
-              User
-              <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
-            </button>
-          </th>
-          <th scope="col" data-sort-column="points">
-            <button class="table-sort-button" data-sort-key="points" type="button">
-              Points
-              <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
-            </button>
-          </th>
-          <th scope="col" data-sort-column="posts">
-            <button class="table-sort-button" data-sort-key="posts" type="button">
-              Posts contributed
-              <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
-            </button>
-          </th>
-        </tr>
-      </thead>
-      <tbody>
-        {leaderboard.map((user, index) => {
-          const postsContributed = postContributionCounts[user.username] ?? 0;
+      <div class="stats leaderboard-season-stats">
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-users icon-sm" aria-hidden="true"></i><span data-active-season-contributors>{seasonViews[0]?.leaderboard.length ?? 0}</span></span>
+          <span class="stat-label">Active contributors</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value">
+            <PointsBadge points={seasonViews[0]?.totalPoints ?? 0} valueDataAttribute="data-active-season-points" />
+          </span>
+          <span class="stat-label">Points awarded</span>
+        </div>
+        <div class="stat">
+          <span class="stat-value stat-head"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i><span data-active-season-prs>{seasonViews[0]?.totalAcceptedPrs ?? 0}</span></span>
+          <span class="stat-label">Merged PRs</span>
+        </div>
+        <div class="stat stat-leader">
+          <span class="stat-value stat-head">
+            <i class="ti ti-crown icon-sm" aria-hidden="true"></i>
+            <span data-active-season-top-name>{seasonViews[0]?.topContributor ? `@${seasonViews[0].topContributor.username}` : 'Open spot'}</span>
+          </span>
+          <span class="stat-label" data-active-season-top-value>
+            {seasonViews[0]?.topContributor ? `${seasonViews[0].topContributor.totalPoints} points` : 'No scored merges yet'}
+          </span>
+        </div>
+      </div>
+    </section>
 
-          return (
-          <tr
-            data-leaderboard-row
-            data-rank={index + 1}
-            data-user={user.username.toLowerCase()}
-            data-points={user.totalPoints}
-            data-posts={postsContributed}
-          >
-            <td>#{index + 1}</td>
-            <td>
-              <a class="user-chip user-link" href={getProfileUrl(user.username)}>
-                <UserAvatar username={user.username} avatarUrl={user.avatarUrl} size={80} />
-                <span class="user-handle">@{user.username}</span>
-              </a>
-            </td>
-            <td>
-              <span class="points-inline">
-                <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
-                {user.totalPoints}
-              </span>
-            </td>
-            <td>{postsContributed}</td>
-          </tr>
-          );
-        })}
-      </tbody>
-    </table>
+    {seasonViews.map((view) => (
+      <section
+        id={`leaderboard-panel-${view.key}`}
+        class="leaderboard-season-panel"
+        data-leaderboard-season-panel={view.key}
+        aria-labelledby={`leaderboard-tab-${view.key}`}
+        hidden={view.key !== 'all'}
+      >
+        <section class="card table-wrap leaderboard-table-card">
+          <div class="leaderboard-section-head">
+            <div>
+              <h2 class="icon-label"><i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>Contributor rankings</h2>
+              <p class="meta" data-leaderboard-page-info>
+                {view.leaderboard.length > 0 ? `Showing ${rowsPerPage} users per page` : 'No scored contributors in this season yet.'}
+              </p>
+            </div>
+            <p class="meta leaderboard-section-note">Sort by rank, user, points, or posts contributed.</p>
+          </div>
 
-    {totalPages > 1 && (
-      <nav class="leaderboard-pagination" aria-label="Leaderboard pages">
-        <a id="leaderboard-prev" class="page-control" href="/leaderboard?page=1">Previous</a>
-        <ul class="page-links" aria-label="Page numbers">
-          {pageNumbers.map((page) => (
-            <li>
-              <a data-page-link={page} class="page-link" href={`/leaderboard?page=${page}`}>{page}</a>
-            </li>
-          ))}
-        </ul>
-        <a id="leaderboard-next" class="page-control" href={`/leaderboard?page=${totalPages > 1 ? 2 : 1}`}>Next</a>
-      </nav>
-    )}
-  </section>
+          {view.leaderboard.length === 0 ? (
+            <div class="leaderboard-empty-state">
+              <p class="leaderboard-empty-title">No scored merges in {view.meta.label.toLowerCase()}.</p>
+              <p class="meta">Once merged PRs land inside this date window, the seasonal board will populate automatically.</p>
+            </div>
+          ) : (
+            <>
+              <table class="table" data-leaderboard-table data-per-page={rowsPerPage}>
+                <thead>
+                  <tr>
+                    <th scope="col" data-sort-column="rank">
+                      <button class="table-sort-button" data-sort-key="rank" type="button">
+                        Rank
+                        <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-column="user">
+                      <button class="table-sort-button" data-sort-key="user" type="button">
+                        User
+                        <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-column="points">
+                      <button class="table-sort-button" data-sort-key="points" type="button">
+                        Points
+                        <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                    <th scope="col" data-sort-column="posts">
+                      <button class="table-sort-button" data-sort-key="posts" type="button">
+                        Posts contributed
+                        <span class="sort-indicator" data-sort-indicator aria-hidden="true">↕</span>
+                      </button>
+                    </th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {view.leaderboard.map((user, index) => (
+                    <tr
+                      data-leaderboard-row
+                      data-rank={index + 1}
+                      data-user={user.username.toLowerCase()}
+                      data-points={user.totalPoints}
+                      data-posts={user.totalPostsContributed}
+                    >
+                      <td>#{index + 1}</td>
+                      <td>
+                        <a class="user-chip user-link" href={getProfileUrl(user.username)}>
+                          <UserAvatar username={user.username} avatarUrl={user.avatarUrl} size={80} />
+                          <span class="user-handle">@{user.username}</span>
+                        </a>
+                      </td>
+                      <td>
+                        <span class="points-inline">
+                          <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
+                          {user.totalPoints}
+                        </span>
+                      </td>
+                      <td>{user.totalPostsContributed}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
 
-  <section class="card">
-    <h2 class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>Recent contributions</h2>
-    <ul class="recent-list">
-      {recentEvents.map((event) => {
-        const postUrl = getPostUrl(event.postSlug);
+              {view.totalPages > 1 && (
+                <nav class="leaderboard-pagination" aria-label={`${view.meta.label} leaderboard pages`}>
+                  <button type="button" class="page-control" data-leaderboard-prev>Previous</button>
+                  <ul class="page-links" aria-label="Page numbers">
+                    {view.pageNumbers.map((page) => (
+                      <li>
+                        <button type="button" data-page-link={page} class="page-link">{page}</button>
+                      </li>
+                    ))}
+                  </ul>
+                  <button type="button" class="page-control" data-leaderboard-next>Next</button>
+                </nav>
+              )}
+            </>
+          )}
+        </section>
 
-        return (
-          <li class="recent-item">
-            <span class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i><a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a> by</span>
-            <a class="user-chip user-link" href={getProfileUrl(event.username)}>
-              <UserAvatar username={event.username} avatarUrl={event.userAvatarUrl} size={64} class="avatar-sm" />
-              <span class="user-handle">@{event.username}</span>
-            </a>
-            <span>
-              <span class="icon-label"><i class="ti ti-article icon-sm" aria-hidden="true"></i>{postUrl ? <a href={postUrl}>{event.postSlug}</a> : <span>unknown post</span>}</span> <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{event.points}</span>
-            </span>
-          </li>
-        );
-      })}
-    </ul>
-  </section>
+        <section class="card leaderboard-activity-card">
+          <div class="leaderboard-section-head">
+            <div>
+              <h2 class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>Recent contributions</h2>
+              <p class="meta">Latest scored merges inside the {view.meta.label.toLowerCase()} window.</p>
+            </div>
+          </div>
+
+          {view.recentEvents.length === 0 ? (
+            <p class="meta">No contribution events in this season yet.</p>
+          ) : (
+            <ul class="recent-list">
+              {view.recentEvents.map((event) => {
+                const postUrl = getPostUrl(event.postSlug);
+
+                return (
+                  <li class="recent-item">
+                    <span class="icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i><a href={getPullRequestUrl(event.prNumber)} target="_blank" rel="noopener noreferrer">PR #{event.prNumber}</a> by</span>
+                    <a class="user-chip user-link" href={getProfileUrl(event.username)}>
+                      <UserAvatar username={event.username} avatarUrl={event.userAvatarUrl} size={64} class="avatar-sm" />
+                      <span class="user-handle">@{event.username}</span>
+                    </a>
+                    <span>
+                      <span class="icon-label"><i class="ti ti-article icon-sm" aria-hidden="true"></i>{postUrl ? <a href={postUrl}>{event.postSlug}</a> : <span>unknown post</span>}</span>{' '}
+                      <PointsBadge points={event.points} plus={true} />
+                    </span>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+        </section>
+      </section>
+    ))}
+  </div>
 
   <script is:inline>
     (function () {
-      var table = document.getElementById('leaderboard-table');
-      if (!table) return;
+      var root = document.querySelector('[data-leaderboard-seasons]');
+      if (!root) return;
 
-      var tbody = table.querySelector('tbody');
-      if (!tbody) return;
-
-      var rows = Array.from(tbody.querySelectorAll('[data-leaderboard-row]'));
-      var perPage = Number(table.getAttribute('data-per-page') || '10');
-      var pages = Math.max(1, Math.ceil(rows.length / perPage));
-      var pageInfo = document.getElementById('leaderboard-page-info');
-      var prev = document.getElementById('leaderboard-prev');
-      var next = document.getElementById('leaderboard-next');
-      var pageLinks = Array.from(document.querySelectorAll('[data-page-link]'));
-      var sortButtons = Array.from(table.querySelectorAll('[data-sort-key]'));
-      var sortColumns = Array.from(table.querySelectorAll('[data-sort-column]'));
       var collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true });
+      var tabs = Array.from(root.querySelectorAll('[data-leaderboard-season-tab]'));
+      var panels = Array.from(root.querySelectorAll('[data-leaderboard-season-panel]'));
+      var activeSeasonKicker = root.querySelector('[data-active-season-kicker]');
+      var activeSeasonHeading = root.querySelector('[data-active-season-heading]');
+      var activeSeasonDescription = root.querySelector('[data-active-season-description]');
+      var activeSeasonRangeText = root.querySelector('[data-active-season-range-text]');
+      var activeSeasonContributors = root.querySelector('[data-active-season-contributors]');
+      var activeSeasonPoints = root.querySelector('[data-active-season-points]');
+      var activeSeasonPrs = root.querySelector('[data-active-season-prs]');
+      var activeSeasonTopName = root.querySelector('[data-active-season-top-name]');
+      var activeSeasonTopValue = root.querySelector('[data-active-season-top-value]');
+      var controllers = {};
+      var activeSeason = 'all';
 
-      var parsePage = function () {
+      var parseSeason = function () {
         var params = new URLSearchParams(window.location.search);
-        var pageParam = Number(params.get('page') || '1');
-        if (!Number.isFinite(pageParam) || pageParam < 1) return 1;
-        if (pageParam > pages) return pages;
-        return Math.floor(pageParam);
+        var season = params.get('season') || 'all';
+        return controllers[season] ? season : 'all';
       };
 
-      var currentPage = parsePage();
-      var sortState = { key: 'rank', direction: 'asc' };
-
-      var getRowValue = function (row, key) {
-        if (key === 'user') return row.getAttribute('data-user') || '';
-        if (key === 'points') return Number(row.getAttribute('data-points') || '0');
-        if (key === 'posts') return Number(row.getAttribute('data-posts') || '0');
-        return Number(row.getAttribute('data-rank') || '0');
-      };
-
-      var sortRows = function () {
-        rows.sort(function (a, b) {
-          var aValue = getRowValue(a, sortState.key);
-          var bValue = getRowValue(b, sortState.key);
-          var result;
-
-          if (typeof aValue === 'string' || typeof bValue === 'string') {
-            result = collator.compare(String(aValue), String(bValue));
-          } else {
-            result = Number(aValue) - Number(bValue);
-          }
-
-          if (result === 0 && sortState.key !== 'rank') {
-            result = Number(a.getAttribute('data-rank') || '0') - Number(b.getAttribute('data-rank') || '0');
-          }
-
-          return sortState.direction === 'asc' ? result : -result;
-        });
-
-        rows.forEach(function (row) {
-          tbody.appendChild(row);
-        });
-      };
-
-      var updateSortUi = function () {
-        sortColumns.forEach(function (column) {
-          var key = column.getAttribute('data-sort-column');
-          var isCurrent = key === sortState.key;
-          column.setAttribute('aria-sort', isCurrent ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none');
-        });
-
-        sortButtons.forEach(function (button) {
-          var key = button.getAttribute('data-sort-key');
-          var indicator = button.querySelector('[data-sort-indicator]');
-          var isCurrent = key === sortState.key;
-          if (!indicator) return;
-          indicator.textContent = isCurrent ? (sortState.direction === 'asc' ? '↑' : '↓') : '↕';
-        });
-      };
-
-      var syncUrl = function () {
+      var syncSeasonUrl = function () {
         var url = new URL(window.location.href);
-        if (currentPage === 1) {
-          url.searchParams.delete('page');
+        if (activeSeason === 'all') {
+          url.searchParams.delete('season');
         } else {
-          url.searchParams.set('page', String(currentPage));
+          url.searchParams.set('season', activeSeason);
         }
         window.history.replaceState({}, '', url);
       };
 
       var setPageState = function (target, disabled) {
         if (!target) return;
-        if (disabled) {
-          target.setAttribute('aria-disabled', 'true');
-          target.classList.add('is-disabled');
-        } else {
-          target.removeAttribute('aria-disabled');
-          target.classList.remove('is-disabled');
-        }
+        target.disabled = disabled;
+        target.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+        target.classList.toggle('is-disabled', disabled);
       };
 
-      var render = function () {
-        var start = (currentPage - 1) * perPage;
-        var end = start + perPage;
-
-        rows.forEach(function (row, index) {
-          row.hidden = index < start || index >= end;
-        });
-
-        if (pageInfo) {
-          pageInfo.textContent = 'Page ' + currentPage + ' of ' + pages + ' (' + rows.length + ' contributors)';
+      var initPanel = function (panel) {
+        var seasonKey = panel.getAttribute('data-leaderboard-season-panel') || 'all';
+        var table = panel.querySelector('[data-leaderboard-table]');
+        if (!table) {
+          return {
+            key: seasonKey,
+            setActive: function (isActive) {
+              panel.hidden = !isActive;
+            },
+            resetPage: function () {}
+          };
         }
 
-        pageLinks.forEach(function (link) {
-          var page = Number(link.getAttribute('data-page-link'));
-          var isActive = page === currentPage;
-          if (isActive) {
-            link.classList.add('is-active');
-            link.setAttribute('aria-current', 'page');
-          } else {
-            link.classList.remove('is-active');
-            link.removeAttribute('aria-current');
+        var tbody = table.querySelector('tbody');
+        if (!tbody) {
+          return {
+            key: seasonKey,
+            setActive: function (isActive) {
+              panel.hidden = !isActive;
+            },
+            resetPage: function () {}
+          };
+        }
+
+        var rows = Array.from(tbody.querySelectorAll('[data-leaderboard-row]'));
+        var perPage = Number(table.getAttribute('data-per-page') || '10');
+        var pages = Math.max(1, Math.ceil(rows.length / perPage));
+        var pageInfo = panel.querySelector('[data-leaderboard-page-info]');
+        var prev = panel.querySelector('[data-leaderboard-prev]');
+        var next = panel.querySelector('[data-leaderboard-next]');
+        var pageLinks = Array.from(panel.querySelectorAll('[data-page-link]'));
+        var sortButtons = Array.from(table.querySelectorAll('[data-sort-key]'));
+        var sortColumns = Array.from(table.querySelectorAll('[data-sort-column]'));
+        var currentPage = 1;
+        var sortState = { key: 'rank', direction: 'asc' };
+
+        var getRowValue = function (row, key) {
+          if (key === 'user') return row.getAttribute('data-user') || '';
+          if (key === 'points') return Number(row.getAttribute('data-points') || '0');
+          if (key === 'posts') return Number(row.getAttribute('data-posts') || '0');
+          return Number(row.getAttribute('data-rank') || '0');
+        };
+
+        var sortRows = function () {
+          rows.sort(function (a, b) {
+            var aValue = getRowValue(a, sortState.key);
+            var bValue = getRowValue(b, sortState.key);
+            var result;
+
+            if (typeof aValue === 'string' || typeof bValue === 'string') {
+              result = collator.compare(String(aValue), String(bValue));
+            } else {
+              result = Number(aValue) - Number(bValue);
+            }
+
+            if (result === 0 && sortState.key !== 'rank') {
+              result = Number(a.getAttribute('data-rank') || '0') - Number(b.getAttribute('data-rank') || '0');
+            }
+
+            return sortState.direction === 'asc' ? result : -result;
+          });
+
+          rows.forEach(function (row) {
+            tbody.appendChild(row);
+          });
+        };
+
+        var updateSortUi = function () {
+          sortColumns.forEach(function (column) {
+            var key = column.getAttribute('data-sort-column');
+            var isCurrent = key === sortState.key;
+            column.setAttribute('aria-sort', isCurrent ? (sortState.direction === 'asc' ? 'ascending' : 'descending') : 'none');
+          });
+
+          sortButtons.forEach(function (button) {
+            var key = button.getAttribute('data-sort-key');
+            var indicator = button.querySelector('[data-sort-indicator]');
+            var isCurrent = key === sortState.key;
+            if (!indicator) return;
+            indicator.textContent = isCurrent ? (sortState.direction === 'asc' ? '↑' : '↓') : '↕';
+          });
+        };
+
+        var render = function () {
+          var start = (currentPage - 1) * perPage;
+          var end = start + perPage;
+
+          rows.forEach(function (row, index) {
+            row.hidden = index < start || index >= end;
+          });
+
+          if (pageInfo) {
+            pageInfo.textContent = 'Page ' + currentPage + ' of ' + pages + ' (' + rows.length + ' contributors)';
           }
+
+          pageLinks.forEach(function (link) {
+            var page = Number(link.getAttribute('data-page-link'));
+            var isActive = page === currentPage;
+            link.classList.toggle('is-active', isActive);
+            link.setAttribute('aria-current', isActive ? 'page' : 'false');
+          });
+
+          setPageState(prev, currentPage <= 1);
+          setPageState(next, currentPage >= pages);
+        };
+
+        sortButtons.forEach(function (button) {
+          button.addEventListener('click', function () {
+            var key = button.getAttribute('data-sort-key');
+            if (!key) return;
+
+            if (sortState.key === key) {
+              sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+              sortState.key = key;
+              sortState.direction = 'asc';
+            }
+
+            currentPage = 1;
+            sortRows();
+            updateSortUi();
+            render();
+          });
+        });
+
+        pageLinks.forEach(function (link) {
+          link.addEventListener('click', function () {
+            var targetPage = Number(link.getAttribute('data-page-link')) || 1;
+            if (targetPage < 1 || targetPage > pages || targetPage === currentPage) return;
+            currentPage = targetPage;
+            render();
+          });
         });
 
         if (prev) {
-          prev.setAttribute('href', '/leaderboard?page=' + Math.max(1, currentPage - 1));
+          prev.addEventListener('click', function () {
+            if (currentPage <= 1) return;
+            currentPage -= 1;
+            render();
+          });
         }
+
         if (next) {
-          next.setAttribute('href', '/leaderboard?page=' + Math.min(pages, currentPage + 1));
+          next.addEventListener('click', function () {
+            if (currentPage >= pages) return;
+            currentPage += 1;
+            render();
+          });
         }
 
-        setPageState(prev, currentPage <= 1);
-        setPageState(next, currentPage >= pages);
-      };
-
-      var goToPage = function (page) {
-        if (page < 1 || page > pages || page === currentPage) return false;
-        currentPage = page;
+        sortRows();
+        updateSortUi();
         render();
-        syncUrl();
-        return true;
+
+        return {
+          key: seasonKey,
+          setActive: function (isActive) {
+            panel.hidden = !isActive;
+          },
+          resetPage: function () {
+            currentPage = 1;
+            render();
+          }
+        };
       };
 
-      sortButtons.forEach(function (button) {
-        button.addEventListener('click', function () {
-          var key = button.getAttribute('data-sort-key');
-          if (!key) return;
+      panels.forEach(function (panel) {
+        var controller = initPanel(panel);
+        controllers[controller.key] = controller;
+      });
 
-          if (sortState.key === key) {
-            sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
-          } else {
-            sortState.key = key;
-            sortState.direction = 'asc';
+      var activateSeason = function (seasonKey, options) {
+        activeSeason = controllers[seasonKey] ? seasonKey : 'all';
+
+        tabs.forEach(function (tab) {
+          var key = tab.getAttribute('data-leaderboard-season-tab');
+          var isActive = key === activeSeason;
+          tab.classList.toggle('is-active', isActive);
+          tab.setAttribute('aria-selected', isActive ? 'true' : 'false');
+          tab.tabIndex = isActive ? 0 : -1;
+        });
+
+        var activeTab = tabs.find(function (tab) {
+          return tab.getAttribute('data-leaderboard-season-tab') === activeSeason;
+        });
+        if (activeTab) {
+          if (activeSeasonKicker) {
+            activeSeasonKicker.textContent = activeTab.getAttribute('data-season-heading') || 'All time standings';
           }
+          if (activeSeasonHeading) {
+            activeSeasonHeading.textContent = activeTab.getAttribute('data-season-label') || 'All time';
+          }
+          if (activeSeasonDescription) {
+            activeSeasonDescription.textContent = activeTab.getAttribute('data-season-description') || '';
+          }
+          if (activeSeasonRangeText) {
+            activeSeasonRangeText.textContent = activeTab.getAttribute('data-season-range') || 'All scored history';
+          }
+          if (activeSeasonContributors) {
+            activeSeasonContributors.textContent = activeTab.getAttribute('data-season-contributors') || '0';
+          }
+          if (activeSeasonPoints) {
+            activeSeasonPoints.textContent = activeTab.getAttribute('data-season-points') || '0';
+          }
+          if (activeSeasonPrs) {
+            activeSeasonPrs.textContent = activeTab.getAttribute('data-season-prs') || '0';
+          }
+          if (activeSeasonTopName) {
+            activeSeasonTopName.textContent = activeTab.getAttribute('data-season-top-name') || 'Open spot';
+          }
+          if (activeSeasonTopValue) {
+            activeSeasonTopValue.textContent = activeTab.getAttribute('data-season-top-value') || 'No scored merges yet';
+          }
+        }
 
-          currentPage = 1;
-          sortRows();
-          updateSortUi();
-          render();
-          syncUrl();
+        Object.keys(controllers).forEach(function (key) {
+          controllers[key].setActive(key === activeSeason);
+        });
+
+        if (options && options.resetPage && controllers[activeSeason]) {
+          controllers[activeSeason].resetPage();
+        }
+
+        syncSeasonUrl();
+      };
+
+      tabs.forEach(function (tab, index) {
+        tab.addEventListener('click', function () {
+          var key = tab.getAttribute('data-leaderboard-season-tab') || 'all';
+          if (key === activeSeason) return;
+          activateSeason(key, { resetPage: true });
+        });
+
+        tab.addEventListener('keydown', function (event) {
+          if (event.key !== 'ArrowRight' && event.key !== 'ArrowLeft') return;
+          event.preventDefault();
+          var delta = event.key === 'ArrowRight' ? 1 : -1;
+          var nextIndex = (index + delta + tabs.length) % tabs.length;
+          var nextTab = tabs[nextIndex];
+          if (!nextTab) return;
+          nextTab.focus();
+          nextTab.click();
         });
       });
 
-      pageLinks.forEach(function (link) {
-        link.addEventListener('click', function (event) {
-          var targetPage = Number(link.getAttribute('data-page-link')) || 1;
-          if (targetPage === currentPage) {
-            event.preventDefault();
-            return;
-          }
-          if (goToPage(targetPage)) {
-            event.preventDefault();
-          }
-        });
-      });
-
-      if (prev) {
-        prev.addEventListener('click', function (event) {
-          if (currentPage <= 1) {
-            event.preventDefault();
-            return;
-          }
-          if (goToPage(currentPage - 1)) {
-            event.preventDefault();
-          }
-        });
-      }
-
-      if (next) {
-        next.addEventListener('click', function (event) {
-          if (currentPage >= pages) {
-            event.preventDefault();
-            return;
-          }
-          if (goToPage(currentPage + 1)) {
-            event.preventDefault();
-          }
-        });
-      }
-
-      sortRows();
-      updateSortUi();
-      render();
-      syncUrl();
+      activateSeason(parseSeason(), { resetPage: false });
     })();
   </script>
 
   <style>
+    .leaderboard-seasons,
+    .leaderboard-season-panel {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .leaderboard-hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.4fr) minmax(18rem, 0.9fr);
+      gap: 1rem;
+      align-items: start;
+    }
+
+    .leaderboard-hero-meta {
+      margin-bottom: 0;
+      max-width: 60ch;
+    }
+
+    .leaderboard-hero-note {
+      display: grid;
+      gap: 0.55rem;
+      padding: 0.95rem;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, color-mix(in srgb, var(--surface) 74%, var(--primary) 6%), var(--surface-soft));
+    }
+
+    .leaderboard-note-badge,
+    .leaderboard-season-range {
+      width: fit-content;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.35rem 0.55rem;
+    }
+
+    .leaderboard-season-tabs {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 0;
+      width: fit-content;
+      border: 1px solid var(--border);
+      background: var(--surface-soft);
+      overflow: hidden;
+    }
+
+    .leaderboard-season-tab,
+    .page-control,
+    .page-link,
+    .table-sort-button {
+      font: inherit;
+    }
+
+    .leaderboard-season-tab {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      border: 0;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      padding: 0.4rem 0.55rem;
+      cursor: pointer;
+      min-height: 2rem;
+    }
+
+    .leaderboard-season-tab:last-child {
+      border-right: 0;
+    }
+
+    .leaderboard-season-tab:hover,
+    .leaderboard-season-tab:focus-visible {
+      background: color-mix(in srgb, var(--primary) 6%, var(--surface));
+      color: var(--primary);
+      outline: none;
+    }
+
+    .leaderboard-season-tab.is-active {
+      background: color-mix(in srgb, var(--primary) 11%, var(--surface));
+      color: var(--primary);
+      box-shadow: inset 0 -2px 0 var(--primary);
+    }
+
+    .leaderboard-season-tab-label {
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .leaderboard-season-tab-icon {
+      color: currentColor;
+    }
+
+    .leaderboard-season-overview {
+      display: grid;
+      gap: 0.65rem;
+      padding: 0.75rem;
+    }
+
+    .leaderboard-season-overview h2 {
+      margin: 0;
+      font-size: 1.06rem;
+      line-height: 1.2;
+    }
+
+    .leaderboard-season-overview .kicker {
+      margin-bottom: 0.1rem;
+    }
+
+    .leaderboard-season-overview .meta {
+      margin-bottom: 0;
+    }
+
+    .leaderboard-season-overview-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.6rem;
+      align-items: start;
+    }
+
+    .leaderboard-season-controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 0.45rem;
+    }
+
+    .leaderboard-season-stats {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      margin-top: 0;
+      gap: 0.42rem;
+    }
+
+    .leaderboard-season-stats .stat {
+      padding: 0.45rem 0.52rem;
+    }
+
+    .leaderboard-season-stats .stat-value {
+      font-size: 1rem;
+    }
+
+    .leaderboard-season-stats .stat-label {
+      font-size: 0.75rem;
+    }
+
+    .stat-leader .stat-label {
+      text-transform: none;
+    }
+
+    .leaderboard-table-card,
+    .leaderboard-activity-card {
+      display: grid;
+      gap: 0.8rem;
+    }
+
+    .leaderboard-section-head {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.7rem;
+      align-items: end;
+    }
+
+    .leaderboard-section-head h2 {
+      margin-bottom: 0.2rem;
+    }
+
+    .leaderboard-section-note {
+      margin-bottom: 0;
+    }
+
+    .leaderboard-empty-state {
+      display: grid;
+      gap: 0.45rem;
+      padding: 1rem;
+      border: 1px dashed var(--border);
+      background: var(--surface-soft);
+    }
+
+    .leaderboard-empty-title {
+      margin-bottom: 0;
+      font-weight: 600;
+    }
+
     .table-sort-button {
       display: inline-flex;
       align-items: center;
@@ -366,7 +797,6 @@ const structuredData = [
       border: 0;
       background: transparent;
       color: inherit;
-      font: inherit;
       letter-spacing: inherit;
       text-transform: inherit;
       cursor: pointer;
@@ -407,12 +837,12 @@ const structuredData = [
       border-radius: var(--radius-sm);
       background: var(--surface);
       color: var(--text);
-      font-family: var(--font-main);
       font-size: 0.82rem;
       font-weight: 600;
       line-height: 1;
       padding: 0.35rem 0.55rem;
       text-decoration: none;
+      cursor: pointer;
     }
 
     .page-link.is-active {
@@ -425,11 +855,50 @@ const structuredData = [
     .page-control.is-disabled {
       opacity: 0.55;
       pointer-events: none;
+      cursor: default;
+    }
+
+    @media (max-width: 1080px) {
+      .leaderboard-hero {
+        grid-template-columns: 1fr;
+      }
+
+      .leaderboard-season-stats {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
     }
 
     @media (max-width: 860px) {
-      .leaderboard-pagination {
+      .leaderboard-pagination,
+      .leaderboard-section-head,
+      .leaderboard-season-overview-head {
         justify-content: center;
+      }
+
+      .leaderboard-season-controls {
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .leaderboard-season-tabs {
+        display: grid;
+        grid-template-columns: 1fr;
+        width: 100%;
+      }
+
+      .leaderboard-season-tab {
+        justify-content: space-between;
+        border-right: 0;
+        border-bottom: 1px solid var(--border);
+      }
+
+      .leaderboard-season-tab:last-child {
+        border-bottom: 0;
+      }
+
+      .leaderboard-season-stats {
+        grid-template-columns: 1fr;
       }
     }
   </style>
