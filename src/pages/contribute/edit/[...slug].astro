@@ -1,0 +1,92 @@
+---
+import fs from 'node:fs';
+import path from 'node:path';
+import BaseLayout from '../../../layouts/BaseLayout.astro';
+import QuickContributeForm from '../../../components/QuickContributeForm.astro';
+import { getCategoryPath, getPostBySlug, getPosts } from '../../../lib/openblog';
+import { toAbsoluteUrl } from '../../../lib/seo';
+import { getSiteUrl } from '../../../lib/site';
+
+export function getStaticPaths() {
+  return getPosts().map((post) => ({ params: { slug: post.slug } }));
+}
+
+const slugParam = Astro.params.slug;
+const slug = Array.isArray(slugParam) ? slugParam.join('/') : slugParam ?? '';
+const post = getPostBySlug(slug);
+if (!post) throw new Error('Post not found');
+
+const postSourcePath = post.slug
+  .split('/')
+  .map((segment) => encodeURIComponent(segment))
+  .join('/');
+const postFilePath = `content/posts/${post.slug}.md`;
+const postDiskPath = path.join(process.cwd(), postFilePath);
+const postRawMarkdown = fs.readFileSync(postDiskPath, 'utf8');
+const postPath = `/posts/${postSourcePath}`;
+const categoryPath = getCategoryPath(post.category);
+const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/${postFilePath}`;
+
+const defaultEditPrTitle = `Improve ${post.title}`;
+const defaultEditPrBody = `## Summary
+- Improve quality and clarity for \`${post.slug}\`.
+
+## Changed slug
+- \`${post.slug}\`
+
+## Checklist
+- [ ] I verified markdown structure and formatting
+`;
+
+const canonicalPath = `/contribute/edit/${postSourcePath}`;
+const pageDescription =
+  `Edit ${post.title} and open a pull request directly from the OpenBlog quick contribution workspace.`;
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: `Quick edit ${post.title}`,
+  description: pageDescription,
+  url: canonicalUrl
+};
+---
+<BaseLayout
+  title={`Quick Edit ${post.title} | OpenBlog`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  structuredData={structuredData}
+>
+  <div class="contribute-page quick-contribute-page">
+    <section class="card quick-contribute-hero">
+      <p class="kicker icon-label"><i class="ti ti-edit-circle icon-sm" aria-hidden="true"></i>Quick edit workspace</p>
+      <h1>Edit post and open PR faster</h1>
+      <p>Update this post markdown in one place, then create a pull request directly from your authenticated GitHub session.</p>
+      <div class="contribute-actions">
+        <a class="contribute-action" href={postPath}>
+          <i class="ti ti-article icon-sm" aria-hidden="true"></i>
+          Back to post
+        </a>
+        <a class="contribute-action" href={categoryPath}>
+          <i class="ti ti-category icon-sm" aria-hidden="true"></i>
+          Category page
+        </a>
+        <a class="contribute-action" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+          Open raw file on GitHub
+        </a>
+      </div>
+    </section>
+
+    <QuickContributeForm
+      mode="edit"
+      title={`Editing: ${post.slug}`}
+      description="GitHub-style flow: update markdown, branch + commit are generated, and PR opens automatically."
+      fixedFilePath={postFilePath}
+      initialPrTitle={defaultEditPrTitle}
+      initialPrBody={defaultEditPrBody}
+      initialContent={postRawMarkdown}
+      submitLabel="Create PR for this post"
+    />
+  </div>
+</BaseLayout>

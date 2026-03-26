@@ -1,0 +1,87 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import QuickContributeForm from '../../components/QuickContributeForm.astro';
+import { toAbsoluteUrl } from '../../lib/seo';
+import { getSiteUrl } from '../../lib/site';
+
+const today = new Date().toISOString().slice(0, 10);
+const quickCreateTemplate = `---
+title: New post title
+description: One-sentence summary of what readers will learn.
+date: ${today}
+tags:
+  - topic-1
+  - topic-2
+featured: false
+draft: false
+lang: en
+---
+
+Start with a short intro that sets context and states the problem.
+
+## Main idea
+
+Explain the concept with concrete examples, tradeoffs, and actionable steps.
+`;
+const quickCreatePrBody = `## Summary
+- Add a new post markdown file.
+
+## Checklist
+- [ ] Frontmatter follows OpenBlog standards
+- [ ] Content is focused and technically accurate
+- [ ] I verified markdown formatting
+`;
+
+const pageDescription =
+  'Create a new OpenBlog post and open a pull request directly with your authenticated GitHub account.';
+const canonicalPath = '/contribute/create';
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'Create post pull request',
+  description: pageDescription,
+  url: canonicalUrl
+};
+---
+<BaseLayout
+  title="Create Post PR | OpenBlog"
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  structuredData={structuredData}
+>
+  <div class="contribute-page quick-contribute-page">
+    <section class="card quick-contribute-hero">
+      <p class="kicker icon-label"><i class="ti ti-file-plus icon-sm" aria-hidden="true"></i>Create post workspace</p>
+      <h1>Create a new post and open PR</h1>
+      <p>Write your markdown, submit once, and OpenBlog opens a pull request from your GitHub account automatically.</p>
+      <div class="contribute-actions">
+        <a class="contribute-action" href="/how-to-contribute">
+          <i class="ti ti-book icon-sm" aria-hidden="true"></i>
+          Contribution guide
+        </a>
+        <a class="contribute-action" href="/post-md-file-structure">
+          <i class="ti ti-template icon-sm" aria-hidden="true"></i>
+          Post structure guide
+        </a>
+        <a class="contribute-action" href="/markdown-file-standards">
+          <i class="ti ti-markdown icon-sm" aria-hidden="true"></i>
+          Markdown standards
+        </a>
+      </div>
+    </section>
+
+    <QuickContributeForm
+      mode="create"
+      title="New post editor"
+      description="GitHub-style flow: authenticate, edit markdown, then open a PR in one action."
+      initialCategory="networking"
+      initialPostSlug="my-new-post"
+      initialPrTitle="Add new post: my-new-post"
+      initialPrBody={quickCreatePrBody}
+      initialContent={quickCreateTemplate}
+      submitLabel="Create PR for new post"
+    />
+  </div>
+</BaseLayout>

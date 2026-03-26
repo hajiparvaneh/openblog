@@ -33,6 +33,7 @@ export const GET: APIRoute = ({ site }) => {
     { path: '/', changefreq: 'daily', priority: 1 },
     { path: '/leaderboard', changefreq: 'daily', priority: 0.8 },
     { path: '/how-to-contribute', changefreq: 'weekly', priority: 0.7 },
+    { path: '/contribute/create', changefreq: 'weekly', priority: 0.7 },
     { path: '/post-md-file-structure', changefreq: 'weekly', priority: 0.7 },
     { path: '/markdown-file-standards', changefreq: 'weekly', priority: 0.7 }
   ];

@@ -1,0 +1,701 @@
+---
+type QuickContributeMode = 'edit' | 'create';
+
+type Props = {
+  mode: QuickContributeMode;
+  title: string;
+  description: string;
+  fixedFilePath?: string;
+  initialCategory?: string;
+  initialPostSlug?: string;
+  initialContent?: string;
+  initialPrTitle?: string;
+  initialPrBody?: string;
+  submitLabel?: string;
+};
+
+const {
+  mode,
+  title,
+  description,
+  fixedFilePath,
+  initialCategory = '',
+  initialPostSlug = '',
+  initialContent = '',
+  initialPrTitle = '',
+  initialPrBody = '',
+  submitLabel = 'Create pull request'
+} = Astro.props as Props;
+
+const configuredAuthWorkerUrl = (import.meta.env.PUBLIC_GITHUB_AUTH_WORKER_URL ?? '').trim();
+const authWorkerBaseUrl = (() => {
+  if (!configuredAuthWorkerUrl) return '';
+  try {
+    const parsed = new URL(configuredAuthWorkerUrl);
+    const normalizedPath = parsed.pathname.replace(/\/+$/, '');
+    return `${parsed.origin}${normalizedPath}`;
+  } catch {
+    return '';
+  }
+})();
+
+const normalizedMode: QuickContributeMode = mode === 'create' ? 'create' : 'edit';
+const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : '';
+---
+<section
+  class="card quick-contribute"
+  data-quick-contribute
+  data-mode={normalizedMode}
+  data-fixed-file-path={resolvedFixedFilePath}
+  data-auth-worker-base={authWorkerBaseUrl}
+>
+  <h2 class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>{title}</h2>
+  <p class="meta">{description}</p>
+
+  <form class="quick-contribute-form" data-quick-contribute-form>
+    {normalizedMode === 'create' ? (
+      <div class="quick-contribute-grid">
+        <label class="quick-contribute-field">
+          <span class="quick-contribute-field-head">
+            <span>Category</span>
+            <button
+              type="button"
+              class="quick-contribute-help-trigger"
+              data-help-trigger
+              data-help-title="Category"
+              data-help-body="Use lowercase with hyphens, for example: networking, security, database."
+              aria-label="Category hint"
+            >?</button>
+          </span>
+          <input
+            type="text"
+            name="category"
+            placeholder="networking"
+            autocomplete="off"
+            value={initialCategory}
+            required
+          />
+        </label>
+
+        <label class="quick-contribute-field">
+          <span class="quick-contribute-field-head">
+            <span>Post slug</span>
+            <button
+              type="button"
+              class="quick-contribute-help-trigger"
+              data-help-trigger
+              data-help-title="Post slug"
+              data-help-body="Use lowercase with hyphens only, for example: how-dns-works. Do not include .md."
+              aria-label="Post slug hint"
+            >?</button>
+          </span>
+          <input
+            type="text"
+            name="postSlug"
+            placeholder="how-dns-works"
+            autocomplete="off"
+            value={initialPostSlug}
+            required
+          />
+        </label>
+      </div>
+    ) : null}
+
+    <p class="meta quick-contribute-target">
+      <span class="quick-contribute-field-head">
+        <span>Target file</span>
+        <button
+          type="button"
+          class="quick-contribute-help-trigger"
+          data-help-trigger
+          data-help-title="Target file"
+          data-help-body="Final markdown path in the repository. It must stay under content/posts/<category>/<post>.md."
+          aria-label="Target file hint"
+        >?</button>
+      </span>
+      <code data-quick-contribute-target-code>{resolvedFixedFilePath || 'content/posts/<category>/<slug>.md'}</code>
+    </p>
+
+    <label class="quick-contribute-field">
+      <span class="quick-contribute-field-head">
+        <span>PR title</span>
+        <button
+          type="button"
+          class="quick-contribute-help-trigger"
+          data-help-trigger
+          data-help-title="PR title"
+          data-help-body="Use a clear action title, for example: Improve DNS guide references and examples."
+          aria-label="PR title hint"
+        >?</button>
+      </span>
+      <input type="text" name="prTitle" value={initialPrTitle} placeholder="Improve article clarity and examples" maxlength="120" required />
+    </label>
+
+    <label class="quick-contribute-field">
+      <span class="quick-contribute-field-head">
+        <span>PR summary</span>
+        <button
+          type="button"
+          class="quick-contribute-help-trigger"
+          data-help-trigger
+          data-help-title="PR summary"
+          data-help-body="Describe what changed, why it is better, and which post slug is affected."
+          aria-label="PR summary hint"
+        >?</button>
+      </span>
+      <textarea name="prBody" rows={5} placeholder="What changed and why it is better.">{initialPrBody}</textarea>
+    </label>
+
+    <label class="quick-contribute-field">
+      <span class="quick-contribute-field-head">
+        <span>Markdown content</span>
+        <button
+          type="button"
+          class="quick-contribute-help-trigger"
+          data-help-trigger
+          data-help-title="Markdown content"
+          data-help-body="Keep valid frontmatter at the top, then write focused technical content with examples and references."
+          aria-label="Markdown content hint"
+        >?</button>
+      </span>
+      <textarea name="content" rows={18} required>{initialContent}</textarea>
+    </label>
+
+    <div class="quick-contribute-actions">
+      <a class="contribute-action" data-quick-contribute-login href="#" hidden>
+        <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+        Sign in with GitHub
+      </a>
+      <button class="contribute-action quick-contribute-submit" type="submit" data-quick-contribute-submit>
+        <i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>
+        {submitLabel}
+      </button>
+      <a class="contribute-action" data-quick-contribute-pr href="#" target="_blank" rel="noopener noreferrer" hidden>
+        <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
+        Open created PR
+      </a>
+    </div>
+
+    <p class="meta quick-contribute-status" data-quick-contribute-status role="status" aria-live="polite"></p>
+
+    <section class="quick-contribute-preview" aria-label="Live preview">
+      <div class="quick-contribute-preview-head">
+        <strong class="icon-label"><i class="ti ti-eye icon-sm" aria-hidden="true"></i>Live preview</strong>
+      </div>
+      <p class="meta quick-contribute-preview-empty" data-quick-preview-empty>Start typing to see a rendered markdown preview.</p>
+      <div class="article-content quick-contribute-preview-body" data-quick-preview hidden></div>
+    </section>
+  </form>
+
+  <div class="quick-contribute-help-modal" data-help-modal hidden>
+    <button
+      type="button"
+      class="quick-contribute-help-backdrop"
+      data-help-close
+      aria-label="Close field hint popup"
+    />
+    <div class="quick-contribute-help-panel" role="dialog" aria-modal="true" aria-label="Field hints">
+      <div class="quick-contribute-help-header">
+        <strong data-help-title-text>Field hint</strong>
+        <button type="button" class="quick-contribute-help-close" data-help-close aria-label="Close hint">
+          <i class="ti ti-x icon-sm" aria-hidden="true"></i>
+        </button>
+      </div>
+      <p class="meta quick-contribute-help-text" data-help-body-text></p>
+    </div>
+  </div>
+</section>
+
+<script is:inline>
+  (function () {
+    var escapeHtml = function (value) {
+      return String(value || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    };
+
+    var formatInline = function (value) {
+      return value
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+        .replace(/`([^`]+)`/g, '<code>$1</code>')
+        .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    };
+
+    var stripFrontmatter = function (source) {
+      var normalized = String(source || '').replace(/\r\n/g, '\n');
+      return normalized.replace(/^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/, '');
+    };
+
+    var renderMarkdownPreview = function (source) {
+      var lines = stripFrontmatter(source).split('\n');
+      var parts = [];
+      var inCode = false;
+      var inList = false;
+      var codeBuffer = [];
+
+      var flushList = function () {
+        if (!inList) return;
+        parts.push('</ul>');
+        inList = false;
+      };
+
+      for (var index = 0; index < lines.length; index += 1) {
+        var rawLine = lines[index];
+        var line = escapeHtml(rawLine);
+
+        if (line.trim().startsWith('```')) {
+          if (inCode) {
+            parts.push('<pre><code>' + codeBuffer.join('\n') + '</code></pre>');
+            codeBuffer = [];
+            inCode = false;
+          } else {
+            flushList();
+            inCode = true;
+          }
+          continue;
+        }
+
+        if (inCode) {
+          codeBuffer.push(line);
+          continue;
+        }
+
+        var listMatch = line.match(/^\s*[-*]\s+(.+)$/);
+        if (listMatch) {
+          if (!inList) {
+            parts.push('<ul>');
+            inList = true;
+          }
+          parts.push('<li>' + formatInline(listMatch[1]) + '</li>');
+          continue;
+        }
+
+        flushList();
+
+        if (!line.trim()) {
+          continue;
+        }
+
+        var h3 = line.match(/^###\s+(.+)$/);
+        if (h3) {
+          parts.push('<h3>' + formatInline(h3[1]) + '</h3>');
+          continue;
+        }
+
+        var h2 = line.match(/^##\s+(.+)$/);
+        if (h2) {
+          parts.push('<h2>' + formatInline(h2[1]) + '</h2>');
+          continue;
+        }
+
+        var h1 = line.match(/^#\s+(.+)$/);
+        if (h1) {
+          parts.push('<h1>' + formatInline(h1[1]) + '</h1>');
+          continue;
+        }
+
+        var quote = line.match(/^&gt;\s+(.+)$/);
+        if (quote) {
+          parts.push('<blockquote><p>' + formatInline(quote[1]) + '</p></blockquote>');
+          continue;
+        }
+
+        parts.push('<p>' + formatInline(line) + '</p>');
+      }
+
+      if (inCode) {
+        parts.push('<pre><code>' + codeBuffer.join('\n') + '</code></pre>');
+      }
+      if (inList) {
+        parts.push('</ul>');
+      }
+
+      return parts.join('');
+    };
+
+    var toYamlDoubleQuotedValue = function (value) {
+      return '"' + String(value || '')
+        .replace(/\\/g, '\\\\')
+        .replace(/"/g, '\\"') + '"';
+    };
+
+    var toYamlSingleQuotedValue = function (value) {
+      return "'" + String(value || '').replace(/'/g, "''") + "'";
+    };
+
+    var titleNeedsQuotes = function (value) {
+      var text = String(value || '');
+      return (
+        !text ||
+        /:\s/.test(text) ||
+        /^\s|\s$/.test(text) ||
+        /^[\-?:,[\]{}#&*!|>'"%@`]/.test(text)
+      );
+    };
+
+    var toYamlTitleValue = function (value, preserveSingleQuotes, preserveDoubleQuotes) {
+      var text = String(value || '');
+      var shouldQuote = titleNeedsQuotes(text);
+
+      if (!shouldQuote) {
+        return text;
+      }
+
+      if (preserveSingleQuotes) {
+        return toYamlSingleQuotedValue(text);
+      }
+
+      if (preserveDoubleQuotes) {
+        return toYamlDoubleQuotedValue(text);
+      }
+
+      return toYamlDoubleQuotedValue(text);
+    };
+
+    var syncFrontmatterTitle = function (content, nextTitle) {
+      var source = String(content || '');
+      var trimmedTitle = String(nextTitle || '').trim();
+      if (!trimmedTitle) return source;
+
+      var frontmatterMatch = source.match(/^---\r?\n[\s\S]*?\r?\n(?:---|\.\.\.)\r?\n?/);
+      if (!frontmatterMatch) return source;
+
+      var frontmatterBlock = frontmatterMatch[0];
+      var existingTitleMatch = frontmatterBlock.match(/^title:\s*(.*)$/m);
+      var existingTitleRaw = existingTitleMatch ? existingTitleMatch[1].trim() : '';
+      var preserveSingleQuotes = /^'[\s\S]*'$/.test(existingTitleRaw);
+      var preserveDoubleQuotes = /^"[\s\S]*"$/.test(existingTitleRaw);
+      var titleLine = 'title: ' + toYamlTitleValue(trimmedTitle, preserveSingleQuotes, preserveDoubleQuotes);
+      var updatedFrontmatter = '';
+
+      if (/^title:\s*.*$/m.test(frontmatterBlock)) {
+        updatedFrontmatter = frontmatterBlock.replace(/^title:\s*.*$/m, titleLine);
+      } else {
+        updatedFrontmatter = frontmatterBlock.replace(/^---\r?\n/, function (start) {
+          return start + titleLine + '\n';
+        });
+      }
+
+      return updatedFrontmatter + source.slice(frontmatterBlock.length);
+    };
+
+    var slugifySegment = function (value) {
+      return String(value || '')
+        .trim()
+        .toLowerCase()
+        .replace(/[\s_]+/g, '-')
+        .replace(/[^a-z0-9-]+/g, '-')
+        .replace(/-{2,}/g, '-')
+        .replace(/^-+|-+$/g, '');
+    };
+
+    var setStatus = function (statusEl, message, kind) {
+      if (!statusEl) return;
+      statusEl.textContent = message || '';
+      statusEl.classList.remove('is-success', 'is-error', 'is-info');
+      if (!message) return;
+      if (kind === 'success') statusEl.classList.add('is-success');
+      else if (kind === 'error') statusEl.classList.add('is-error');
+      else statusEl.classList.add('is-info');
+    };
+
+    var updateTargetFilePath = function (form, root) {
+      var mode = root.getAttribute('data-mode') === 'create' ? 'create' : 'edit';
+      var fixedFilePath = root.getAttribute('data-fixed-file-path') || '';
+      var targetCode = form.querySelector('[data-quick-contribute-target-code]');
+      if (!(targetCode instanceof HTMLElement)) return '';
+
+      if (mode === 'edit') {
+        targetCode.textContent = fixedFilePath;
+        return fixedFilePath;
+      }
+
+      var categoryInput = form.elements.namedItem('category');
+      var postSlugInput = form.elements.namedItem('postSlug');
+      var category = categoryInput instanceof HTMLInputElement ? slugifySegment(categoryInput.value) : '';
+      var postSlug = postSlugInput instanceof HTMLInputElement ? slugifySegment(postSlugInput.value) : '';
+
+      var filePath = category && postSlug ? 'content/posts/' + category + '/' + postSlug + '.md' : '';
+      targetCode.textContent = filePath || 'content/posts/<category>/<slug>.md';
+
+      return filePath;
+    };
+
+    var initializeForm = async function (root) {
+      var authApiBase = root.getAttribute('data-auth-worker-base') || '';
+      var toAuthUrl = function (path) {
+        return authApiBase ? authApiBase + path : path;
+      };
+      var toLoginUrl = function () {
+        var url = new URL(toAuthUrl('/login'), window.location.origin);
+        url.searchParams.set('return_to', window.location.href);
+        return url.toString();
+      };
+
+      var form = root.querySelector('[data-quick-contribute-form]');
+      if (!(form instanceof HTMLFormElement)) return;
+      if (form.getAttribute('data-ready') === 'true') return;
+      form.setAttribute('data-ready', 'true');
+
+      var submitButton = form.querySelector('[data-quick-contribute-submit]');
+      var loginButton = form.querySelector('[data-quick-contribute-login]');
+      var statusEl = form.querySelector('[data-quick-contribute-status]');
+      var prLink = form.querySelector('[data-quick-contribute-pr]');
+      var helpModal = root.querySelector('[data-help-modal]');
+      var helpTitleText = root.querySelector('[data-help-title-text]');
+      var helpBodyText = root.querySelector('[data-help-body-text]');
+      var prTitleInput = form.elements.namedItem('prTitle');
+      var contentInput = form.elements.namedItem('content');
+      var preview = form.querySelector('[data-quick-preview]');
+      var previewEmpty = form.querySelector('[data-quick-preview-empty]');
+
+      if (!(submitButton instanceof HTMLButtonElement)) return;
+      if (loginButton instanceof HTMLAnchorElement) {
+        loginButton.href = toLoginUrl();
+      }
+
+      var currentUsername = '';
+      var refreshTargetPath = function () {
+        return updateTargetFilePath(form, root);
+      };
+      var renderPreview = function () {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+        if (!(preview instanceof HTMLElement)) return;
+        if (!(previewEmpty instanceof HTMLElement)) return;
+
+        var source = contentInput.value || '';
+        if (!source.trim()) {
+          preview.innerHTML = '';
+          preview.hidden = true;
+          previewEmpty.hidden = false;
+          return;
+        }
+
+        var rendered = renderMarkdownPreview(source);
+        if (!rendered.trim()) {
+          preview.textContent = source;
+        } else {
+          preview.innerHTML = rendered;
+        }
+        preview.hidden = false;
+        previewEmpty.hidden = true;
+      };
+
+      var openHelp = function (title, body) {
+        if (!(helpModal instanceof HTMLElement)) return;
+        if (helpTitleText instanceof HTMLElement) {
+          helpTitleText.textContent = title || 'Field hint';
+        }
+        if (helpBodyText instanceof HTMLElement) {
+          helpBodyText.textContent = body || '';
+        }
+        helpModal.hidden = false;
+        helpModal.classList.add('is-open');
+      };
+
+      var closeHelp = function () {
+        if (!(helpModal instanceof HTMLElement)) return;
+        helpModal.classList.remove('is-open');
+        helpModal.hidden = true;
+      };
+
+      if (helpModal instanceof HTMLElement) {
+        var helpTriggers = Array.from(form.querySelectorAll('[data-help-trigger]'));
+        helpTriggers.forEach(function (trigger) {
+          if (!(trigger instanceof HTMLButtonElement)) return;
+          trigger.addEventListener('click', function () {
+            var title = trigger.getAttribute('data-help-title') || 'Field hint';
+            var body = trigger.getAttribute('data-help-body') || '';
+            openHelp(title, body);
+          });
+        });
+
+        var helpCloseControls = Array.from(helpModal.querySelectorAll('[data-help-close]'));
+        helpCloseControls.forEach(function (control) {
+          if (!(control instanceof HTMLElement)) return;
+          control.addEventListener('click', closeHelp);
+        });
+
+        document.addEventListener('keydown', function (event) {
+          if (event.key === 'Escape' && !helpModal.hidden) {
+            closeHelp();
+          }
+        });
+      }
+
+      refreshTargetPath();
+      renderPreview();
+
+      var categoryInput = form.elements.namedItem('category');
+      var postSlugInput = form.elements.namedItem('postSlug');
+      if (categoryInput instanceof HTMLInputElement) {
+        categoryInput.addEventListener('input', refreshTargetPath);
+      }
+      if (postSlugInput instanceof HTMLInputElement) {
+        postSlugInput.addEventListener('input', refreshTargetPath);
+      }
+      if (contentInput instanceof HTMLTextAreaElement) {
+        contentInput.addEventListener('input', renderPreview);
+      }
+      if (prTitleInput instanceof HTMLInputElement && contentInput instanceof HTMLTextAreaElement) {
+        prTitleInput.addEventListener('input', function () {
+          var nextContent = syncFrontmatterTitle(contentInput.value, prTitleInput.value);
+          if (nextContent !== contentInput.value) {
+            contentInput.value = nextContent;
+            renderPreview();
+          }
+        });
+      }
+
+      if (!authApiBase) {
+        submitButton.disabled = true;
+        if (loginButton instanceof HTMLAnchorElement) {
+          loginButton.hidden = true;
+        }
+        setStatus(statusEl, 'Quick PR flow requires PUBLIC_GITHUB_AUTH_WORKER_URL to be configured.', 'error');
+        return;
+      }
+
+      try {
+        var authResponse = await fetch(toAuthUrl('/me'), {
+          credentials: 'include'
+        });
+
+        if (authResponse.ok) {
+          var currentUser = await authResponse.json();
+          submitButton.disabled = false;
+          if (loginButton instanceof HTMLAnchorElement) {
+            loginButton.hidden = true;
+          }
+          if (currentUser && typeof currentUser.login === 'string') {
+            currentUsername = currentUser.login;
+            setStatus(statusEl, 'Signed in as @' + currentUsername + '.', 'info');
+          }
+        } else {
+          submitButton.disabled = true;
+          if (loginButton instanceof HTMLAnchorElement) {
+            loginButton.hidden = false;
+          }
+          setStatus(statusEl, 'Sign in first, then create your pull request from this form.', 'info');
+        }
+      } catch (_) {
+        submitButton.disabled = true;
+        if (loginButton instanceof HTMLAnchorElement) {
+          loginButton.hidden = false;
+        }
+        setStatus(statusEl, 'Authentication check failed. Sign in again and retry.', 'error');
+      }
+
+      form.addEventListener('submit', async function (event) {
+        event.preventDefault();
+        if (submitButton.disabled) return;
+
+        var filePath = refreshTargetPath();
+        if (!filePath) {
+          setStatus(statusEl, 'Category and post slug are required.', 'error');
+          return;
+        }
+
+        var prBodyInput = form.elements.namedItem('prBody');
+        var prTitle = prTitleInput instanceof HTMLInputElement ? prTitleInput.value.trim() : '';
+        var prBody = prBodyInput instanceof HTMLTextAreaElement ? prBodyInput.value.trim() : '';
+        var content = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
+
+        if (!prTitle) {
+          setStatus(statusEl, 'PR title is required.', 'error');
+          return;
+        }
+
+        if (!content.trim()) {
+          setStatus(statusEl, 'Markdown content cannot be empty.', 'error');
+          return;
+        }
+
+        submitButton.disabled = true;
+        submitButton.setAttribute('aria-busy', 'true');
+        setStatus(statusEl, 'Creating branch, committing markdown, and opening PR...', 'info');
+        if (prLink instanceof HTMLAnchorElement) {
+          prLink.hidden = true;
+          prLink.href = '#';
+        }
+
+        try {
+          var payload = {
+            filePath: filePath,
+            content: content,
+            prTitle: prTitle,
+            prBody: prBody
+          };
+
+          var response = await fetch(toAuthUrl('/contribute'), {
+            method: 'POST',
+            credentials: 'include',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          });
+
+          var data = null;
+          try {
+            data = await response.json();
+          } catch (_) {
+            data = null;
+          }
+
+          if (!response.ok) {
+            var errorMessage = data && typeof data.error === 'string'
+              ? data.error
+              : 'Unable to create pull request. Try again.';
+            throw new Error(errorMessage);
+          }
+
+          var prUrl = data && data.pullRequest && typeof data.pullRequest.url === 'string'
+            ? data.pullRequest.url
+            : '';
+
+          if (prUrl) {
+            if (prLink instanceof HTMLAnchorElement) {
+              prLink.href = prUrl;
+              prLink.hidden = false;
+            }
+
+            var opened = false;
+            try {
+              var popup = window.open(prUrl, '_blank', 'noopener,noreferrer');
+              opened = Boolean(popup);
+            } catch (_) {
+              opened = false;
+            }
+
+            setStatus(
+              statusEl,
+              opened
+                ? 'Pull request opened in a new tab.'
+                : 'Pull request created successfully. Use the link to open it.',
+              'success'
+            );
+          } else {
+            setStatus(statusEl, 'Pull request created successfully.', 'success');
+          }
+        } catch (error) {
+          var message = error instanceof Error ? error.message : 'Unable to create pull request.';
+          setStatus(statusEl, message, 'error');
+        } finally {
+          submitButton.disabled = false;
+          submitButton.removeAttribute('aria-busy');
+        }
+      });
+    };
+
+    var forms = Array.from(document.querySelectorAll('[data-quick-contribute]'));
+    forms.forEach(function (entry) {
+      if (entry instanceof HTMLElement) {
+        void initializeForm(entry);
+      }
+    });
+  })();
+</script>

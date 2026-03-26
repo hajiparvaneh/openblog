@@ -150,6 +150,7 @@ const manualContributionHints: ManualContributionHint[] = [
 ];
 const categoryPath = getCategoryPath(post.category);
 const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+const quickEditPath = `/contribute/edit/${postSourcePath}`;
 const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
 const canonicalPath = `/posts/${postSourcePath}`;
 const pageDescription = post.description || `Read ${post.title} on OpenBlog.`;
@@ -343,10 +344,14 @@ const structuredData = [
     <div class="article-content" set:html={html} />
     <section class="post-contribute meta">
       <span class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>Want to contribute to this post?</span>
-      <a class="post-contribute-link" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
-        Edit it on GitHub
+      <a class="post-contribute-link" href={quickEditPath}>
+        Open quick edit workspace
       </a>
-      , open a PR, and earn contribution points.
+      or
+      <a class="post-contribute-link" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+        edit directly on GitHub
+      </a>
+      and open a PR.
     </section>
 
     <section class="post-proof-quality">
@@ -385,9 +390,7 @@ const structuredData = [
                   </span>
                   <a
                     class="post-proof-quality-action"
-                    href={postSourceUrl}
-                    target="_blank"
-                    rel="nofollow noopener noreferrer"
+                    href={quickEditPath}
                     aria-label={`Start contribution for ${task.title}`}
                   >
                     Start contribution
@@ -407,9 +410,7 @@ const structuredData = [
           <li class="post-proof-quality-extra-item">
             <a
               class="post-proof-quality-extra-link"
-              href={postSourceUrl}
-              target="_blank"
-              rel="nofollow noopener noreferrer"
+              href={quickEditPath}
             >
               <span class="icon-label">
                 <i class={`ti ti-${hint.labelMeta.icon} icon-sm post-proof-quality-extra-icon`} aria-hidden="true"></i>
