@@ -187,6 +187,10 @@ const authWorkerBaseUrl = (() => {
                 <i class="ti ti-chevron-down icon-sm" aria-hidden="true"></i>
               </button>
               <div class="header-auth-menu" id="header-auth-menu" role="menu" hidden>
+                <a id="header-auth-openblog-profile" href="/profile/@github" role="menuitem">
+                  <i class="ti ti-user icon-sm" aria-hidden="true"></i>
+                  OpenBlog profile
+                </a>
                 <a id="header-auth-profile" href="https://github.com" target="_blank" rel="noopener noreferrer" role="menuitem">
                   <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
                   GitHub profile
@@ -342,6 +346,7 @@ const authWorkerBaseUrl = (() => {
         var authMenu = document.getElementById('header-auth-menu');
         var authAvatar = document.getElementById('header-auth-avatar');
         var authName = document.getElementById('header-auth-name');
+        var authOpenblogProfileLink = document.getElementById('header-auth-openblog-profile');
         var authProfileLink = document.getElementById('header-auth-profile');
         var authLogoutButton = document.getElementById('header-auth-logout');
 
@@ -353,6 +358,12 @@ const authWorkerBaseUrl = (() => {
           var url = new URL(toAuthUrl('/login'), window.location.origin);
           url.searchParams.set('return_to', window.location.href);
           return url.toString();
+        };
+
+        var getOpenblogProfilePath = function (username) {
+          if (typeof username !== 'string') return '/profile/@github';
+          var handle = username.trim().replace(/^@+/, '');
+          return handle ? '/profile/@' + encodeURIComponent(handle) : '/profile/@github';
         };
 
         var setAuthMenuOpen = function (open) {
@@ -377,6 +388,9 @@ const authWorkerBaseUrl = (() => {
           if (authName) {
             authName.textContent = '@github';
           }
+          if (authOpenblogProfileLink) {
+            authOpenblogProfileLink.setAttribute('href', '/profile/@github');
+          }
           if (authProfileLink) {
             authProfileLink.setAttribute('href', 'https://github.com');
           }
@@ -400,6 +414,9 @@ const authWorkerBaseUrl = (() => {
           }
           if (authName && typeof user.login === 'string') {
             authName.textContent = '@' + user.login;
+          }
+          if (authOpenblogProfileLink && typeof user.login === 'string') {
+            authOpenblogProfileLink.setAttribute('href', getOpenblogProfilePath(user.login));
           }
           if (authProfileLink && typeof user.html_url === 'string') {
             authProfileLink.setAttribute('href', user.html_url);
