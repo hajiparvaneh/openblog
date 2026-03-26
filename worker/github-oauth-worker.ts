@@ -21,6 +21,19 @@ const COOKIE_NAMES = {
 const STATE_TTL_SECONDS = 600;
 const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 7;
 
+const hasValue = (value: string | undefined): boolean => {
+  if (!value) return false;
+  const normalized = value.trim().toLowerCase();
+  return normalized.length > 0 && normalized !== 'undefined' && normalized !== 'null';
+};
+
+const validateAuthEnv = (env: Env): string[] => {
+  const missing: string[] = [];
+  if (!hasValue(env.GITHUB_CLIENT_ID)) missing.push('GITHUB_CLIENT_ID');
+  if (!hasValue(env.GITHUB_CLIENT_SECRET)) missing.push('GITHUB_CLIENT_SECRET');
+  return missing;
+};
+
 const json = (data: unknown, status = 200, headers: HeadersInit = {}): Response =>
   new Response(JSON.stringify(data), {
     status,
@@ -288,6 +301,7 @@ export default {
     const url = new URL(request.url);
     const cookies = parseCookies(request.headers.get('cookie'));
     const corsHeaders = getCorsHeaders(request, env);
+    const missingAuthEnv = validateAuthEnv(env);
 
     if (request.method === 'OPTIONS') {
       return new Response(null, {
@@ -301,6 +315,18 @@ export default {
     }
 
     if (url.pathname === '/login') {
+      if (missingAuthEnv.length > 0) {
+        console.error('OAuth config missing', { missing: missingAuthEnv });
+        return json(
+          {
+            error: 'OAuth not configured on Worker',
+            missing: missingAuthEnv
+          },
+          500,
+          corsHeaders
+        );
+      }
+
       const state = generateState();
       const redirectUrl = buildAuthorizeUrl(request, env, state);
       const returnTo = sanitizeReturnTo(url.searchParams.get('return_to'), request, env);
@@ -347,6 +373,18 @@ export default {
     }
 
     if (url.pathname === '/callback') {
+      if (missingAuthEnv.length > 0) {
+        console.error('OAuth config missing', { missing: missingAuthEnv });
+        return json(
+          {
+            error: 'OAuth not configured on Worker',
+            missing: missingAuthEnv
+          },
+          500,
+          corsHeaders
+        );
+      }
+
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
       const storedState = cookies[COOKIE_NAMES.state];
