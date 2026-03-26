@@ -1,0 +1,142 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { toAbsoluteUrl } from '../lib/seo';
+import { getSiteUrl } from '../lib/site';
+
+const pageDescription = 'Minimal GitHub OAuth login demo backed by a Cloudflare Worker.';
+const canonicalPath = '/github-auth';
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'WebPage',
+  name: 'GitHub OAuth Demo',
+  description: pageDescription,
+  url: canonicalUrl
+};
+---
+<BaseLayout title="GitHub OAuth Demo | OpenBlog" description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
+  <section class="card oauth-card">
+    <p class="kicker icon-label"><i class="ti ti-shield-lock icon-sm" aria-hidden="true"></i>Auth demo</p>
+    <h1>GitHub OAuth (Cloudflare Worker)</h1>
+    <p class="meta">
+      This page calls <code>/login</code> and <code>/me</code> on your Worker. The Worker stores the GitHub token in a secure HTTP-only cookie.
+    </p>
+
+    <div class="oauth-actions">
+      <button id="login-btn" class="home-cta" type="button">
+        <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+        Login with GitHub
+      </button>
+      <button id="refresh-btn" class="home-cta home-cta-soft" type="button">
+        <i class="ti ti-refresh icon-sm" aria-hidden="true"></i>
+        Refresh user
+      </button>
+    </div>
+
+    <div id="auth-status" class="meta" aria-live="polite">Checking session...</div>
+
+    <article id="user-card" class="user-card" hidden>
+      <img id="user-avatar" class="user-avatar" src="" alt="" loading="lazy" decoding="async" width="72" height="72" />
+      <div>
+        <p class="kicker icon-label"><i class="ti ti-user icon-sm" aria-hidden="true"></i>Authenticated user</p>
+        <h2 id="user-login" class="user-login"></h2>
+        <a id="user-profile" class="sidebar-sub-link" target="_blank" rel="noopener noreferrer">Open GitHub profile</a>
+      </div>
+    </article>
+  </section>
+
+  <script is:inline>
+    const statusEl = document.getElementById('auth-status');
+    const userCardEl = document.getElementById('user-card');
+    const userAvatarEl = document.getElementById('user-avatar');
+    const userLoginEl = document.getElementById('user-login');
+    const userProfileEl = document.getElementById('user-profile');
+    const loginBtn = document.getElementById('login-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
+
+    const renderGuest = (message) => {
+      statusEl.textContent = message;
+      userCardEl.hidden = true;
+      userAvatarEl.src = '';
+      userAvatarEl.alt = '';
+      userLoginEl.textContent = '';
+      userProfileEl.removeAttribute('href');
+    };
+
+    const renderUser = (user) => {
+      statusEl.textContent = 'You are authenticated.';
+      userCardEl.hidden = false;
+      userAvatarEl.src = user.avatar_url;
+      userAvatarEl.alt = `${user.login} avatar`;
+      userLoginEl.textContent = `@${user.login}`;
+      userProfileEl.href = user.html_url;
+    };
+
+    const loadUser = async () => {
+      statusEl.textContent = 'Loading user...';
+      try {
+        const response = await fetch('/me', { credentials: 'include' });
+
+        if (response.status === 401) {
+          renderGuest('Not logged in yet. Click "Login with GitHub".');
+          return;
+        }
+
+        if (!response.ok) {
+          throw new Error(`Unexpected /me status: ${response.status}`);
+        }
+
+        const user = await response.json();
+        renderUser(user);
+      } catch (error) {
+        renderGuest(`Unable to load profile: ${error.message}`);
+      }
+    };
+
+    loginBtn?.addEventListener('click', () => {
+      window.location.href = '/login';
+    });
+
+    refreshBtn?.addEventListener('click', () => {
+      void loadUser();
+    });
+
+    void loadUser();
+  </script>
+</BaseLayout>
+
+<style>
+  .oauth-card {
+    display: grid;
+    gap: 1rem;
+  }
+
+  .oauth-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  .user-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.85rem;
+    background: color-mix(in srgb, var(--card-bg) 94%, #fff 6%);
+  }
+
+  .user-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+  }
+
+  .user-login {
+    margin: 0.2rem 0;
+    font-size: 1.05rem;
+  }
+</style>
