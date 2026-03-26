@@ -1,0 +1,7 @@
+name = "openblog-github-auth"
+main = "github-oauth-worker.ts"
+compatibility_date = "2026-03-26"
+workers_dev = true
+
+[observability.logs]
+enabled = true
