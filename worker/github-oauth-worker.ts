@@ -402,7 +402,7 @@ export default {
         const token = await exchangeCodeForToken(code, request, env);
         const headers = new Headers({
           'cache-control': 'no-store',
-          Location: returnTo ?? `${getBaseUrl(request)}/github-auth`,
+          Location: returnTo ?? `${getBaseUrl(request)}/`,
           ...corsHeaders
         });
         headers.append(
