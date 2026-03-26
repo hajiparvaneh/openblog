@@ -44,21 +44,6 @@ npm run dev
 
 Open the local URL shown in your terminal.
 
-## 🔐 GitHub OAuth (Pages + Worker)
-
-If your Astro site and Cloudflare Worker are on different domains, configure both sides explicitly:
-
-1. Frontend build env:
-   - `PUBLIC_GITHUB_AUTH_WORKER_URL=https://<your-worker-domain>`
-2. Worker secrets/vars:
-   - `GITHUB_CLIENT_ID`
-   - `GITHUB_CLIENT_SECRET`
-   - `AUTH_ALLOWED_ORIGIN=https://<your-pages-domain>` (required for cross-domain cookies + CORS)
-3. GitHub OAuth App callback URL:
-   - `https://<your-worker-domain>/callback`
-
-The login flow starts at `/login?return_to=<current-page>`, and the worker redirects back to that URL after successful authentication.
-
 ### Production preview
 
 ```bash
