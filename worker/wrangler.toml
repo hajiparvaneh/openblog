@@ -2,6 +2,7 @@ name = "openblog-worker"
 main = "github-oauth-worker.ts"
 compatibility_date = "2026-03-26"
 workers_dev = true
+keep_vars = true
 
 [observability.logs]
 enabled = true
