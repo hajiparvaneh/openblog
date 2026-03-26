@@ -556,18 +556,41 @@ const createFeatureBranchWithRetry = async (
   branchName: string,
   baseSha: string
 ): Promise<void> => {
-  const maxAttempts = 4;
+  const maxAttempts = 6;
   for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
     try {
       await createFeatureBranch(token, owner, repoName, branchName, baseSha);
       return;
     } catch (error) {
       const shouldRetry =
-        error instanceof GitHubApiError && error.status === 422 && attempt < maxAttempts;
+        error instanceof GitHubApiError &&
+        (error.status === 404 || error.status === 422) &&
+        attempt < maxAttempts;
       if (!shouldRetry) throw error;
       await sleep(900 * attempt);
     }
   }
+};
+
+const getBranchShaWithRetry = async (
+  token: string,
+  owner: string,
+  repoName: string,
+  branch: string
+): Promise<string> => {
+  const maxAttempts = 6;
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await getBranchSha(token, owner, repoName, branch);
+    } catch (error) {
+      const shouldRetry =
+        error instanceof GitHubApiError && error.status === 404 && attempt < maxAttempts;
+      if (!shouldRetry) throw error;
+      await sleep(900 * attempt);
+    }
+  }
+
+  throw new GitHubApiError(504, 'Timed out while waiting for fork branch to become available');
 };
 
 const getFileShaOnBranch = async (
@@ -657,8 +680,15 @@ const createPullRequest = async (
     throw new HttpError(401, 'Authenticated GitHub user is missing a login');
   }
 
-  const baseSha = await getBranchSha(token, targetOwner, targetRepoName, payload.baseBranch);
   await ensureFork(token, username, targetOwner, targetRepoName);
+  let baseSha: string;
+  try {
+    baseSha = await getBranchShaWithRetry(token, username, targetRepoName, payload.baseBranch);
+  } catch (error) {
+    const shouldFallbackToUpstream = error instanceof GitHubApiError && error.status === 404;
+    if (!shouldFallbackToUpstream) throw error;
+    baseSha = await getBranchSha(token, targetOwner, targetRepoName, payload.baseBranch);
+  }
 
   const branchSeed = payload.filePath
     .replace(/^content\/posts\//, '')
