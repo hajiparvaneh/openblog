@@ -62,6 +62,17 @@ const categories = [...posts.reduce((map, post) => {
 const latestContributors = getLatestContributors(10);
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
+const configuredAuthWorkerUrl = (import.meta.env.PUBLIC_GITHUB_AUTH_WORKER_URL ?? '').trim();
+const authWorkerBaseUrl = (() => {
+  if (!configuredAuthWorkerUrl) return '';
+  try {
+    const parsed = new URL(configuredAuthWorkerUrl);
+    const normalizedPath = parsed.pathname.replace(/\/+$/, '');
+    return `${parsed.origin}${normalizedPath}`;
+  } catch {
+    return '';
+  }
+})();
 ---
 <html lang={pageLang}>
   <head>
@@ -157,6 +168,36 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
             <a href="/leaderboard"><i class="ti ti-trophy icon-sm" aria-hidden="true"></i>Leaderboard</a>
             <a href="/how-to-contribute"><i class="ti ti-pencil icon-sm" aria-hidden="true"></i>Contribute</a>
           </nav>
+          <div class="header-auth" id="header-auth" data-open="false" data-state="guest">
+            <a class="header-auth-login" id="header-auth-login" href="/github-auth">
+              <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+              <span class="header-auth-label">Sign in</span>
+            </a>
+            <div class="header-auth-user" id="header-auth-user" hidden>
+              <button
+                class="header-auth-trigger"
+                id="header-auth-trigger"
+                type="button"
+                aria-label="Open account menu"
+                aria-expanded="false"
+                aria-controls="header-auth-menu"
+              >
+                <img id="header-auth-avatar" class="header-auth-avatar" src="" alt="" loading="lazy" decoding="async" width="24" height="24" />
+                <span id="header-auth-name" class="header-auth-name">@github</span>
+                <i class="ti ti-chevron-down icon-sm" aria-hidden="true"></i>
+              </button>
+              <div class="header-auth-menu" id="header-auth-menu" role="menu" hidden>
+                <a id="header-auth-profile" href="https://github.com" target="_blank" rel="noopener noreferrer" role="menuitem">
+                  <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
+                  GitHub profile
+                </a>
+                <button id="header-auth-logout" type="button" role="menuitem">
+                  <i class="ti ti-logout icon-sm" aria-hidden="true"></i>
+                  Sign out
+                </button>
+              </div>
+            </div>
+          </div>
           <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
             <span class="icon-label">
               <i class="ti ti-sun theme-icon theme-icon-sun icon-sm" aria-hidden="true"></i>
@@ -284,15 +325,128 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
       </a>
     </noscript>
     <CookieConsentManager />
-    <script is:inline>
+    <script is:inline define:vars={{ authWorkerBaseUrl }}>
       (function () {
         var storageKey = 'openblog-theme';
+        var authApiBase = typeof authWorkerBaseUrl === 'string' ? authWorkerBaseUrl : '';
         var button = document.getElementById('theme-toggle');
         var label = document.getElementById('theme-toggle-label');
         var themeColor = document.querySelector('meta[name="theme-color"]');
         var headerActions = document.getElementById('site-header-actions');
         var menuButton = document.getElementById('header-menu-toggle');
         var mainNav = document.getElementById('main-nav');
+        var authRoot = document.getElementById('header-auth');
+        var authLoginLink = document.getElementById('header-auth-login');
+        var authUserWrap = document.getElementById('header-auth-user');
+        var authTrigger = document.getElementById('header-auth-trigger');
+        var authMenu = document.getElementById('header-auth-menu');
+        var authAvatar = document.getElementById('header-auth-avatar');
+        var authName = document.getElementById('header-auth-name');
+        var authProfileLink = document.getElementById('header-auth-profile');
+        var authLogoutButton = document.getElementById('header-auth-logout');
+
+        var toAuthUrl = function (path) {
+          return authApiBase ? authApiBase + path : path;
+        };
+
+        var getLoginUrl = function () {
+          var url = new URL(toAuthUrl('/login'), window.location.origin);
+          url.searchParams.set('return_to', window.location.href);
+          return url.toString();
+        };
+
+        var setAuthMenuOpen = function (open) {
+          if (!authRoot || !authTrigger || !authMenu) return;
+          var isOpen = Boolean(open);
+          authRoot.setAttribute('data-open', String(isOpen));
+          authTrigger.setAttribute('aria-expanded', String(isOpen));
+          authMenu.hidden = !isOpen;
+        };
+
+        var renderGuest = function () {
+          if (authRoot) authRoot.setAttribute('data-state', 'guest');
+          if (authUserWrap) authUserWrap.hidden = true;
+          if (authLoginLink) {
+            authLoginLink.hidden = false;
+            authLoginLink.setAttribute('href', getLoginUrl());
+          }
+          if (authAvatar) {
+            authAvatar.src = '';
+            authAvatar.alt = '';
+          }
+          if (authName) {
+            authName.textContent = '@github';
+          }
+          if (authProfileLink) {
+            authProfileLink.setAttribute('href', 'https://github.com');
+          }
+          setAuthMenuOpen(false);
+        };
+
+        var renderUser = function (user) {
+          if (!user || typeof user !== 'object') {
+            renderGuest();
+            return;
+          }
+
+          if (authRoot) authRoot.setAttribute('data-state', 'authenticated');
+          if (authLoginLink) authLoginLink.hidden = true;
+          if (authUserWrap) authUserWrap.hidden = false;
+          if (authAvatar && typeof user.avatar_url === 'string') {
+            authAvatar.src = user.avatar_url;
+          }
+          if (authAvatar && typeof user.login === 'string') {
+            authAvatar.alt = user.login + ' avatar';
+          }
+          if (authName && typeof user.login === 'string') {
+            authName.textContent = '@' + user.login;
+          }
+          if (authProfileLink && typeof user.html_url === 'string') {
+            authProfileLink.setAttribute('href', user.html_url);
+          }
+        };
+
+        var loadAuthUser = async function () {
+          try {
+            var response = await fetch(toAuthUrl('/me'), { credentials: 'include' });
+            if (response.status === 401) {
+              renderGuest();
+              return;
+            }
+            if (!response.ok) {
+              throw new Error('Unexpected status: ' + response.status);
+            }
+            var user = await response.json();
+            renderUser(user);
+          } catch (_) {
+            renderGuest();
+          }
+        };
+
+        if (authTrigger) {
+          authTrigger.addEventListener('click', function () {
+            var isOpen = authTrigger.getAttribute('aria-expanded') === 'true';
+            setAuthMenuOpen(!isOpen);
+          });
+        }
+
+        if (authLogoutButton) {
+          authLogoutButton.addEventListener('click', async function () {
+            authLogoutButton.setAttribute('disabled', 'true');
+            try {
+              await fetch(toAuthUrl('/logout'), {
+                method: 'POST',
+                credentials: 'include'
+              });
+            } catch (_) {
+            } finally {
+              authLogoutButton.removeAttribute('disabled');
+              renderGuest();
+            }
+          });
+        }
+
+        void loadAuthUser();
 
         var applyTheme = function (theme) {
           document.documentElement.setAttribute('data-theme', theme);
@@ -346,14 +500,18 @@ const hasSidebarExtra = Astro.slots.has('sidebar-extra');
         });
 
         document.addEventListener('click', function (event) {
-          if (!mobileMenu.matches) return;
           if (!(event.target instanceof Node)) return;
+          if (authRoot && !authRoot.contains(event.target)) {
+            setAuthMenuOpen(false);
+          }
+          if (!mobileMenu.matches) return;
           if (headerActions.contains(event.target)) return;
           setMenuOpen(false);
         });
 
         document.addEventListener('keydown', function (event) {
           if (event.key !== 'Escape') return;
+          setAuthMenuOpen(false);
           setMenuOpen(false);
         });
 
