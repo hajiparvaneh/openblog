@@ -1,6 +1,7 @@
 interface Env {
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
+  AUTH_ALLOWED_ORIGIN?: string;
 }
 
 type GitHubUser = {
@@ -13,7 +14,8 @@ type GitHubUser = {
 
 const COOKIE_NAMES = {
   token: 'gh_token',
-  state: 'oauth_state'
+  state: 'oauth_state',
+  returnTo: 'oauth_return_to'
 } as const;
 
 const STATE_TTL_SECONDS = 600;
@@ -82,6 +84,64 @@ const generateState = (): string => {
 const getBaseUrl = (request: Request): string => {
   const url = new URL(request.url);
   return `${url.protocol}//${url.host}`;
+};
+
+const normalizeOrigin = (value: string | null | undefined): string | null => {
+  if (!value) return null;
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+};
+
+const getAllowedCorsOrigin = (request: Request, env: Env): string | null => {
+  const requestOrigin = normalizeOrigin(request.headers.get('origin'));
+  if (!requestOrigin) return null;
+
+  const allowedOrigin = normalizeOrigin(env.AUTH_ALLOWED_ORIGIN);
+  if (allowedOrigin) {
+    return requestOrigin === allowedOrigin ? requestOrigin : null;
+  }
+
+  const workerOrigin = getBaseUrl(request);
+  return requestOrigin === workerOrigin ? requestOrigin : null;
+};
+
+const getCorsHeaders = (request: Request, env: Env): HeadersInit => {
+  const allowedOrigin = getAllowedCorsOrigin(request, env);
+  if (!allowedOrigin) return {};
+
+  return {
+    'Access-Control-Allow-Origin': allowedOrigin,
+    'Access-Control-Allow-Credentials': 'true',
+    Vary: 'Origin'
+  };
+};
+
+const getTokenCookieSameSite = (env: Env): 'Lax' | 'None' =>
+  normalizeOrigin(env.AUTH_ALLOWED_ORIGIN) ? 'None' : 'Lax';
+
+const sanitizeReturnTo = (candidate: string | null, request: Request, env: Env): string | null => {
+  if (!candidate) return null;
+
+  let parsed: URL;
+  try {
+    parsed = new URL(candidate);
+  } catch {
+    return null;
+  }
+
+  if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+    return null;
+  }
+
+  const allowedOrigin = normalizeOrigin(env.AUTH_ALLOWED_ORIGIN) ?? getBaseUrl(request);
+  if (parsed.origin !== allowedOrigin) {
+    return null;
+  }
+
+  return parsed.toString();
 };
 
 const buildAuthorizeUrl = (request: Request, env: Env, state: string): string => {
@@ -227,22 +287,62 @@ export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const cookies = parseCookies(request.headers.get('cookie'));
+    const corsHeaders = getCorsHeaders(request, env);
+
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        status: 204,
+        headers: {
+          ...corsHeaders,
+          'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type'
+        }
+      });
+    }
 
     if (url.pathname === '/login') {
       const state = generateState();
       const redirectUrl = buildAuthorizeUrl(request, env, state);
+      const returnTo = sanitizeReturnTo(url.searchParams.get('return_to'), request, env);
+      const headers = new Headers({
+        Location: redirectUrl
+      });
 
-      return new Response(null, {
-        status: 302,
-        headers: {
-          Location: redirectUrl,
-          'Set-Cookie': createCookie(COOKIE_NAMES.state, state, {
+      headers.append(
+        'Set-Cookie',
+        createCookie(COOKIE_NAMES.state, state, {
+          maxAge: STATE_TTL_SECONDS,
+          httpOnly: true,
+          sameSite: 'Lax',
+          secure: true
+        })
+      );
+
+      if (returnTo) {
+        headers.append(
+          'Set-Cookie',
+          createCookie(COOKIE_NAMES.returnTo, returnTo, {
             maxAge: STATE_TTL_SECONDS,
             httpOnly: true,
             sameSite: 'Lax',
             secure: true
           })
-        }
+        );
+      } else {
+        headers.append(
+          'Set-Cookie',
+          createCookie(COOKIE_NAMES.returnTo, '', {
+            maxAge: 0,
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: true
+          })
+        );
+      }
+
+      return new Response(null, {
+        status: 302,
+        headers
       });
     }
 
@@ -250,28 +350,29 @@ export default {
       const code = url.searchParams.get('code');
       const state = url.searchParams.get('state');
       const storedState = cookies[COOKIE_NAMES.state];
+      const returnTo = sanitizeReturnTo(cookies[COOKIE_NAMES.returnTo] ?? null, request, env);
 
       if (!code || !state) {
-        return json({ error: 'Missing code or state' }, 400);
+        return json({ error: 'Missing code or state' }, 400, corsHeaders);
       }
 
       if (!storedState || state !== storedState) {
-        return json({ error: 'Invalid OAuth state' }, 400);
+        return json({ error: 'Invalid OAuth state' }, 400, corsHeaders);
       }
 
       try {
         const token = await exchangeCodeForToken(code, request, env);
-        const user = await fetchAuthenticatedUser(token);
         const headers = new Headers({
-          'content-type': 'application/json; charset=utf-8',
-          'cache-control': 'no-store'
+          'cache-control': 'no-store',
+          Location: returnTo ?? `${getBaseUrl(request)}/github-auth`,
+          ...corsHeaders
         });
         headers.append(
           'Set-Cookie',
           createCookie(COOKIE_NAMES.token, token, {
             maxAge: TOKEN_TTL_SECONDS,
             httpOnly: true,
-            sameSite: 'Lax',
+            sameSite: getTokenCookieSameSite(env),
             secure: true
           })
         );
@@ -284,28 +385,40 @@ export default {
             secure: true
           })
         );
+        headers.append(
+          'Set-Cookie',
+          createCookie(COOKIE_NAMES.returnTo, '', {
+            maxAge: 0,
+            httpOnly: true,
+            sameSite: 'Lax',
+            secure: true
+          })
+        );
 
-        return new Response(JSON.stringify(user), { status: 200, headers });
+        return new Response(null, { status: 302, headers });
       } catch (error) {
-        return json({ error: (error as Error).message }, 500);
+        console.error('OAuth callback failed', error);
+        return json({ error: (error as Error).message }, 500, corsHeaders);
       }
     }
 
     if (url.pathname === '/me') {
       const token = cookies[COOKIE_NAMES.token];
       if (!token) {
-        return json({ error: 'Not authenticated' }, 401);
+        return json({ error: 'Not authenticated' }, 401, corsHeaders);
       }
 
       try {
         const user = await fetchAuthenticatedUser(token);
-        return json(user);
-      } catch {
+        return json(user, 200, corsHeaders);
+      } catch (error) {
+        console.error('Failed to fetch authenticated user', error);
         return json({ error: 'Invalid or expired token' }, 401, {
+          ...corsHeaders,
           'Set-Cookie': createCookie(COOKIE_NAMES.token, '', {
             maxAge: 0,
             httpOnly: true,
-            sameSite: 'Lax',
+            sameSite: getTokenCookieSameSite(env),
             secure: true
           })
         });
@@ -316,17 +429,18 @@ export default {
       return new Response(null, {
         status: 204,
         headers: {
+          ...corsHeaders,
           'Set-Cookie': createCookie(COOKIE_NAMES.token, '', {
             maxAge: 0,
             httpOnly: true,
-            sameSite: 'Lax',
+            sameSite: getTokenCookieSameSite(env),
             secure: true
           })
         }
       });
     }
 
-    return json({ error: 'Not Found' }, 404);
+    return json({ error: 'Not Found' }, 404, corsHeaders);
   }
 };
 

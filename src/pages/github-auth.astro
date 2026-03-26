@@ -7,6 +7,18 @@ const pageDescription = 'Minimal GitHub OAuth login demo backed by a Cloudflare 
 const canonicalPath = '/github-auth';
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const configuredAuthWorkerUrl = (import.meta.env.PUBLIC_GITHUB_AUTH_WORKER_URL ?? '').trim();
+const authWorkerBaseUrl = (() => {
+  if (!configuredAuthWorkerUrl) return '';
+  try {
+    const parsed = new URL(configuredAuthWorkerUrl);
+    const normalizedPath = parsed.pathname.replace(/\/+$/, '');
+    return `${parsed.origin}${normalizedPath}`;
+  } catch {
+    return '';
+  }
+})();
+const authApiBaseLabel = authWorkerBaseUrl || 'same origin';
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
@@ -20,7 +32,10 @@ const structuredData = {
     <p class="kicker icon-label"><i class="ti ti-shield-lock icon-sm" aria-hidden="true"></i>Auth demo</p>
     <h1>GitHub OAuth (Cloudflare Worker)</h1>
     <p class="meta">
-      This page calls <code>/login</code> and <code>/me</code> on your Worker. The Worker stores the GitHub token in a secure HTTP-only cookie.
+      This page calls <code>/login</code> and <code>/me</code> on your Worker. The Worker stores the GitHub token in a secure HTTP-only cookie and redirects back here.
+    </p>
+    <p class="meta">
+      Auth API base: <code>{authApiBaseLabel}</code>
     </p>
 
     <div class="oauth-actions">
@@ -46,7 +61,8 @@ const structuredData = {
     </article>
   </section>
 
-  <script is:inline>
+  <script is:inline define:vars={{ authWorkerBaseUrl }}>
+    const AUTH_API_BASE = authWorkerBaseUrl;
     const statusEl = document.getElementById('auth-status');
     const userCardEl = document.getElementById('user-card');
     const userAvatarEl = document.getElementById('user-avatar');
@@ -54,6 +70,16 @@ const structuredData = {
     const userProfileEl = document.getElementById('user-profile');
     const loginBtn = document.getElementById('login-btn');
     const refreshBtn = document.getElementById('refresh-btn');
+
+    const toAuthUrl = (path) => {
+      return AUTH_API_BASE ? `${AUTH_API_BASE}${path}` : path;
+    };
+
+    const getLoginUrl = () => {
+      const loginUrl = new URL(toAuthUrl('/login'), window.location.origin);
+      loginUrl.searchParams.set('return_to', window.location.href);
+      return loginUrl.toString();
+    };
 
     const renderGuest = (message) => {
       statusEl.textContent = message;
@@ -76,7 +102,7 @@ const structuredData = {
     const loadUser = async () => {
       statusEl.textContent = 'Loading user...';
       try {
-        const response = await fetch('/me', { credentials: 'include' });
+        const response = await fetch(toAuthUrl('/me'), { credentials: 'include' });
 
         if (response.status === 401) {
           renderGuest('Not logged in yet. Click "Login with GitHub".');
@@ -95,7 +121,7 @@ const structuredData = {
     };
 
     loginBtn?.addEventListener('click', () => {
-      window.location.href = '/login';
+      window.location.href = getLoginUrl();
     });
 
     refreshBtn?.addEventListener('click', () => {
