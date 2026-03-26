@@ -169,4 +169,3 @@ Recommended guardrails:
 - Protect `main` branch
 - Keep `openblog/generated/*` maintainer/bot-managed
 - Enforce scoring-label policy
-
