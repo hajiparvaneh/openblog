@@ -784,6 +784,10 @@ p {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.quick-contribute-grid-urls {
+  margin-top: 0.1rem;
+}
+
 .quick-contribute-field {
   display: grid;
   gap: 0.28rem;
@@ -853,6 +857,65 @@ p {
 }
 
 .quick-contribute-target {
+  margin: 0;
+}
+
+.quick-contribute-thumbnail-preview {
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.quick-contribute-thumbnail-card {
+  display: grid;
+  grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr);
+  gap: 0.7rem;
+  padding: 0.65rem 0.68rem;
+}
+
+.quick-contribute-thumbnail-media {
+  position: relative;
+  display: grid;
+  place-items: center;
+  aspect-ratio: 16 / 9;
+  border: 1px solid var(--border);
+  background: var(--surface-soft);
+  overflow: hidden;
+}
+
+.quick-contribute-thumbnail-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.quick-contribute-thumbnail-empty {
+  margin: 0;
+  padding: 0 0.55rem;
+  text-align: center;
+}
+
+.quick-contribute-thumbnail-copy {
+  display: grid;
+  align-content: start;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.quick-contribute-thumbnail-url {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.quick-contribute-thumbnail-title {
+  font-size: 0.98rem;
+  line-height: 1.3;
+}
+
+.quick-contribute-thumbnail-description {
   margin: 0;
 }
 
@@ -2668,6 +2731,10 @@ h3 {
   }
 
   .quick-contribute-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-contribute-thumbnail-card {
     grid-template-columns: 1fr;
   }
 

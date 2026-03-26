@@ -116,6 +116,50 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       <code data-quick-contribute-target-code>{resolvedFixedFilePath || 'content/posts/<category>/<slug>.md'}</code>
     </p>
 
+    <div class="quick-contribute-grid quick-contribute-grid-urls">
+      <label class="quick-contribute-field">
+        <span class="quick-contribute-field-head">
+          <span>Post URL</span>
+          <button
+            type="button"
+            class="quick-contribute-help-trigger"
+            data-help-trigger
+            data-help-title="Post URL"
+            data-help-body="Computed post URL preview. It is automatically derived from category and slug, or from the fixed target file in edit mode."
+            aria-label="Post URL hint"
+          >?</button>
+        </span>
+        <input
+          type="text"
+          name="previewUrl"
+          placeholder="/posts/networking/how-dns-works"
+          autocomplete="off"
+          readonly
+          aria-readonly="true"
+        />
+      </label>
+
+      <label class="quick-contribute-field">
+        <span class="quick-contribute-field-head">
+          <span>Thumbnail URL</span>
+          <button
+            type="button"
+            class="quick-contribute-help-trigger"
+            data-help-trigger
+            data-help-title="Thumbnail URL"
+            data-help-body="Public image URL for post cards and social previews. Editing this field updates markdown frontmatter and the thumbnail preview."
+            aria-label="Thumbnail URL hint"
+          >?</button>
+        </span>
+        <input
+          type="text"
+          name="thumbnailUrl"
+          placeholder="https://images.example.com/dns-cover.jpg"
+          autocomplete="off"
+        />
+      </label>
+    </div>
+
     <label class="quick-contribute-field">
       <span class="quick-contribute-field-head">
         <span>PR title</span>
@@ -177,6 +221,29 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
     </div>
 
     <p class="meta quick-contribute-status" data-quick-contribute-status role="status" aria-live="polite"></p>
+
+    <section class="quick-contribute-thumbnail-preview" aria-label="Post card preview">
+      <div class="quick-contribute-preview-head">
+        <strong class="icon-label"><i class="ti ti-photo icon-sm" aria-hidden="true"></i>Thumbnail preview</strong>
+      </div>
+      <div class="quick-contribute-thumbnail-card">
+        <div class="quick-contribute-thumbnail-media">
+          <img class="quick-contribute-thumbnail-image" data-quick-thumbnail-image alt="" loading="lazy" decoding="async" hidden />
+          <p class="meta quick-contribute-thumbnail-empty" data-quick-thumbnail-empty>
+            Set a thumbnail URL to preview the post card image.
+          </p>
+        </div>
+        <div class="quick-contribute-thumbnail-copy">
+          <p class="quick-contribute-thumbnail-url">
+            <code data-quick-post-url-text>/posts/&lt;category&gt;/&lt;slug&gt;</code>
+          </p>
+          <strong class="quick-contribute-thumbnail-title" data-quick-thumbnail-title-preview>Post title preview</strong>
+          <p class="meta quick-contribute-thumbnail-description" data-quick-thumbnail-description-preview>
+            Post description preview will appear from frontmatter.
+          </p>
+        </div>
+      </div>
+    </section>
 
     <section class="quick-contribute-preview" aria-label="Live preview">
       <div class="quick-contribute-preview-head">
@@ -382,6 +449,106 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       return updatedFrontmatter + source.slice(frontmatterBlock.length);
     };
 
+    var escapeRegExp = function (value) {
+      return String(value || '').replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    };
+
+    var stripWrappingQuotes = function (value) {
+      var text = String(value || '').trim();
+      if (!text) return '';
+
+      if (/^".*"$/.test(text)) {
+        return text.slice(1, -1).replace(/\\"/g, '"').replace(/\\\\/g, '\\');
+      }
+      if (/^'.*'$/.test(text)) {
+        return text.slice(1, -1).replace(/''/g, "'");
+      }
+      return text;
+    };
+
+    var readFrontmatterField = function (content, fieldName) {
+      var source = String(content || '');
+      var frontmatterMatch = source.match(/^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)\r?\n?/);
+      if (!frontmatterMatch) return '';
+
+      var frontmatterBody = frontmatterMatch[1];
+      var pattern = new RegExp('^' + escapeRegExp(fieldName) + ':\\s*(.*)$', 'm');
+      var fieldMatch = frontmatterBody.match(pattern);
+      if (!fieldMatch) return '';
+      return stripWrappingQuotes(fieldMatch[1]);
+    };
+
+    var toYamlFieldValue = function (value) {
+      var text = String(value || '').trim();
+      if (!text) return '';
+      if (/[:#\r\n]/.test(text) || /^\s|\s$/.test(text)) {
+        return toYamlDoubleQuotedValue(text);
+      }
+      return text;
+    };
+
+    var syncFrontmatterField = function (content, fieldName, nextValue) {
+      var source = String(content || '');
+      var frontmatterMatch = source.match(/^---\r?\n([\s\S]*?)\r?\n(---|\.\.\.)\r?\n?/);
+      if (!frontmatterMatch) return source;
+
+      var frontmatterBody = frontmatterMatch[1];
+      var closingDelimiter = frontmatterMatch[2];
+      var lineEnding = source.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+      var pattern = new RegExp('^' + escapeRegExp(fieldName) + ':\\s*.*$');
+      var value = String(nextValue || '').trim();
+      var lines = frontmatterBody.split(/\r?\n/);
+      var updatedLines = [];
+      var found = false;
+
+      for (var index = 0; index < lines.length; index += 1) {
+        var line = lines[index];
+        if (pattern.test(line)) {
+          found = true;
+          if (value) {
+            updatedLines.push(fieldName + ': ' + toYamlFieldValue(value));
+          }
+          continue;
+        }
+        updatedLines.push(line);
+      }
+
+      if (value && !found) {
+        updatedLines.push(fieldName + ': ' + toYamlFieldValue(value));
+      }
+
+      var updatedFrontmatter = '---' + lineEnding + updatedLines.join(lineEnding) + lineEnding + closingDelimiter + lineEnding;
+      return updatedFrontmatter + source.slice(frontmatterMatch[0].length);
+    };
+
+    var toPostUrlFromParts = function (category, postSlug) {
+      var normalizedCategory = slugifySegment(category);
+      var normalizedPostSlug = slugifySegment(postSlug);
+      if (!normalizedCategory || !normalizedPostSlug) return '';
+      return '/posts/' + encodeURIComponent(normalizedCategory) + '/' + encodeURIComponent(normalizedPostSlug);
+    };
+
+    var getPostUrlFromFilePath = function (filePath) {
+      var normalizedPath = String(filePath || '').trim().replace(/\\/g, '/');
+      var match = normalizedPath.match(/^content\/posts\/([^/]+)\/([^/]+)\.md$/);
+      if (!match) return '';
+      return '/posts/' + encodeURIComponent(match[1]) + '/' + encodeURIComponent(match[2]);
+    };
+
+    var getPreviewMetaFromContent = function (content, fallbackTitle) {
+      var title = readFrontmatterField(content, 'title') || String(fallbackTitle || '').trim() || 'Post title preview';
+      var description = readFrontmatterField(content, 'description');
+      var thumbnail = readFrontmatterField(content, 'thumbnail');
+      var thumbnailAlt = readFrontmatterField(content, 'thumbnailAlt');
+
+      return {
+        title: title,
+        description: description,
+        thumbnail: thumbnail,
+        thumbnailAlt: thumbnailAlt
+      };
+    };
+
     var slugifySegment = function (value) {
       return String(value || '')
         .trim()
@@ -449,8 +616,15 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       var helpBodyText = root.querySelector('[data-help-body-text]');
       var prTitleInput = form.elements.namedItem('prTitle');
       var contentInput = form.elements.namedItem('content');
+      var previewUrlInput = form.elements.namedItem('previewUrl');
+      var thumbnailUrlInput = form.elements.namedItem('thumbnailUrl');
       var preview = form.querySelector('[data-quick-preview]');
       var previewEmpty = form.querySelector('[data-quick-preview-empty]');
+      var thumbnailImage = form.querySelector('[data-quick-thumbnail-image]');
+      var thumbnailEmpty = form.querySelector('[data-quick-thumbnail-empty]');
+      var postUrlText = form.querySelector('[data-quick-post-url-text]');
+      var thumbnailTitlePreview = form.querySelector('[data-quick-thumbnail-title-preview]');
+      var thumbnailDescriptionPreview = form.querySelector('[data-quick-thumbnail-description-preview]');
 
       if (!(submitButton instanceof HTMLButtonElement)) return;
       if (loginButton instanceof HTMLAnchorElement) {
@@ -460,6 +634,81 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       var currentUsername = '';
       var refreshTargetPath = function () {
         return updateTargetFilePath(form, root);
+      };
+      var getComputedPostUrl = function () {
+        var mode = root.getAttribute('data-mode') === 'create' ? 'create' : 'edit';
+        if (mode === 'edit') {
+          return getPostUrlFromFilePath(root.getAttribute('data-fixed-file-path') || '');
+        }
+
+        var categoryInput = form.elements.namedItem('category');
+        var postSlugInput = form.elements.namedItem('postSlug');
+        var category = categoryInput instanceof HTMLInputElement ? categoryInput.value : '';
+        var postSlug = postSlugInput instanceof HTMLInputElement ? postSlugInput.value : '';
+        return toPostUrlFromParts(category, postSlug);
+      };
+      var syncPreviewUrlInputFromTarget = function () {
+        var computedPostUrl = getComputedPostUrl() || '/posts/<category>/<slug>';
+        if (previewUrlInput instanceof HTMLInputElement) {
+          previewUrlInput.value = computedPostUrl;
+        }
+        return computedPostUrl;
+      };
+      var syncThumbnailInputFromContent = function () {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+        if (!(thumbnailUrlInput instanceof HTMLInputElement)) return;
+        var thumbnailInFrontmatter = readFrontmatterField(contentInput.value, 'thumbnail');
+        if (thumbnailUrlInput.value !== thumbnailInFrontmatter) {
+          thumbnailUrlInput.value = thumbnailInFrontmatter;
+        }
+      };
+      var syncContentThumbnailFromInput = function () {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+        if (!(thumbnailUrlInput instanceof HTMLInputElement)) return;
+        var nextContent = syncFrontmatterField(contentInput.value, 'thumbnail', thumbnailUrlInput.value);
+        if (nextContent !== contentInput.value) {
+          contentInput.value = nextContent;
+        }
+      };
+      var renderThumbnailPreview = function () {
+        var source = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
+        var fallbackTitle = prTitleInput instanceof HTMLInputElement ? prTitleInput.value : '';
+        var meta = getPreviewMetaFromContent(source, fallbackTitle);
+        var thumbnailUrlFromInput = thumbnailUrlInput instanceof HTMLInputElement ? thumbnailUrlInput.value.trim() : '';
+        var thumbnailUrl = thumbnailUrlFromInput || meta.thumbnail;
+        var thumbnailAlt = meta.thumbnailAlt || meta.title || 'Post thumbnail preview';
+        var previewUrl = syncPreviewUrlInputFromTarget();
+        if (postUrlText instanceof HTMLElement) {
+          postUrlText.textContent = previewUrl || '/posts/<category>/<slug>';
+        }
+        if (thumbnailTitlePreview instanceof HTMLElement) {
+          thumbnailTitlePreview.textContent = meta.title;
+        }
+        if (thumbnailDescriptionPreview instanceof HTMLElement) {
+          thumbnailDescriptionPreview.textContent = meta.description || 'Post description preview will appear from frontmatter.';
+        }
+        if (!(thumbnailImage instanceof HTMLImageElement) || !(thumbnailEmpty instanceof HTMLElement)) {
+          return;
+        }
+
+        if (!thumbnailUrl) {
+          thumbnailImage.hidden = true;
+          thumbnailImage.removeAttribute('src');
+          thumbnailImage.removeAttribute('data-current-src');
+          thumbnailEmpty.hidden = false;
+          thumbnailEmpty.textContent = 'Set a thumbnail URL to preview the post card image.';
+          return;
+        }
+
+        thumbnailImage.alt = thumbnailAlt;
+        thumbnailImage.hidden = false;
+        thumbnailEmpty.hidden = true;
+        thumbnailEmpty.textContent = 'Set a thumbnail URL to preview the post card image.';
+        var currentSrc = thumbnailImage.getAttribute('data-current-src') || '';
+        if (currentSrc !== thumbnailUrl) {
+          thumbnailImage.setAttribute('data-current-src', thumbnailUrl);
+          thumbnailImage.src = thumbnailUrl;
+        }
       };
       var renderPreview = function () {
         if (!(contentInput instanceof HTMLTextAreaElement)) return;
@@ -483,6 +732,18 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         preview.hidden = false;
         previewEmpty.hidden = true;
       };
+      if (thumbnailImage instanceof HTMLImageElement && thumbnailEmpty instanceof HTMLElement) {
+        thumbnailImage.addEventListener('load', function () {
+          thumbnailImage.hidden = false;
+          thumbnailEmpty.hidden = true;
+          thumbnailEmpty.textContent = 'Set a thumbnail URL to preview the post card image.';
+        });
+        thumbnailImage.addEventListener('error', function () {
+          thumbnailImage.hidden = true;
+          thumbnailEmpty.hidden = false;
+          thumbnailEmpty.textContent = 'Unable to load this image URL. Check the link and try again.';
+        });
+      }
 
       var openHelp = function (title, body) {
         if (!(helpModal instanceof HTMLElement)) return;
@@ -527,18 +788,38 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       }
 
       refreshTargetPath();
+      syncThumbnailInputFromContent();
+      syncPreviewUrlInputFromTarget();
       renderPreview();
+      renderThumbnailPreview();
 
       var categoryInput = form.elements.namedItem('category');
       var postSlugInput = form.elements.namedItem('postSlug');
+      var refreshPathAndPreview = function () {
+        refreshTargetPath();
+        syncPreviewUrlInputFromTarget();
+        renderThumbnailPreview();
+      };
+
       if (categoryInput instanceof HTMLInputElement) {
-        categoryInput.addEventListener('input', refreshTargetPath);
+        categoryInput.addEventListener('input', refreshPathAndPreview);
       }
       if (postSlugInput instanceof HTMLInputElement) {
-        postSlugInput.addEventListener('input', refreshTargetPath);
+        postSlugInput.addEventListener('input', refreshPathAndPreview);
+      }
+      if (thumbnailUrlInput instanceof HTMLInputElement) {
+        thumbnailUrlInput.addEventListener('input', function () {
+          syncContentThumbnailFromInput();
+          renderPreview();
+          renderThumbnailPreview();
+        });
       }
       if (contentInput instanceof HTMLTextAreaElement) {
-        contentInput.addEventListener('input', renderPreview);
+        contentInput.addEventListener('input', function () {
+          renderPreview();
+          syncThumbnailInputFromContent();
+          renderThumbnailPreview();
+        });
       }
       if (prTitleInput instanceof HTMLInputElement && contentInput instanceof HTMLTextAreaElement) {
         prTitleInput.addEventListener('input', function () {
@@ -546,7 +827,9 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
           if (nextContent !== contentInput.value) {
             contentInput.value = nextContent;
             renderPreview();
+            syncThumbnailInputFromContent();
           }
+          renderThumbnailPreview();
         });
       }
 

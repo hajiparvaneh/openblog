@@ -58,25 +58,27 @@ const structuredData = {
   structuredData={structuredData}
 >
   <div class="contribute-page quick-contribute-page">
-    <section class="card quick-contribute-hero">
-      <p class="kicker icon-label"><i class="ti ti-edit-circle icon-sm" aria-hidden="true"></i>Quick edit workspace</p>
-      <h1>Edit post and open PR faster</h1>
-      <p>Update this post markdown in one place, then create a pull request directly from your authenticated GitHub session.</p>
-      <div class="contribute-actions">
-        <a class="contribute-action" href={postPath}>
-          <i class="ti ti-article icon-sm" aria-hidden="true"></i>
-          Back to post
-        </a>
-        <a class="contribute-action" href={categoryPath}>
-          <i class="ti ti-category icon-sm" aria-hidden="true"></i>
-          Category page
-        </a>
-        <a class="contribute-action" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
-          <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-          Open raw file on GitHub
-        </a>
-      </div>
-    </section>
+    {post.category !== 'blog' && (
+      <section class="card quick-contribute-hero">
+        <p class="kicker icon-label"><i class="ti ti-edit-circle icon-sm" aria-hidden="true"></i>Quick edit workspace</p>
+        <h1>Edit post and open PR faster</h1>
+        <p>Update this post markdown in one place, then create a pull request directly from your authenticated GitHub session.</p>
+        <div class="contribute-actions">
+          <a class="contribute-action" href={postPath}>
+            <i class="ti ti-article icon-sm" aria-hidden="true"></i>
+            Back to post
+          </a>
+          <a class="contribute-action" href={categoryPath}>
+            <i class="ti ti-category icon-sm" aria-hidden="true"></i>
+            Category page
+          </a>
+          <a class="contribute-action" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+            <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+            Open raw file on GitHub
+          </a>
+        </div>
+      </section>
+    )}
 
     <QuickContributeForm
       mode="edit"
