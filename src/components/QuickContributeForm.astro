@@ -68,6 +68,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
   data-mode={normalizedMode}
   data-fixed-file-path={resolvedFixedFilePath}
   data-auth-worker-base={authWorkerBaseUrl}
+  data-auth-state="checking"
 >
   <form class="quick-contribute-form" data-quick-contribute-form>
     <input type="hidden" name="postSlug" value={resolvedInitialPostSlug} />
@@ -124,8 +125,9 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       <aside class="quick-editor-sidebar card">
         <section class="quick-sidebar-panel quick-publish-panel">
           <strong class="quick-sidebar-title icon-label"><i class="ti ti-send icon-sm" aria-hidden="true"></i>Publish</strong>
+          <p class="quick-contribute-auth-gate" data-quick-auth-gate hidden></p>
           <div class="quick-contribute-actions quick-contribute-actions-sidebar">
-            <a class="contribute-action" data-quick-contribute-login href="#" hidden>
+            <a class="contribute-action" data-quick-contribute-login href="#" target="_blank" rel="noopener" hidden>
               <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
               Sign in with GitHub
             </a>
@@ -786,6 +788,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
 
       var submitButton = form.querySelector('[data-quick-contribute-submit]');
       var loginButton = form.querySelector('[data-quick-contribute-login]');
+      var authGate = form.querySelector('[data-quick-auth-gate]');
       var statusEl = form.querySelector('[data-quick-contribute-status]');
       var prLink = form.querySelector('[data-quick-contribute-pr]');
       var helpModal = root.querySelector('[data-help-modal]');
@@ -826,6 +829,118 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       }
 
       var currentUsername = '';
+      var authState = 'checking';
+      var isSubmitting = false;
+      var loginPopup = null;
+      var loginPollTimer = 0;
+      var syncSubmitAvailability = function () {
+        submitButton.disabled = isSubmitting || authState !== 'authenticated';
+        submitButton.setAttribute('aria-disabled', submitButton.disabled ? 'true' : 'false');
+      };
+      var applyAuthState = function (nextState, message, kind) {
+        authState = nextState;
+        root.setAttribute('data-auth-state', nextState);
+        if (loginButton instanceof HTMLAnchorElement) {
+          loginButton.hidden = nextState === 'authenticated';
+        }
+        if (authGate instanceof HTMLElement) {
+          authGate.hidden = nextState === 'authenticated';
+          if (!authGate.hidden) {
+            if (nextState === 'checking') {
+              authGate.textContent = 'Checking your GitHub sign-in status...';
+            } else if (nextState === 'unavailable') {
+              authGate.textContent = 'Sign in is required before creating or editing a page.';
+            } else {
+              authGate.textContent = 'Sign in with GitHub first to create or edit this page.';
+            }
+          }
+        }
+        syncSubmitAvailability();
+        if (typeof message === 'string' && message.length > 0) {
+          setStatus(statusEl, message, kind || 'info');
+        }
+      };
+      var stopLoginPolling = function () {
+        if (!loginPollTimer) return;
+        window.clearInterval(loginPollTimer);
+        loginPollTimer = 0;
+      };
+      var refreshAuthStatus = async function (options) {
+        var silent = Boolean(options && options.silent);
+        if (!silent) {
+          applyAuthState('checking', 'Checking sign-in status...', 'info');
+        }
+        try {
+          var authResponse = await fetch(toAuthUrl('/me'), {
+            credentials: 'include'
+          });
+          if (authResponse.ok) {
+            var currentUser = await authResponse.json();
+            if (currentUser && typeof currentUser.login === 'string') {
+              currentUsername = currentUser.login;
+              applyAuthState('authenticated', 'Signed in as @' + currentUsername + '. You can now create or edit this page.', 'info');
+            } else {
+              currentUsername = '';
+              applyAuthState('authenticated', 'Signed in. You can now create or edit this page.', 'info');
+            }
+            stopLoginPolling();
+            return true;
+          }
+          currentUsername = '';
+          applyAuthState(
+            'anonymous',
+            silent ? '' : 'Sign in with GitHub first to create or edit this page.',
+            'info'
+          );
+          return false;
+        } catch (_) {
+          currentUsername = '';
+          applyAuthState(
+            'anonymous',
+            silent ? '' : 'Authentication check failed. Sign in with GitHub and retry.',
+            'error'
+          );
+          return false;
+        }
+      };
+      var openLoginPopup = function () {
+        var loginUrl = toLoginUrl();
+        try {
+          loginPopup = window.open(loginUrl, 'openblog-github-login', 'popup=yes,width=620,height=760');
+        } catch (_) {
+          loginPopup = null;
+        }
+        if (!loginPopup) {
+          setStatus(statusEl, 'Popup blocked. Allow popups, then try Sign in with GitHub again.', 'error');
+          return false;
+        }
+        setStatus(statusEl, 'Complete sign in in the new window. This page will update automatically.', 'info');
+        stopLoginPolling();
+        var attempts = 0;
+        loginPollTimer = window.setInterval(function () {
+          attempts += 1;
+          void refreshAuthStatus({ silent: true }).then(function (isAuthenticated) {
+            if (isAuthenticated) {
+              stopLoginPolling();
+            }
+          });
+          var popupClosed = false;
+          try {
+            popupClosed = Boolean(loginPopup && loginPopup.closed);
+          } catch (_) {
+            popupClosed = true;
+          }
+          if (popupClosed && attempts > 2) {
+            stopLoginPolling();
+            void refreshAuthStatus({ silent: false });
+          }
+          if (attempts >= 120) {
+            stopLoginPolling();
+          }
+        }, 1500);
+        return true;
+      };
+      applyAuthState('checking', 'Checking sign-in status...', 'info');
       var readContentValue = function () {
         if (contentEditor && typeof contentEditor.getMarkdown === 'function') {
           return String(contentEditor.getMarkdown() || '');
@@ -1324,47 +1439,33 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         });
       }
 
-      if (!authApiBase) {
-        submitButton.disabled = true;
-        if (loginButton instanceof HTMLAnchorElement) {
-          loginButton.hidden = true;
-        }
-        setStatus(statusEl, 'Quick Pull Request flow requires PUBLIC_GITHUB_AUTH_WORKER_URL to be configured.', 'error');
-        return;
-      }
-
-      try {
-        var authResponse = await fetch(toAuthUrl('/me'), {
-          credentials: 'include'
+      if (loginButton instanceof HTMLAnchorElement) {
+        loginButton.addEventListener('click', function (event) {
+          event.preventDefault();
+          openLoginPopup();
         });
-
-        if (authResponse.ok) {
-          var currentUser = await authResponse.json();
-          submitButton.disabled = false;
-          if (loginButton instanceof HTMLAnchorElement) {
-            loginButton.hidden = true;
-          }
-          if (currentUser && typeof currentUser.login === 'string') {
-            currentUsername = currentUser.login;
-            setStatus(statusEl, 'Signed in as @' + currentUsername + '.', 'info');
-          }
-        } else {
-          submitButton.disabled = true;
-          if (loginButton instanceof HTMLAnchorElement) {
-            loginButton.hidden = false;
-          }
-          setStatus(statusEl, 'Sign in first, then create your Pull Request from this form.', 'info');
-        }
-      } catch (_) {
-        submitButton.disabled = true;
-        if (loginButton instanceof HTMLAnchorElement) {
-          loginButton.hidden = false;
-        }
-        setStatus(statusEl, 'Authentication check failed. Sign in again and retry.', 'error');
       }
+      window.addEventListener('focus', function () {
+        if (authState === 'authenticated' || isSubmitting) return;
+        void refreshAuthStatus({ silent: true });
+      });
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState !== 'visible') return;
+        if (authState === 'authenticated' || isSubmitting) return;
+        void refreshAuthStatus({ silent: true });
+      });
+      await refreshAuthStatus({ silent: false });
 
       form.addEventListener('submit', async function (event) {
         event.preventDefault();
+        if (authState !== 'authenticated') {
+          applyAuthState('anonymous', 'Sign in with GitHub first to create or edit this page.', 'info');
+          var popupOpened = openLoginPopup();
+          if (!popupOpened && loginButton instanceof HTMLAnchorElement) {
+            loginButton.focus();
+          }
+          return;
+        }
         if (submitButton.disabled) return;
 
         var filePath = refreshTargetPath();
@@ -1390,7 +1491,8 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
 
         var content = buildContentForSubmission();
 
-        submitButton.disabled = true;
+        isSubmitting = true;
+        syncSubmitAvailability();
         submitButton.setAttribute('aria-busy', 'true');
         setStatus(statusEl, 'Creating branch, committing markdown, and opening Pull Request...', 'info');
         if (prLink instanceof HTMLAnchorElement) {
@@ -1423,6 +1525,11 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           }
 
           if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              currentUsername = '';
+              applyAuthState('anonymous', 'Your session expired. Sign in with GitHub again to continue.', 'error');
+              return;
+            }
             var errorMessage = data && typeof data.error === 'string'
               ? data.error
               : 'Unable to create Pull Request. Try again.';
@@ -1461,7 +1568,8 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           var message = error instanceof Error ? error.message : 'Unable to create Pull Request.';
           setStatus(statusEl, message, 'error');
         } finally {
-          submitButton.disabled = false;
+          isSubmitting = false;
+          syncSubmitAvailability();
           submitButton.removeAttribute('aria-busy');
         }
       });

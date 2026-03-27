@@ -618,6 +618,11 @@ p {
   text-decoration: none;
 }
 
+.contribute-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .contribute-flow {
   margin: 0;
   padding-left: 1.25rem;
@@ -1125,9 +1130,30 @@ p {
   width: 100%;
 }
 
+.quick-contribute-auth-gate {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 0.5rem 0.55rem;
+}
+
+.quick-contribute:is([data-auth-state='checking'], [data-auth-state='anonymous'], [data-auth-state='unavailable']) [data-quick-contribute-login] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  color: var(--primary-strong);
+}
+
 .quick-contribute-submit[aria-busy='true'] {
   opacity: 0.78;
   cursor: progress;
+}
+
+.quick-contribute-submit:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
 }
 
 .quick-contribute:is([data-mode='create'], [data-mode='edit']) .quick-contribute-submit {
