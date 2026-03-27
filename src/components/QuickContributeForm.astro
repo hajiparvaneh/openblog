@@ -24,7 +24,7 @@ const {
   initialContent = '',
   initialPrTitle = '',
   initialPrBody = '',
-  submitLabel = 'Create pull request'
+  submitLabel = 'Create Pull Request'
 } = Astro.props as Props;
 
 const configuredAuthWorkerUrl = (import.meta.env.PUBLIC_GITHUB_AUTH_WORKER_URL ?? '').trim();
@@ -41,217 +41,246 @@ const authWorkerBaseUrl = (() => {
 
 const normalizedMode: QuickContributeMode = mode === 'create' ? 'create' : 'edit';
 const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : '';
+const fixedPathMatch = resolvedFixedFilePath.match(/^content\/posts\/([^/]+)\/([^/]+)\.md$/);
+const resolvedCategoryFromPath = fixedPathMatch?.[1] ?? '';
+const resolvedSlugFromPath = fixedPathMatch?.[2] ?? '';
+const resolvedInitialCategory = normalizedMode === 'create' ? initialCategory : resolvedCategoryFromPath;
+const resolvedInitialPostSlug = normalizedMode === 'create' ? initialPostSlug : resolvedSlugFromPath;
+const customCategoryOptionValue = '__new__';
+const customLanguageOptionValue = '__new_lang__';
+const categoryOptions = [
+  'networking',
+  'security',
+  'database',
+  'devops',
+  'javascript',
+  'csharp',
+  'blog'
+];
+if (resolvedInitialCategory && !categoryOptions.includes(resolvedInitialCategory)) {
+  categoryOptions.unshift(resolvedInitialCategory);
+}
+const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'networking';
 ---
 <section
-  class="card quick-contribute"
+  class="quick-contribute"
   data-quick-contribute
   data-mode={normalizedMode}
   data-fixed-file-path={resolvedFixedFilePath}
   data-auth-worker-base={authWorkerBaseUrl}
+  data-auth-state="checking"
 >
-  <h2 class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>{title}</h2>
-  <p class="meta">{description}</p>
-
   <form class="quick-contribute-form" data-quick-contribute-form>
-    {normalizedMode === 'create' ? (
-      <div class="quick-contribute-grid">
-        <label class="quick-contribute-field">
+    <input type="hidden" name="postSlug" value={resolvedInitialPostSlug} />
+    <div class="quick-editor-layout">
+      <div class="quick-editor-main card">
+        <h2 class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>{title}</h2>
+        <p class="meta">{description}</p>
+        <label class="quick-contribute-field quick-title-field">
           <span class="quick-contribute-field-head">
-            <span>Category</span>
+            <span>Title</span>
             <button
               type="button"
               class="quick-contribute-help-trigger"
               data-help-trigger
-              data-help-title="Category"
-              data-help-body="Use lowercase with hyphens, for example: networking, security, database."
-              aria-label="Category hint"
+              data-help-title="Title"
+              data-help-body="Post title in frontmatter. Keep it specific and outcome-focused."
+              aria-label="Title hint"
             >?</button>
           </span>
-          <input
-            type="text"
-            name="category"
-            placeholder="networking"
-            autocomplete="off"
-            value={initialCategory}
-            required
-          />
+          <input type="text" name="postTitle" placeholder="How DNS resolution works in practice" autocomplete="off" required />
         </label>
 
-        <label class="quick-contribute-field">
+        <p class="meta quick-contribute-post-url">
           <span class="quick-contribute-field-head">
-            <span>Post slug</span>
+            <span>Post URL</span>
+          </span>
+          <span class="quick-contribute-post-url-value" data-quick-post-url-label>https://openblog.cc/posts/&lt;category&gt;/&lt;slug&gt;</span>
+        </p>
+
+        <div class="quick-contribute-field">
+          <span class="quick-contribute-field-head">
+            <span>Content</span>
+            <button
+              type="button"
+              class="quick-contribute-mode-toggle"
+              data-quick-toggle-full-file
+              aria-pressed="false"
+            >Show full file</button>
             <button
               type="button"
               class="quick-contribute-help-trigger"
               data-help-trigger
-              data-help-title="Post slug"
-              data-help-body="Use lowercase with hyphens only, for example: how-dns-works. Do not include .md."
-              aria-label="Post slug hint"
+              data-help-title="Content"
+              data-help-body="Write markdown body content. Frontmatter is synced from the sidebar fields."
+              aria-label="Content hint"
             >?</button>
           </span>
-          <input
-            type="text"
-            name="postSlug"
-            placeholder="how-dns-works"
-            autocomplete="off"
-            value={initialPostSlug}
-            required
-          />
-        </label>
-      </div>
-    ) : null}
-
-    <p class="meta quick-contribute-target">
-      <span class="quick-contribute-field-head">
-        <span>Target file</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Target file"
-          data-help-body="Final markdown path in the repository. It must stay under content/posts/<category>/<post>.md."
-          aria-label="Target file hint"
-        >?</button>
-      </span>
-      <code data-quick-contribute-target-code>{resolvedFixedFilePath || 'content/posts/<category>/<slug>.md'}</code>
-    </p>
-
-    <div class="quick-contribute-grid quick-contribute-grid-urls">
-      <label class="quick-contribute-field">
-        <span class="quick-contribute-field-head">
-          <span>Post URL</span>
-          <button
-            type="button"
-            class="quick-contribute-help-trigger"
-            data-help-trigger
-            data-help-title="Post URL"
-            data-help-body="Computed post URL preview. It is automatically derived from category and slug, or from the fixed target file in edit mode."
-            aria-label="Post URL hint"
-          >?</button>
-        </span>
-        <input
-          type="text"
-          name="previewUrl"
-          placeholder="/posts/networking/how-dns-works"
-          autocomplete="off"
-          readonly
-          aria-readonly="true"
-        />
-      </label>
-
-      <label class="quick-contribute-field">
-        <span class="quick-contribute-field-head">
-          <span>Thumbnail URL</span>
-          <button
-            type="button"
-            class="quick-contribute-help-trigger"
-            data-help-trigger
-            data-help-title="Thumbnail URL"
-            data-help-body="Public image URL for post cards and social previews. Editing this field updates markdown frontmatter and the thumbnail preview."
-            aria-label="Thumbnail URL hint"
-          >?</button>
-        </span>
-        <input
-          type="text"
-          name="thumbnailUrl"
-          placeholder="https://images.example.com/dns-cover.jpg"
-          autocomplete="off"
-        />
-      </label>
-    </div>
-
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>PR title</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="PR title"
-          data-help-body="Use a clear action title, for example: Improve DNS guide references and examples."
-          aria-label="PR title hint"
-        >?</button>
-      </span>
-      <input type="text" name="prTitle" value={initialPrTitle} placeholder="Improve article clarity and examples" maxlength="120" required />
-    </label>
-
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>PR summary</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="PR summary"
-          data-help-body="Describe what changed, why it is better, and which post slug is affected."
-          aria-label="PR summary hint"
-        >?</button>
-      </span>
-      <textarea name="prBody" rows={5} placeholder="What changed and why it is better.">{initialPrBody}</textarea>
-    </label>
-
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>Markdown content</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Markdown content"
-          data-help-body="Keep valid frontmatter at the top, then write focused technical content with examples and references."
-          aria-label="Markdown content hint"
-        >?</button>
-      </span>
-      <textarea name="content" rows={18} required>{initialContent}</textarea>
-    </label>
-
-    <div class="quick-contribute-actions">
-      <a class="contribute-action" data-quick-contribute-login href="#" hidden>
-        <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-        Sign in with GitHub
-      </a>
-      <button class="contribute-action quick-contribute-submit" type="submit" data-quick-contribute-submit>
-        <i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>
-        {submitLabel}
-      </button>
-      <a class="contribute-action" data-quick-contribute-pr href="#" target="_blank" rel="noopener noreferrer" hidden>
-        <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
-        Open created PR
-      </a>
-    </div>
-
-    <p class="meta quick-contribute-status" data-quick-contribute-status role="status" aria-live="polite"></p>
-
-    <section class="quick-contribute-thumbnail-preview" aria-label="Post card preview">
-      <div class="quick-contribute-preview-head">
-        <strong class="icon-label"><i class="ti ti-photo icon-sm" aria-hidden="true"></i>Thumbnail preview</strong>
-      </div>
-      <div class="quick-contribute-thumbnail-card">
-        <div class="quick-contribute-thumbnail-media">
-          <img class="quick-contribute-thumbnail-image" data-quick-thumbnail-image alt="" loading="lazy" decoding="async" hidden />
-          <p class="meta quick-contribute-thumbnail-empty" data-quick-thumbnail-empty>
-            Set a thumbnail URL to preview the post card image.
-          </p>
+          <div class="quick-content-editor" data-quick-content-editor></div>
+          <textarea class="quick-content-source" name="content" rows={20} required>{initialContent}</textarea>
         </div>
-        <div class="quick-contribute-thumbnail-copy">
-          <p class="quick-contribute-thumbnail-url">
-            <code data-quick-post-url-text>/posts/&lt;category&gt;/&lt;slug&gt;</code>
-          </p>
-          <strong class="quick-contribute-thumbnail-title" data-quick-thumbnail-title-preview>Post title preview</strong>
-          <p class="meta quick-contribute-thumbnail-description" data-quick-thumbnail-description-preview>
-            Post description preview will appear from frontmatter.
-          </p>
-        </div>
-      </div>
-    </section>
 
-    <section class="quick-contribute-preview" aria-label="Live preview">
-      <div class="quick-contribute-preview-head">
-        <strong class="icon-label"><i class="ti ti-eye icon-sm" aria-hidden="true"></i>Live preview</strong>
       </div>
-      <p class="meta quick-contribute-preview-empty" data-quick-preview-empty>Start typing to see a rendered markdown preview.</p>
-      <div class="article-content quick-contribute-preview-body" data-quick-preview hidden></div>
-    </section>
+
+      <aside class="quick-editor-sidebar card">
+        <section class="quick-sidebar-panel quick-publish-panel">
+          <strong class="quick-sidebar-title icon-label"><i class="ti ti-send icon-sm" aria-hidden="true"></i>Publish</strong>
+          <p class="quick-contribute-auth-gate" data-quick-auth-gate hidden></p>
+          <div class="quick-contribute-actions quick-contribute-actions-sidebar">
+            <a class="contribute-action" data-quick-contribute-login href="#" target="_blank" rel="noopener" hidden>
+              <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+              Sign in with GitHub
+            </a>
+            <button class="contribute-action quick-contribute-submit" type="submit" data-quick-contribute-submit>
+              <i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>
+              {submitLabel}
+            </button>
+            <a class="contribute-action" data-quick-contribute-pr href="#" target="_blank" rel="noopener noreferrer" hidden>
+              <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
+              Open created Pull Request
+            </a>
+          </div>
+          <p class="meta quick-contribute-status" data-quick-contribute-status role="status" aria-live="polite"></p>
+        </section>
+
+        <section class="quick-sidebar-panel">
+          <label class="quick-contribute-check">
+            <input type="checkbox" name="postDraft" />
+            <span class="quick-contribute-check-copy">
+              <strong>Draft</strong>
+              <span class="meta">Keep this post hidden until ready.</span>
+            </span>
+          </label>
+
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Date & time</span>
+            </span>
+            <input type="datetime-local" name="postDateTime" />
+          </label>
+
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Category</span>
+            </span>
+            <select name="category" required disabled={normalizedMode === 'edit'}>
+              {categoryOptions.map((option) => (
+                <option value={option} selected={option === defaultCategoryValue}>{option}</option>
+              ))}
+              {normalizedMode === 'create' && <option value={customCategoryOptionValue}>+ Add new category</option>}
+            </select>
+          </label>
+          {normalizedMode === 'create' && (
+            <label class="quick-contribute-field" data-quick-category-custom-wrap hidden>
+              <span class="quick-contribute-field-head">
+                <span>New category</span>
+              </span>
+              <input
+                type="text"
+                name="customCategory"
+                placeholder="ai-ops"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </label>
+          )}
+        </section>
+
+        <section class="quick-sidebar-panel">
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Thumbnail URL</span>
+            </span>
+            <input
+              type="text"
+              name="thumbnailUrl"
+              placeholder="https://images.example.com/dns-cover.jpg"
+              autocomplete="off"
+            />
+          </label>
+
+          <section class="quick-contribute-thumbnail-preview" aria-label="Post card preview">
+            <div class="quick-contribute-preview-head">
+              <strong class="icon-label"><i class="ti ti-photo icon-sm" aria-hidden="true"></i>Thumbnail preview</strong>
+            </div>
+            <div class="quick-contribute-thumbnail-card">
+              <div class="quick-contribute-thumbnail-media">
+                <img class="quick-contribute-thumbnail-image" data-quick-thumbnail-image alt="" loading="lazy" decoding="async" hidden />
+                <p class="meta quick-contribute-thumbnail-empty" data-quick-thumbnail-empty>
+                  Set a thumbnail URL to preview the post card image.
+                </p>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="quick-sidebar-panel">
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Tags</span>
+            </span>
+            <input type="text" name="postTags" placeholder="networking, dns, troubleshooting" autocomplete="off" />
+            <div class="quick-contribute-tags-preview" data-quick-tags-preview hidden></div>
+          </label>
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Language</span>
+            </span>
+            <select name="postLang">
+              <option value="en" selected>English - en 🇺🇸</option>
+              <option value="fa">Persian - fa 🇮🇷</option>
+              <option value="de">German - de 🇩🇪</option>
+              <option value="fr">French - fr 🇫🇷</option>
+              <option value="es">Spanish - es 🇪🇸</option>
+              <option value="it">Italian - it 🇮🇹</option>
+              <option value="tr">Turkish - tr 🇹🇷</option>
+              <option value="ar">Arabic - ar 🇸🇦</option>
+              <option value="pt">Portuguese - pt 🇵🇹</option>
+              <option value="hi">Hindi - hi 🇮🇳</option>
+              <option value="ja">Japanese - ja 🇯🇵</option>
+              <option value="ko">Korean - ko 🇰🇷</option>
+              <option value="zh">Chinese - zh 🇨🇳</option>
+              <option value={customLanguageOptionValue}>Other languages</option>
+            </select>
+          </label>
+          <label class="quick-contribute-field" data-quick-lang-custom-wrap hidden>
+            <span class="quick-contribute-field-head">
+              <span>New language</span>
+            </span>
+            <input
+              type="text"
+              name="customPostLang"
+              placeholder="pt-br"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </label>
+        </section>
+
+        <section class="quick-sidebar-panel">
+          <p class="meta quick-contribute-target">
+            <span class="quick-contribute-field-head">
+              <span>Target file</span>
+            </span>
+            <code data-quick-contribute-target-code>{resolvedFixedFilePath || 'content/posts/<category>/<slug>.md'}</code>
+          </p>
+
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Pull Request title</span>
+            </span>
+            <input type="text" name="prTitle" value={initialPrTitle} placeholder="Improve article clarity and examples" maxlength="120" required />
+          </label>
+
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Pull Request summary</span>
+            </span>
+            <textarea name="prBody" rows={4} placeholder="What changed and why it is better.">{initialPrBody}</textarea>
+          </label>
+        </section>
+      </aside>
+    </div>
   </form>
 
   <div class="quick-contribute-help-modal" data-help-modal hidden>
@@ -273,7 +302,11 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
   </div>
 </section>
 
-<script is:inline>
+<script>
+  // @ts-nocheck
+  import Editor from '@toast-ui/editor';
+  import '@toast-ui/editor/dist/toastui-editor.css';
+
   (function () {
     var escapeHtml = function (value) {
       return String(value || '')
@@ -294,6 +327,23 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
     var stripFrontmatter = function (source) {
       var normalized = String(source || '').replace(/\r\n/g, '\n');
       return normalized.replace(/^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/, '');
+    };
+
+    var ensureFrontmatterBlock = function (source) {
+      var normalized = String(source || '').replace(/\r\n/g, '\n');
+      if (/^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/.test(normalized)) {
+        return normalized;
+      }
+      var body = normalized.replace(/^\n+/, '');
+      return body ? '---\n---\n\n' + body : '---\n---\n';
+    };
+
+    var replaceBodyWithFrontmatter = function (source, nextBody) {
+      var normalized = String(source || '').replace(/\r\n/g, '\n');
+      var frontmatterMatch = normalized.match(/^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/);
+      var body = String(nextBody || '').replace(/\r\n/g, '\n').replace(/^\n+/, '');
+      if (!frontmatterMatch) return body;
+      return frontmatterMatch[0] + body;
     };
 
     var renderMarkdownPreview = function (source) {
@@ -521,6 +571,96 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       return updatedFrontmatter + source.slice(frontmatterMatch[0].length);
     };
 
+    var toTagList = function (value) {
+      var items = String(value || '')
+        .split(',')
+        .map(function (entry) { return entry.trim(); })
+        .filter(Boolean);
+      var deduped = [];
+      for (var i = 0; i < items.length; i += 1) {
+        if (deduped.indexOf(items[i]) === -1) {
+          deduped.push(items[i]);
+        }
+      }
+      return deduped;
+    };
+
+    var readFrontmatterTags = function (content) {
+      var source = String(content || '');
+      var frontmatterMatch = source.match(/^---\r?\n([\s\S]*?)\r?\n(?:---|\.\.\.)\r?\n?/);
+      if (!frontmatterMatch) return '';
+      var frontmatterBody = frontmatterMatch[1];
+
+      var listMatch = frontmatterBody.match(/^tags:\s*\r?\n((?:\s*-\s*.*(?:\r?\n|$))*)/m);
+      if (listMatch && listMatch[1]) {
+        var listTags = [];
+        var itemPattern = /^\s*-\s*(.+)\s*$/gm;
+        var item = null;
+        while ((item = itemPattern.exec(listMatch[1])) !== null) {
+          var parsedTag = stripWrappingQuotes(item[1]);
+          if (parsedTag) listTags.push(parsedTag);
+        }
+        if (listTags.length > 0) return listTags.join(', ');
+      }
+
+      var singleMatch = frontmatterBody.match(/^tags:\s*(.+)$/m);
+      if (!singleMatch) return '';
+      var singleValue = stripWrappingQuotes(singleMatch[1]);
+      if (!singleValue) return '';
+      return toTagList(singleValue).join(', ');
+    };
+
+    var syncFrontmatterTags = function (content, nextTags) {
+      var source = String(content || '');
+      var frontmatterMatch = source.match(/^---\r?\n([\s\S]*?)\r?\n(---|\.\.\.)\r?\n?/);
+      if (!frontmatterMatch) return source;
+
+      var frontmatterBody = frontmatterMatch[1];
+      var closingDelimiter = frontmatterMatch[2];
+      var lineEnding = source.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+      var lines = frontmatterBody.split(/\r?\n/);
+      var tags = toTagList(nextTags);
+
+      var tagsStart = -1;
+      var tagsEnd = -1;
+      for (var index = 0; index < lines.length; index += 1) {
+        var tagHeader = lines[index].match(/^tags:\s*(.*)$/);
+        if (!tagHeader) continue;
+        tagsStart = index;
+        tagsEnd = index;
+        if (!tagHeader[1].trim()) {
+          while (tagsEnd + 1 < lines.length && /^\s*-\s+/.test(lines[tagsEnd + 1])) {
+            tagsEnd += 1;
+          }
+        }
+        break;
+      }
+
+      if (tagsStart >= 0) {
+        lines.splice(tagsStart, tagsEnd - tagsStart + 1);
+      }
+
+      if (tags.length > 0) {
+        var insertAt = tagsStart >= 0 ? tagsStart : lines.length;
+        lines.splice(insertAt, 0, 'tags: ' + tags.join(', '));
+      }
+
+      var updatedFrontmatter = '---' + lineEnding + lines.join(lineEnding) + lineEnding + closingDelimiter + lineEnding;
+      return updatedFrontmatter + source.slice(frontmatterMatch[0].length);
+    };
+
+    var hasSelectOption = function (selectInput, value) {
+      if (!(selectInput instanceof HTMLSelectElement)) return false;
+      var normalizedValue = String(value || '').trim();
+      if (!normalizedValue) return false;
+      for (var optionIndex = 0; optionIndex < selectInput.options.length; optionIndex += 1) {
+        if (selectInput.options[optionIndex].value === normalizedValue) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     var toPostUrlFromParts = function (category, postSlug) {
       var normalizedCategory = slugifySegment(category);
       var normalizedPostSlug = slugifySegment(postSlug);
@@ -533,6 +673,31 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       var match = normalizedPath.match(/^content\/posts\/([^/]+)\/([^/]+)\.md$/);
       if (!match) return '';
       return '/posts/' + encodeURIComponent(match[1]) + '/' + encodeURIComponent(match[2]);
+    };
+
+    var toDateTimeLocalValue = function (value) {
+      var raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) return raw;
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        return raw + 'T00:00';
+      }
+
+      var parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) return '';
+      var year = String(parsed.getFullYear());
+      var month = String(parsed.getMonth() + 1).padStart(2, '0');
+      var day = String(parsed.getDate()).padStart(2, '0');
+      var hours = String(parsed.getHours()).padStart(2, '0');
+      var minutes = String(parsed.getMinutes()).padStart(2, '0');
+      return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+    };
+
+    var toBooleanFromField = function (value) {
+      var normalized = String(value || '').trim().toLowerCase();
+      if (!normalized) return false;
+      return normalized === 'true' || normalized === '1' || normalized === 'yes';
     };
 
     var getPreviewMetaFromContent = function (content, fallbackTitle) {
@@ -559,6 +724,13 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         .replace(/^-+|-+$/g, '');
     };
 
+    var normalizeLanguageValue = function (value) {
+      return String(value || '')
+        .trim()
+        .replace(/_/g, '-')
+        .toLowerCase();
+    };
+
     var setStatus = function (statusEl, message, kind) {
       if (!statusEl) return;
       statusEl.textContent = message || '';
@@ -581,8 +753,15 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       }
 
       var categoryInput = form.elements.namedItem('category');
+      var customCategoryInput = form.elements.namedItem('customCategory');
       var postSlugInput = form.elements.namedItem('postSlug');
-      var category = categoryInput instanceof HTMLInputElement ? slugifySegment(categoryInput.value) : '';
+      var selectedCategory = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
+        ? categoryInput.value
+        : '';
+      var categoryValue = selectedCategory === '__new__'
+        ? (customCategoryInput instanceof HTMLInputElement ? customCategoryInput.value : '')
+        : selectedCategory;
+      var category = slugifySegment(categoryValue);
       var postSlug = postSlugInput instanceof HTMLInputElement ? slugifySegment(postSlugInput.value) : '';
 
       var filePath = category && postSlug ? 'content/posts/' + category + '/' + postSlug + '.md' : '';
@@ -609,6 +788,7 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
 
       var submitButton = form.querySelector('[data-quick-contribute-submit]');
       var loginButton = form.querySelector('[data-quick-contribute-login]');
+      var authGate = form.querySelector('[data-quick-auth-gate]');
       var statusEl = form.querySelector('[data-quick-contribute-status]');
       var prLink = form.querySelector('[data-quick-contribute-pr]');
       var helpModal = root.querySelector('[data-help-modal]');
@@ -616,15 +796,32 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       var helpBodyText = root.querySelector('[data-help-body-text]');
       var prTitleInput = form.elements.namedItem('prTitle');
       var contentInput = form.elements.namedItem('content');
-      var previewUrlInput = form.elements.namedItem('previewUrl');
+      var postTitleInput = form.elements.namedItem('postTitle');
+      var postDraftInput = form.elements.namedItem('postDraft');
+      var postDateTimeInput = form.elements.namedItem('postDateTime');
       var thumbnailUrlInput = form.elements.namedItem('thumbnailUrl');
+      var postTagsInput = form.elements.namedItem('postTags');
+      var postLangInput = form.elements.namedItem('postLang');
+      var customPostLangInput = form.elements.namedItem('customPostLang');
+      var categoryInput = form.elements.namedItem('category');
+      var customCategoryInput = form.elements.namedItem('customCategory');
+      var postSlugInput = form.elements.namedItem('postSlug');
+      var categoryCustomWrap = form.querySelector('[data-quick-category-custom-wrap]');
+      var langCustomWrap = form.querySelector('[data-quick-lang-custom-wrap]');
       var preview = form.querySelector('[data-quick-preview]');
       var previewEmpty = form.querySelector('[data-quick-preview-empty]');
       var thumbnailImage = form.querySelector('[data-quick-thumbnail-image]');
       var thumbnailEmpty = form.querySelector('[data-quick-thumbnail-empty]');
-      var postUrlText = form.querySelector('[data-quick-post-url-text]');
-      var thumbnailTitlePreview = form.querySelector('[data-quick-thumbnail-title-preview]');
-      var thumbnailDescriptionPreview = form.querySelector('[data-quick-thumbnail-description-preview]');
+      var postUrlLabel = form.querySelector('[data-quick-post-url-label]');
+      var tagsPreview = form.querySelector('[data-quick-tags-preview]');
+      var editorHost = form.querySelector('[data-quick-content-editor]');
+      var fullFileToggleButton = form.querySelector('[data-quick-toggle-full-file]');
+      var contentEditor = null;
+      var isSyncingEditorValue = false;
+      var contentSourceWithFrontmatter = contentInput instanceof HTMLTextAreaElement
+        ? ensureFrontmatterBlock(String(contentInput.value || ''))
+        : '---\n---\n';
+      var isFullFileView = false;
 
       if (!(submitButton instanceof HTMLButtonElement)) return;
       if (loginButton instanceof HTMLAnchorElement) {
@@ -632,61 +829,372 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       }
 
       var currentUsername = '';
+      var authState = 'checking';
+      var isSubmitting = false;
+      var loginPopup = null;
+      var loginPollTimer = 0;
+      var syncSubmitAvailability = function () {
+        submitButton.disabled = isSubmitting || authState !== 'authenticated';
+        submitButton.setAttribute('aria-disabled', submitButton.disabled ? 'true' : 'false');
+      };
+      var applyAuthState = function (nextState, message, kind) {
+        authState = nextState;
+        root.setAttribute('data-auth-state', nextState);
+        if (loginButton instanceof HTMLAnchorElement) {
+          loginButton.hidden = nextState === 'authenticated';
+        }
+        if (authGate instanceof HTMLElement) {
+          authGate.hidden = nextState === 'authenticated';
+          if (!authGate.hidden) {
+            if (nextState === 'checking') {
+              authGate.textContent = 'Checking your GitHub sign-in status...';
+            } else if (nextState === 'unavailable') {
+              authGate.textContent = 'Sign in is required before creating or editing a page.';
+            } else {
+              authGate.textContent = 'Sign in with GitHub first to create or edit this page.';
+            }
+          }
+        }
+        syncSubmitAvailability();
+        if (typeof message === 'string' && message.length > 0) {
+          setStatus(statusEl, message, kind || 'info');
+        }
+      };
+      var stopLoginPolling = function () {
+        if (!loginPollTimer) return;
+        window.clearInterval(loginPollTimer);
+        loginPollTimer = 0;
+      };
+      var refreshAuthStatus = async function (options) {
+        var silent = Boolean(options && options.silent);
+        if (!silent) {
+          applyAuthState('checking', 'Checking sign-in status...', 'info');
+        }
+        try {
+          var authResponse = await fetch(toAuthUrl('/me'), {
+            credentials: 'include'
+          });
+          if (authResponse.ok) {
+            var currentUser = await authResponse.json();
+            if (currentUser && typeof currentUser.login === 'string') {
+              currentUsername = currentUser.login;
+              applyAuthState('authenticated', 'Signed in as @' + currentUsername + '. You can now create or edit this page.', 'info');
+            } else {
+              currentUsername = '';
+              applyAuthState('authenticated', 'Signed in. You can now create or edit this page.', 'info');
+            }
+            stopLoginPolling();
+            return true;
+          }
+          currentUsername = '';
+          applyAuthState(
+            'anonymous',
+            silent ? '' : 'Sign in with GitHub first to create or edit this page.',
+            'info'
+          );
+          return false;
+        } catch (_) {
+          currentUsername = '';
+          applyAuthState(
+            'anonymous',
+            silent ? '' : 'Authentication check failed. Sign in with GitHub and retry.',
+            'error'
+          );
+          return false;
+        }
+      };
+      var openLoginPopup = function () {
+        var loginUrl = toLoginUrl();
+        try {
+          loginPopup = window.open(loginUrl, 'openblog-github-login', 'popup=yes,width=620,height=760');
+        } catch (_) {
+          loginPopup = null;
+        }
+        if (!loginPopup) {
+          setStatus(statusEl, 'Popup blocked. Allow popups, then try Sign in with GitHub again.', 'error');
+          return false;
+        }
+        setStatus(statusEl, 'Complete sign in in the new window. This page will update automatically.', 'info');
+        stopLoginPolling();
+        var attempts = 0;
+        loginPollTimer = window.setInterval(function () {
+          attempts += 1;
+          void refreshAuthStatus({ silent: true }).then(function (isAuthenticated) {
+            if (isAuthenticated) {
+              stopLoginPolling();
+            }
+          });
+          var popupClosed = false;
+          try {
+            popupClosed = Boolean(loginPopup && loginPopup.closed);
+          } catch (_) {
+            popupClosed = true;
+          }
+          if (popupClosed && attempts > 2) {
+            stopLoginPolling();
+            void refreshAuthStatus({ silent: false });
+          }
+          if (attempts >= 120) {
+            stopLoginPolling();
+          }
+        }, 1500);
+        return true;
+      };
+      applyAuthState('checking', 'Checking sign-in status...', 'info');
+      var readContentValue = function () {
+        if (contentEditor && typeof contentEditor.getMarkdown === 'function') {
+          return String(contentEditor.getMarkdown() || '');
+        }
+        return contentInput instanceof HTMLTextAreaElement ? String(contentInput.value || '') : '';
+      };
+      var writeContentValue = function (value) {
+        var nextValue = String(value || '');
+        if (contentInput instanceof HTMLTextAreaElement && contentInput.value !== nextValue) {
+          contentInput.value = nextValue;
+        }
+        if (contentEditor && typeof contentEditor.setMarkdown === 'function') {
+          var currentValue = '';
+          try {
+            currentValue = String(contentEditor.getMarkdown() || '');
+          } catch (_) {
+            currentValue = '';
+          }
+          if (currentValue !== nextValue) {
+            isSyncingEditorValue = true;
+            contentEditor.setMarkdown(nextValue, false);
+            isSyncingEditorValue = false;
+          }
+        }
+      };
+      var getSelectedCategoryValue = function () {
+        var selectedCategory = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
+          ? categoryInput.value
+          : '';
+        if (selectedCategory === '__new__') {
+          return customCategoryInput instanceof HTMLInputElement ? customCategoryInput.value : '';
+        }
+        return selectedCategory;
+      };
+      var syncCustomCategoryField = function () {
+        var mode = root.getAttribute('data-mode') === 'create' ? 'create' : 'edit';
+        var isCustomCategorySelected = mode === 'create'
+          && categoryInput instanceof HTMLSelectElement
+          && categoryInput.value === '__new__';
+
+        if (categoryCustomWrap instanceof HTMLElement) {
+          categoryCustomWrap.hidden = !isCustomCategorySelected;
+        }
+        if (customCategoryInput instanceof HTMLInputElement) {
+          customCategoryInput.required = isCustomCategorySelected;
+        }
+      };
+      var getSelectedLanguageValue = function () {
+        if (!(postLangInput instanceof HTMLSelectElement)) return '';
+        if (postLangInput.value === '__new_lang__') {
+          return customPostLangInput instanceof HTMLInputElement ? normalizeLanguageValue(customPostLangInput.value) : '';
+        }
+        return normalizeLanguageValue(postLangInput.value);
+      };
+      var syncCustomLanguageField = function () {
+        var isCustomLangSelected = postLangInput instanceof HTMLSelectElement
+          && postLangInput.value === '__new_lang__';
+        if (langCustomWrap instanceof HTMLElement) {
+          langCustomWrap.hidden = !isCustomLangSelected;
+        }
+        if (customPostLangInput instanceof HTMLInputElement) {
+          customPostLangInput.required = isCustomLangSelected;
+        }
+      };
+      var setLanguageInputsFromValue = function (value) {
+        if (!(postLangInput instanceof HTMLSelectElement)) return;
+        var normalizedLang = normalizeLanguageValue(value) || 'en';
+        if (hasSelectOption(postLangInput, normalizedLang)) {
+          postLangInput.value = normalizedLang;
+          if (customPostLangInput instanceof HTMLInputElement) {
+            customPostLangInput.value = '';
+          }
+        } else {
+          postLangInput.value = '__new_lang__';
+          if (customPostLangInput instanceof HTMLInputElement) {
+            customPostLangInput.value = normalizedLang;
+          }
+        }
+        syncCustomLanguageField();
+      };
       var refreshTargetPath = function () {
         return updateTargetFilePath(form, root);
       };
-      var getComputedPostUrl = function () {
+      var getComputedPostPath = function () {
         var mode = root.getAttribute('data-mode') === 'create' ? 'create' : 'edit';
         if (mode === 'edit') {
           return getPostUrlFromFilePath(root.getAttribute('data-fixed-file-path') || '');
         }
 
-        var categoryInput = form.elements.namedItem('category');
-        var postSlugInput = form.elements.namedItem('postSlug');
-        var category = categoryInput instanceof HTMLInputElement ? categoryInput.value : '';
+        var category = getSelectedCategoryValue();
         var postSlug = postSlugInput instanceof HTMLInputElement ? postSlugInput.value : '';
         return toPostUrlFromParts(category, postSlug);
       };
-      var syncPreviewUrlInputFromTarget = function () {
-        var computedPostUrl = getComputedPostUrl() || '/posts/<category>/<slug>';
-        if (previewUrlInput instanceof HTMLInputElement) {
-          previewUrlInput.value = computedPostUrl;
+      var syncSlugFromTitle = function () {
+        var mode = root.getAttribute('data-mode') === 'create' ? 'create' : 'edit';
+        if (mode !== 'create') return;
+        if (!(postTitleInput instanceof HTMLInputElement)) return;
+        if (!(postSlugInput instanceof HTMLInputElement)) return;
+        var nextSlug = slugifySegment(postTitleInput.value);
+        if (!nextSlug) return;
+        if (postSlugInput.value !== nextSlug) {
+          postSlugInput.value = nextSlug;
         }
-        return computedPostUrl;
       };
-      var syncThumbnailInputFromContent = function () {
-        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+      var toFullPostUrl = function (pathValue) {
+        var normalizedPath = String(pathValue || '').trim();
+        if (!normalizedPath) return '';
+        var origin = window.location.origin.replace(/\/+$/, '');
+        if (normalizedPath.indexOf('<') >= 0) {
+          return origin + normalizedPath;
+        }
+        try {
+          return new URL(normalizedPath, window.location.origin).toString();
+        } catch (_) {
+          return origin + normalizedPath;
+        }
+      };
+      var syncComputedPostUrl = function () {
+        var computedPostPath = getComputedPostPath() || '/posts/<category>/<slug>';
+        var fullPostUrl = toFullPostUrl(computedPostPath);
+        if (postUrlLabel instanceof HTMLElement) {
+          postUrlLabel.textContent = fullPostUrl;
+        }
+        return fullPostUrl;
+      };
+      var renderTagBadges = function () {
+        if (!(postTagsInput instanceof HTMLInputElement)) return;
+        if (!(tagsPreview instanceof HTMLElement)) return;
+        var tags = toTagList(postTagsInput.value);
+        tagsPreview.innerHTML = '';
+        if (tags.length === 0) {
+          tagsPreview.hidden = true;
+          return;
+        }
+
+        tags.forEach(function (tag) {
+          var badge = document.createElement('span');
+          badge.className = 'post-chip-label post-tag-link icon-label quick-tag-chip';
+          var icon = document.createElement('i');
+          icon.className = 'ti ti-tag post-chip-icon';
+          icon.setAttribute('aria-hidden', 'true');
+          var text = document.createElement('span');
+          text.textContent = tag;
+          badge.appendChild(icon);
+          badge.appendChild(text);
+          tagsPreview.appendChild(badge);
+        });
+        tagsPreview.hidden = false;
+      };
+      var syncMetaInputsFromContent = function (sourceContent) {
+        var source = typeof sourceContent === 'string'
+          ? sourceContent
+          : readContentValue();
+        if (postTitleInput instanceof HTMLInputElement) {
+          var contentTitle = readFrontmatterField(source, 'title');
+          if (contentTitle && postTitleInput.value !== contentTitle) {
+            postTitleInput.value = contentTitle;
+          }
+        }
+        if (postDraftInput instanceof HTMLInputElement) {
+          postDraftInput.checked = toBooleanFromField(readFrontmatterField(source, 'draft'));
+        }
+        if (postDateTimeInput instanceof HTMLInputElement) {
+          var contentDate = readFrontmatterField(source, 'date');
+          postDateTimeInput.value = toDateTimeLocalValue(contentDate);
+        }
         if (!(thumbnailUrlInput instanceof HTMLInputElement)) return;
-        var thumbnailInFrontmatter = readFrontmatterField(contentInput.value, 'thumbnail');
+        var thumbnailInFrontmatter = readFrontmatterField(source, 'thumbnail');
         if (thumbnailUrlInput.value !== thumbnailInFrontmatter) {
           thumbnailUrlInput.value = thumbnailInFrontmatter;
         }
-      };
-      var syncContentThumbnailFromInput = function () {
-        if (!(contentInput instanceof HTMLTextAreaElement)) return;
-        if (!(thumbnailUrlInput instanceof HTMLInputElement)) return;
-        var nextContent = syncFrontmatterField(contentInput.value, 'thumbnail', thumbnailUrlInput.value);
-        if (nextContent !== contentInput.value) {
-          contentInput.value = nextContent;
+        if (postTagsInput instanceof HTMLInputElement) {
+          var contentTags = readFrontmatterTags(source);
+          if (postTagsInput.value !== contentTags) {
+            postTagsInput.value = contentTags;
+          }
         }
+        if (postLangInput instanceof HTMLSelectElement) {
+          var contentLang = readFrontmatterField(source, 'lang');
+          setLanguageInputsFromValue(contentLang);
+        }
+        renderTagBadges();
+      };
+      var getEditorBodyContent = function () {
+        var source = readContentValue();
+        if (isFullFileView) {
+          return stripFrontmatter(source).replace(/^\n+/, '');
+        }
+        return source;
+      };
+      var buildContentForSubmission = function (bodyOverride) {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return '';
+        var sourceForFrontmatter = isFullFileView
+          ? ensureFrontmatterBlock(readContentValue())
+          : ensureFrontmatterBlock(contentSourceWithFrontmatter);
+        var nextContent = sourceForFrontmatter;
+        if (postTitleInput instanceof HTMLInputElement) {
+          nextContent = syncFrontmatterTitle(nextContent, postTitleInput.value);
+        }
+        if (postDraftInput instanceof HTMLInputElement) {
+          nextContent = syncFrontmatterField(nextContent, 'draft', postDraftInput.checked ? 'true' : 'false');
+        }
+        if (postDateTimeInput instanceof HTMLInputElement) {
+          nextContent = syncFrontmatterField(nextContent, 'date', postDateTimeInput.value);
+        }
+        if (thumbnailUrlInput instanceof HTMLInputElement) {
+          nextContent = syncFrontmatterField(nextContent, 'thumbnail', thumbnailUrlInput.value);
+        }
+        if (postTagsInput instanceof HTMLInputElement) {
+          nextContent = syncFrontmatterTags(nextContent, postTagsInput.value);
+        }
+        if (postLangInput instanceof HTMLSelectElement) {
+          nextContent = syncFrontmatterField(nextContent, 'lang', getSelectedLanguageValue());
+        }
+        var bodyContent = typeof bodyOverride === 'string' ? bodyOverride : getEditorBodyContent();
+        return replaceBodyWithFrontmatter(nextContent, bodyContent);
+      };
+      var syncContentMetaFromInputs = function () {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+        if (!isFullFileView) return;
+        var bodyContent = getEditorBodyContent();
+        writeContentValue(buildContentForSubmission(bodyContent));
+      };
+      var syncFullFileToggleLabel = function () {
+        if (!(fullFileToggleButton instanceof HTMLButtonElement)) return;
+        fullFileToggleButton.textContent = isFullFileView ? 'Hide metadata' : 'Show full file';
+        fullFileToggleButton.setAttribute('aria-pressed', isFullFileView ? 'true' : 'false');
+      };
+      var toggleFullFileView = function () {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+        var bodyContent = getEditorBodyContent();
+
+        if (isFullFileView) {
+          contentSourceWithFrontmatter = ensureFrontmatterBlock(readContentValue());
+          isFullFileView = false;
+          writeContentValue(bodyContent);
+        } else {
+          contentSourceWithFrontmatter = buildContentForSubmission(bodyContent);
+          isFullFileView = true;
+          writeContentValue(contentSourceWithFrontmatter);
+        }
+
+        syncFullFileToggleLabel();
+        renderPreview();
+        renderThumbnailPreview();
       };
       var renderThumbnailPreview = function () {
-        var source = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
-        var fallbackTitle = prTitleInput instanceof HTMLInputElement ? prTitleInput.value : '';
+        var source = buildContentForSubmission();
+        var fallbackTitle = postTitleInput instanceof HTMLInputElement ? postTitleInput.value : '';
         var meta = getPreviewMetaFromContent(source, fallbackTitle);
         var thumbnailUrlFromInput = thumbnailUrlInput instanceof HTMLInputElement ? thumbnailUrlInput.value.trim() : '';
         var thumbnailUrl = thumbnailUrlFromInput || meta.thumbnail;
         var thumbnailAlt = meta.thumbnailAlt || meta.title || 'Post thumbnail preview';
-        var previewUrl = syncPreviewUrlInputFromTarget();
-        if (postUrlText instanceof HTMLElement) {
-          postUrlText.textContent = previewUrl || '/posts/<category>/<slug>';
-        }
-        if (thumbnailTitlePreview instanceof HTMLElement) {
-          thumbnailTitlePreview.textContent = meta.title;
-        }
-        if (thumbnailDescriptionPreview instanceof HTMLElement) {
-          thumbnailDescriptionPreview.textContent = meta.description || 'Post description preview will appear from frontmatter.';
-        }
+        syncComputedPostUrl();
         if (!(thumbnailImage instanceof HTMLImageElement) || !(thumbnailEmpty instanceof HTMLElement)) {
           return;
         }
@@ -711,11 +1219,10 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         }
       };
       var renderPreview = function () {
-        if (!(contentInput instanceof HTMLTextAreaElement)) return;
         if (!(preview instanceof HTMLElement)) return;
         if (!(previewEmpty instanceof HTMLElement)) return;
 
-        var source = contentInput.value || '';
+        var source = readContentValue();
         if (!source.trim()) {
           preview.innerHTML = '';
           preview.hidden = true;
@@ -787,93 +1294,178 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         });
       }
 
+      syncCustomCategoryField();
+      syncCustomLanguageField();
       refreshTargetPath();
-      syncThumbnailInputFromContent();
-      syncPreviewUrlInputFromTarget();
+      syncMetaInputsFromContent(contentSourceWithFrontmatter);
+      if (contentInput instanceof HTMLTextAreaElement) {
+        writeContentValue(stripFrontmatter(contentSourceWithFrontmatter).replace(/^\n+/, ''));
+      }
+      if (editorHost instanceof HTMLElement && contentInput instanceof HTMLTextAreaElement) {
+        try {
+          contentEditor = new Editor({
+            el: editorHost,
+            initialEditType: 'markdown',
+            previewStyle: 'vertical',
+            hideModeSwitch: true,
+            usageStatistics: false,
+            height: '460px',
+            initialValue: contentInput.value,
+            toolbarItems: [
+              ['heading', 'bold', 'italic', 'strike'],
+              ['quote', 'ul', 'ol'],
+              ['image', 'link'],
+              ['code', 'codeblock']
+            ]
+          });
+          if (typeof contentEditor.changeMode === 'function') {
+            contentEditor.changeMode('markdown', true);
+          }
+          form.classList.add('is-content-editor-ready');
+        } catch (_) {
+          contentEditor = null;
+          form.classList.remove('is-content-editor-ready');
+        }
+      }
+      syncFullFileToggleLabel();
+      syncSlugFromTitle();
+      refreshTargetPath();
+      syncComputedPostUrl();
       renderPreview();
       renderThumbnailPreview();
 
-      var categoryInput = form.elements.namedItem('category');
-      var postSlugInput = form.elements.namedItem('postSlug');
       var refreshPathAndPreview = function () {
         refreshTargetPath();
-        syncPreviewUrlInputFromTarget();
+        syncComputedPostUrl();
         renderThumbnailPreview();
       };
+      var handleEditableContentChanged = function () {
+        renderPreview();
+        syncSlugFromTitle();
+        refreshPathAndPreview();
+        renderThumbnailPreview();
+      };
+      if (contentEditor && contentInput instanceof HTMLTextAreaElement) {
+        contentEditor.on('change', function () {
+          if (isSyncingEditorValue) return;
+          var markdown = String(contentEditor.getMarkdown() || '');
+          if (!isFullFileView && /^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/.test(markdown)) {
+            markdown = stripFrontmatter(markdown).replace(/^\n+/, '');
+            writeContentValue(markdown);
+          } else {
+            contentInput.value = markdown;
+          }
+          handleEditableContentChanged();
+        });
+      }
 
-      if (categoryInput instanceof HTMLInputElement) {
-        categoryInput.addEventListener('input', refreshPathAndPreview);
+      if (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement) {
+        categoryInput.addEventListener('change', function () {
+          syncCustomCategoryField();
+          refreshPathAndPreview();
+        });
+      }
+      if (customCategoryInput instanceof HTMLInputElement) {
+        customCategoryInput.addEventListener('input', refreshPathAndPreview);
       }
       if (postSlugInput instanceof HTMLInputElement) {
         postSlugInput.addEventListener('input', refreshPathAndPreview);
       }
-      if (thumbnailUrlInput instanceof HTMLInputElement) {
-        thumbnailUrlInput.addEventListener('input', function () {
-          syncContentThumbnailFromInput();
+      if (postTitleInput instanceof HTMLInputElement) {
+        postTitleInput.addEventListener('input', function () {
+          syncContentMetaFromInputs('title');
+          syncSlugFromTitle();
+          refreshPathAndPreview();
           renderPreview();
           renderThumbnailPreview();
+        });
+      }
+      if (postDraftInput instanceof HTMLInputElement) {
+        postDraftInput.addEventListener('change', function () {
+          syncContentMetaFromInputs('draft');
+          renderPreview();
+        });
+      }
+      if (postDateTimeInput instanceof HTMLInputElement) {
+        postDateTimeInput.addEventListener('change', function () {
+          syncContentMetaFromInputs('date');
+          renderPreview();
+        });
+      }
+      if (thumbnailUrlInput instanceof HTMLInputElement) {
+        thumbnailUrlInput.addEventListener('input', function () {
+          syncContentMetaFromInputs('thumbnail');
+          renderPreview();
+          renderThumbnailPreview();
+        });
+      }
+      if (postTagsInput instanceof HTMLInputElement) {
+        postTagsInput.addEventListener('input', function () {
+          syncContentMetaFromInputs('tags');
+          renderTagBadges();
+          renderThumbnailPreview();
+        });
+      }
+      if (postLangInput instanceof HTMLSelectElement) {
+        postLangInput.addEventListener('change', function () {
+          syncCustomLanguageField();
+          if (
+            postLangInput.value === '__new_lang__'
+            && customPostLangInput instanceof HTMLInputElement
+            && !customPostLangInput.value.trim()
+          ) {
+            renderPreview();
+            return;
+          }
+          syncContentMetaFromInputs('lang');
+          renderPreview();
+        });
+      }
+      if (customPostLangInput instanceof HTMLInputElement) {
+        customPostLangInput.addEventListener('input', function () {
+          syncContentMetaFromInputs('lang');
+          renderPreview();
+        });
+      }
+      if (fullFileToggleButton instanceof HTMLButtonElement) {
+        fullFileToggleButton.addEventListener('click', function () {
+          toggleFullFileView();
         });
       }
       if (contentInput instanceof HTMLTextAreaElement) {
         contentInput.addEventListener('input', function () {
-          renderPreview();
-          syncThumbnailInputFromContent();
-          renderThumbnailPreview();
-        });
-      }
-      if (prTitleInput instanceof HTMLInputElement && contentInput instanceof HTMLTextAreaElement) {
-        prTitleInput.addEventListener('input', function () {
-          var nextContent = syncFrontmatterTitle(contentInput.value, prTitleInput.value);
-          if (nextContent !== contentInput.value) {
-            contentInput.value = nextContent;
-            renderPreview();
-            syncThumbnailInputFromContent();
-          }
-          renderThumbnailPreview();
+          if (contentEditor) return;
+          handleEditableContentChanged();
         });
       }
 
-      if (!authApiBase) {
-        submitButton.disabled = true;
-        if (loginButton instanceof HTMLAnchorElement) {
-          loginButton.hidden = true;
-        }
-        setStatus(statusEl, 'Quick PR flow requires PUBLIC_GITHUB_AUTH_WORKER_URL to be configured.', 'error');
-        return;
-      }
-
-      try {
-        var authResponse = await fetch(toAuthUrl('/me'), {
-          credentials: 'include'
+      if (loginButton instanceof HTMLAnchorElement) {
+        loginButton.addEventListener('click', function (event) {
+          event.preventDefault();
+          openLoginPopup();
         });
-
-        if (authResponse.ok) {
-          var currentUser = await authResponse.json();
-          submitButton.disabled = false;
-          if (loginButton instanceof HTMLAnchorElement) {
-            loginButton.hidden = true;
-          }
-          if (currentUser && typeof currentUser.login === 'string') {
-            currentUsername = currentUser.login;
-            setStatus(statusEl, 'Signed in as @' + currentUsername + '.', 'info');
-          }
-        } else {
-          submitButton.disabled = true;
-          if (loginButton instanceof HTMLAnchorElement) {
-            loginButton.hidden = false;
-          }
-          setStatus(statusEl, 'Sign in first, then create your pull request from this form.', 'info');
-        }
-      } catch (_) {
-        submitButton.disabled = true;
-        if (loginButton instanceof HTMLAnchorElement) {
-          loginButton.hidden = false;
-        }
-        setStatus(statusEl, 'Authentication check failed. Sign in again and retry.', 'error');
       }
+      window.addEventListener('focus', function () {
+        if (authState === 'authenticated' || isSubmitting) return;
+        void refreshAuthStatus({ silent: true });
+      });
+      document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState !== 'visible') return;
+        if (authState === 'authenticated' || isSubmitting) return;
+        void refreshAuthStatus({ silent: true });
+      });
+      await refreshAuthStatus({ silent: false });
 
       form.addEventListener('submit', async function (event) {
         event.preventDefault();
+        if (authState !== 'authenticated') {
+          applyAuthState('anonymous', 'Sign in with GitHub first to create or edit this page.', 'info');
+          var popupOpened = openLoginPopup();
+          if (!popupOpened && loginButton instanceof HTMLAnchorElement) {
+            loginButton.focus();
+          }
+          return;
+        }
         if (submitButton.disabled) return;
 
         var filePath = refreshTargetPath();
@@ -885,21 +1477,24 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         var prBodyInput = form.elements.namedItem('prBody');
         var prTitle = prTitleInput instanceof HTMLInputElement ? prTitleInput.value.trim() : '';
         var prBody = prBodyInput instanceof HTMLTextAreaElement ? prBodyInput.value.trim() : '';
-        var content = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
+        var contentBody = getEditorBodyContent();
 
         if (!prTitle) {
-          setStatus(statusEl, 'PR title is required.', 'error');
+          setStatus(statusEl, 'Pull Request title is required.', 'error');
           return;
         }
 
-        if (!content.trim()) {
+        if (!contentBody.trim()) {
           setStatus(statusEl, 'Markdown content cannot be empty.', 'error');
           return;
         }
 
-        submitButton.disabled = true;
+        var content = buildContentForSubmission();
+
+        isSubmitting = true;
+        syncSubmitAvailability();
         submitButton.setAttribute('aria-busy', 'true');
-        setStatus(statusEl, 'Creating branch, committing markdown, and opening PR...', 'info');
+        setStatus(statusEl, 'Creating branch, committing markdown, and opening Pull Request...', 'info');
         if (prLink instanceof HTMLAnchorElement) {
           prLink.hidden = true;
           prLink.href = '#';
@@ -930,9 +1525,14 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
           }
 
           if (!response.ok) {
+            if (response.status === 401 || response.status === 403) {
+              currentUsername = '';
+              applyAuthState('anonymous', 'Your session expired. Sign in with GitHub again to continue.', 'error');
+              return;
+            }
             var errorMessage = data && typeof data.error === 'string'
               ? data.error
-              : 'Unable to create pull request. Try again.';
+              : 'Unable to create Pull Request. Try again.';
             throw new Error(errorMessage);
           }
 
@@ -965,10 +1565,11 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
             setStatus(statusEl, 'Pull request created successfully.', 'success');
           }
         } catch (error) {
-          var message = error instanceof Error ? error.message : 'Unable to create pull request.';
+          var message = error instanceof Error ? error.message : 'Unable to create Pull Request.';
           setStatus(statusEl, message, 'error');
         } finally {
-          submitButton.disabled = false;
+          isSubmitting = false;
+          syncSubmitAvailability();
           submitButton.removeAttribute('aria-busy');
         }
       });

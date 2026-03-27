@@ -40,7 +40,7 @@ const defaultEditPrBody = `## Summary
 
 const canonicalPath = `/contribute/edit/${postSourcePath}`;
 const pageDescription =
-  `Edit ${post.title} and open a pull request directly from the OpenBlog quick contribution workspace.`;
+  `Edit ${post.title} and open a Pull Request directly from the OpenBlog quick contribution workspace.`;
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = {
@@ -56,13 +56,14 @@ const structuredData = {
   description={pageDescription}
   canonicalPath={canonicalPath}
   structuredData={structuredData}
+  hideGlobalSidebar={true}
 >
   <div class="contribute-page quick-contribute-page">
     {post.category !== 'blog' && (
       <section class="card quick-contribute-hero">
         <p class="kicker icon-label"><i class="ti ti-edit-circle icon-sm" aria-hidden="true"></i>Quick edit workspace</p>
-        <h1>Edit post and open PR faster</h1>
-        <p>Update this post markdown in one place, then create a pull request directly from your authenticated GitHub session.</p>
+        <h1>Edit post and open Pull Request faster</h1>
+        <p>Update this post markdown in one place, then create a Pull Request directly from your authenticated GitHub session.</p>
         <div class="contribute-actions">
           <a class="contribute-action" href={postPath}>
             <i class="ti ti-article icon-sm" aria-hidden="true"></i>
@@ -83,12 +84,12 @@ const structuredData = {
     <QuickContributeForm
       mode="edit"
       title={`Editing: ${post.slug}`}
-      description="GitHub-style flow: update markdown, branch + commit are generated, and PR opens automatically."
+      description="GitHub-style flow: update markdown, branch + commit are generated, and Pull Request opens automatically."
       fixedFilePath={postFilePath}
       initialPrTitle={defaultEditPrTitle}
       initialPrBody={defaultEditPrBody}
       initialContent={postRawMarkdown}
-      submitLabel="Create PR for this post"
+      submitLabel="Publish & open Pull Request"
     />
   </div>
 </BaseLayout>

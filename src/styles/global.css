@@ -618,6 +618,11 @@ p {
   text-decoration: none;
 }
 
+.contribute-action:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .contribute-flow {
   margin: 0;
   padding-left: 1.25rem;
@@ -775,17 +780,56 @@ p {
 .quick-contribute-form {
   margin-top: 0.15rem;
   display: grid;
-  gap: 0.65rem;
+  gap: 0.75rem;
+}
+
+.quick-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.quick-editor-main,
+.quick-editor-sidebar {
+  min-width: 0;
+}
+
+.quick-editor-main {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.quick-editor-sidebar {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  position: sticky;
+  top: 0.75rem;
+}
+
+.quick-sidebar-panel {
+  display: grid;
+  gap: 0.62rem;
+}
+
+.quick-sidebar-panel + .quick-sidebar-panel {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.quick-sidebar-title {
+  font-size: 0.84rem;
+}
+
+.quick-publish-panel {
+  gap: 0.58rem;
 }
 
 .quick-contribute-grid {
   display: grid;
   gap: 0.55rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.quick-contribute-grid-urls {
-  margin-top: 0.1rem;
 }
 
 .quick-contribute-field {
@@ -832,32 +876,157 @@ p {
   outline-offset: 1px;
 }
 
-.quick-contribute-field input,
-.quick-contribute-field textarea {
-  width: 100%;
+.quick-contribute-mode-toggle {
+  margin-left: auto;
   border: 1px solid var(--border);
-  border-radius: 0;
+  border-radius: 999px;
   background: var(--surface-soft);
-  color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
-  font-size: 0.84rem;
-  line-height: 1.45;
-  padding: 0.5rem 0.58rem;
+  color: var(--muted);
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.2rem 0.46rem;
+  cursor: pointer;
 }
 
-.quick-contribute-field textarea {
-  min-height: 8rem;
-  resize: vertical;
+.quick-contribute-mode-toggle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--surface);
 }
 
-.quick-contribute-field input:focus,
-.quick-contribute-field textarea:focus {
+.quick-contribute-mode-toggle:focus-visible {
   outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent);
   outline-offset: 1px;
 }
 
+.quick-contribute-field input,
+.quick-contribute-field textarea,
+.quick-contribute-field select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-main);
+  font-size: 0.88rem;
+  line-height: 1.4;
+  padding: 0.42rem 0.62rem;
+  box-shadow: inset 0 1px 0 rgba(27, 31, 36, 0.04);
+}
+
+.quick-contribute-field textarea {
+  min-height: 5.2rem;
+  resize: vertical;
+}
+
+.quick-contribute-field input:focus,
+.quick-contribute-field textarea:focus,
+.quick-contribute-field select:focus {
+  border-color: var(--primary);
+  outline: 0;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
+}
+
+.quick-contribute-field textarea[name='content'] {
+  min-height: 15.5rem;
+  font-family: var(--font-mono);
+  font-size: 0.83rem;
+  line-height: 1.48;
+}
+
+.quick-content-editor {
+  display: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.quick-contribute-form.is-content-editor-ready .quick-content-editor {
+  display: block;
+}
+
+.quick-contribute-form.is-content-editor-ready .quick-content-source {
+  display: none;
+}
+
+.quick-content-editor .toastui-editor-defaultUI {
+  border: 0;
+  border-radius: 0;
+  font-family: var(--font-main);
+}
+
+.quick-content-editor .toastui-editor-toolbar {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.quick-content-editor .toastui-editor-defaultUI-toolbar {
+  padding: 0 8px;
+}
+
+.quick-content-editor .toastui-editor-toolbar-group {
+  border-right-color: var(--border);
+}
+
+.quick-content-editor .toastui-editor-defaultUI-toolbar button {
+  width: 28px;
+  height: 28px;
+  margin: 8px 2px;
+}
+
+.quick-content-editor .toastui-editor-toolbar-divider {
+  margin: 12px 6px;
+}
+
+.quick-content-editor .toastui-editor-main {
+  background: var(--surface);
+}
+
+.quick-content-editor .toastui-editor-md-container,
+.quick-content-editor .toastui-editor-ww-container {
+  background: var(--surface);
+}
+
+.quick-content-editor .toastui-editor-md-container .toastui-editor,
+.quick-content-editor .toastui-editor-ww-container .ProseMirror {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.quick-content-editor .toastui-editor-md-tab-container {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.quick-content-editor .toastui-editor-mode-switch,
+.quick-content-editor .toastui-editor-md-tab-container {
+  display: none !important;
+}
+
 .quick-contribute-target {
   margin: 0;
+  display: grid;
+  gap: 0.24rem;
+}
+
+.quick-contribute-post-url {
+  margin: 0;
+  display: grid;
+  gap: 0.28rem;
+}
+
+.quick-contribute-post-url-value {
+  display: block;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.35;
+  overflow-wrap: anywhere;
 }
 
 .quick-contribute-thumbnail-preview {
@@ -867,8 +1036,7 @@ p {
 
 .quick-contribute-thumbnail-card {
   display: grid;
-  grid-template-columns: minmax(0, 13.5rem) minmax(0, 1fr);
-  gap: 0.7rem;
+  grid-template-columns: 1fr;
   padding: 0.65rem 0.68rem;
 }
 
@@ -895,32 +1063,26 @@ p {
   text-align: center;
 }
 
-.quick-contribute-thumbnail-copy {
-  display: grid;
-  align-content: start;
+.quick-contribute-tags-preview {
+  display: flex;
+  flex-wrap: wrap;
   gap: 0.35rem;
-  min-width: 0;
 }
 
-.quick-contribute-thumbnail-url {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.quick-contribute-thumbnail-title {
-  font-size: 0.98rem;
-  line-height: 1.3;
-}
-
-.quick-contribute-thumbnail-description {
-  margin: 0;
+.quick-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.24rem;
+  padding: 0.18rem 0.42rem;
+  border: 1px solid color-mix(in srgb, var(--border) 78%, var(--surface) 22%);
+  background: color-mix(in srgb, var(--surface-soft) 92%, var(--surface) 8%);
+  border-radius: 999px;
+  white-space: nowrap;
 }
 
 .quick-contribute-preview {
   border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--surface);
 }
 
@@ -958,9 +1120,40 @@ p {
   align-items: center;
 }
 
+.quick-contribute-actions-sidebar {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.quick-contribute-actions-sidebar .contribute-action {
+  justify-content: center;
+  width: 100%;
+}
+
+.quick-contribute-auth-gate {
+  margin: 0;
+  border: 1px solid color-mix(in srgb, var(--primary) 35%, var(--border));
+  background: color-mix(in srgb, var(--primary) 8%, var(--surface));
+  color: var(--text);
+  font-size: 0.8rem;
+  line-height: 1.4;
+  padding: 0.5rem 0.55rem;
+}
+
+.quick-contribute:is([data-auth-state='checking'], [data-auth-state='anonymous'], [data-auth-state='unavailable']) [data-quick-contribute-login] {
+  border-color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 10%, var(--surface));
+  color: var(--primary-strong);
+}
+
 .quick-contribute-submit[aria-busy='true'] {
   opacity: 0.78;
   cursor: progress;
+}
+
+.quick-contribute-submit:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
 }
 
 .quick-contribute:is([data-mode='create'], [data-mode='edit']) .quick-contribute-submit {
@@ -976,8 +1169,24 @@ p {
 }
 
 .quick-contribute-status {
-  min-height: 1.15rem;
+  min-height: 1rem;
   margin: 0;
+  font-size: 0.8rem;
+}
+
+.quick-contribute-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.quick-contribute-check input[type='checkbox'] {
+  margin-top: 0.15rem;
+}
+
+.quick-contribute-check-copy {
+  display: grid;
+  gap: 0.12rem;
 }
 
 .quick-contribute-status.is-success {
@@ -2732,6 +2941,15 @@ h3 {
 
   .quick-contribute-grid {
     grid-template-columns: 1fr;
+  }
+
+  .quick-editor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-editor-sidebar {
+    position: static;
+    top: auto;
   }
 
   .quick-contribute-thumbnail-card {
