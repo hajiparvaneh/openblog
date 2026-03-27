@@ -3,10 +3,10 @@
   "profileUrl": "https://github.com/hajiparvaneh",
   "avatarUrl": "https://avatars.githubusercontent.com/u/55913813?v=4",
   "joinedAt": "2026-03-12T15:00:09Z",
-  "lastUpdatedAt": "2026-03-16T11:50:38Z",
-  "totalPoints": 580,
-  "acceptedPrs": 16,
-  "totalContributions": 26,
+  "lastUpdatedAt": "2026-03-27T06:55:07Z",
+  "totalPoints": 590,
+  "acceptedPrs": 17,
+  "totalContributions": 27,
   "totalPostsContributed": 11,
   "contributedPostSlugs": [
     "blog/how-to-start-with-openblog-free-blogging-github-portfolio",
@@ -43,12 +43,13 @@
     34,
     35,
     36,
-    37
+    37,
+    53
   ],
   "lastContribution": {
-    "prNumber": 37,
-    "postSlug": "blog/openblog-is-fully-transparent-and-open-source-3",
-    "mergedAt": "2026-03-16T11:50:38Z",
+    "prNumber": 53,
+    "postSlug": "blog/how-to-start-with-openblog-free-blogging-github-portfolio",
+    "mergedAt": "2026-03-27T06:55:07Z",
     "points": 10
   }
 }
