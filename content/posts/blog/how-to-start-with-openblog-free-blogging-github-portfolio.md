@@ -2,7 +2,7 @@
 title: "How to Start With OpenBlog: Free Blogging and GitHub Portfolio Growth"
 description: "Learn how to start with OpenBlog for free, publish technical posts, build your GitHub proof of work, and increase your visibility for developer jobs."
 date: 2026-03-13
-tags: openblog, github, blogging, portfolio
+tags: openblog, github, blogging, portfolio, how-to
 ---
 
 OpenBlog is a free blogging platform built for contributors who want to write, learn, and grow in public.
