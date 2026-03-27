@@ -775,7 +775,50 @@ p {
 .quick-contribute-form {
   margin-top: 0.15rem;
   display: grid;
-  gap: 0.65rem;
+  gap: 0.75rem;
+}
+
+.quick-editor-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+  gap: 0.9rem;
+  align-items: start;
+}
+
+.quick-editor-main,
+.quick-editor-sidebar {
+  min-width: 0;
+}
+
+.quick-editor-main {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.quick-editor-sidebar {
+  display: grid;
+  gap: 0.75rem;
+  align-content: start;
+  position: sticky;
+  top: 0.75rem;
+}
+
+.quick-sidebar-panel {
+  display: grid;
+  gap: 0.62rem;
+}
+
+.quick-sidebar-panel + .quick-sidebar-panel {
+  border-top: 1px solid var(--border);
+  padding-top: 0.75rem;
+}
+
+.quick-sidebar-title {
+  font-size: 0.84rem;
+}
+
+.quick-publish-panel {
+  gap: 0.58rem;
 }
 
 .quick-contribute-grid {
@@ -829,7 +872,8 @@ p {
 }
 
 .quick-contribute-field input,
-.quick-contribute-field textarea {
+.quick-contribute-field textarea,
+.quick-contribute-field select {
   width: 100%;
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
@@ -848,7 +892,8 @@ p {
 }
 
 .quick-contribute-field input:focus,
-.quick-contribute-field textarea:focus {
+.quick-contribute-field textarea:focus,
+.quick-contribute-field select:focus {
   border-color: var(--primary);
   outline: 0;
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--primary) 20%, transparent);
@@ -863,6 +908,8 @@ p {
 
 .quick-contribute-target {
   margin: 0;
+  display: grid;
+  gap: 0.24rem;
 }
 
 .quick-contribute-post-url {
@@ -889,8 +936,7 @@ p {
 
 .quick-contribute-thumbnail-card {
   display: grid;
-  grid-template-columns: minmax(0, 9.5rem) minmax(0, 1fr);
-  gap: 0.7rem;
+  grid-template-columns: 1fr;
   padding: 0.65rem 0.68rem;
 }
 
@@ -917,30 +963,6 @@ p {
   text-align: center;
 }
 
-.quick-contribute-thumbnail-copy {
-  display: grid;
-  align-content: start;
-  gap: 0.35rem;
-  min-width: 0;
-}
-
-.quick-contribute-thumbnail-url {
-  margin: 0;
-  font-family: var(--font-mono);
-  font-size: 0.76rem;
-  line-height: 1.35;
-  overflow-wrap: anywhere;
-}
-
-.quick-contribute-thumbnail-title {
-  font-size: 0.98rem;
-  line-height: 1.3;
-}
-
-.quick-contribute-thumbnail-description {
-  margin: 0;
-}
-
 .quick-contribute-tags-preview {
   display: flex;
   flex-wrap: wrap;
@@ -960,6 +982,7 @@ p {
 
 .quick-contribute-preview {
   border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
   background: var(--surface);
 }
 
@@ -997,6 +1020,16 @@ p {
   align-items: center;
 }
 
+.quick-contribute-actions-sidebar {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.quick-contribute-actions-sidebar .contribute-action {
+  justify-content: center;
+  width: 100%;
+}
+
 .quick-contribute-submit[aria-busy='true'] {
   opacity: 0.78;
   cursor: progress;
@@ -1015,8 +1048,24 @@ p {
 }
 
 .quick-contribute-status {
-  min-height: 1.15rem;
+  min-height: 1rem;
   margin: 0;
+  font-size: 0.8rem;
+}
+
+.quick-contribute-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+}
+
+.quick-contribute-check input[type='checkbox'] {
+  margin-top: 0.15rem;
+}
+
+.quick-contribute-check-copy {
+  display: grid;
+  gap: 0.12rem;
 }
 
 .quick-contribute-status.is-success {
@@ -2771,6 +2820,15 @@ h3 {
 
   .quick-contribute-grid {
     grid-template-columns: 1fr;
+  }
+
+  .quick-editor-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .quick-editor-sidebar {
+    position: static;
+    top: auto;
   }
 
   .quick-contribute-thumbnail-card {

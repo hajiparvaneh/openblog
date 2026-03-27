@@ -20,6 +20,7 @@ type BaseLayoutProps = {
   publishedTime?: string;
   modifiedTime?: string;
   structuredData?: JsonLd | JsonLd[];
+  hideGlobalSidebar?: boolean;
 };
 
 const {
@@ -33,7 +34,8 @@ const {
   robots = 'index, follow',
   publishedTime,
   modifiedTime,
-  structuredData
+  structuredData,
+  hideGlobalSidebar = false
 } = Astro.props as BaseLayoutProps;
 
 const siteUrl = getSiteUrl(Astro.site);
@@ -62,6 +64,7 @@ const categories = [...posts.reduce((map, post) => {
 const latestContributors = getLatestContributors(10);
 const repoUrl = 'https://github.com/hajiparvaneh/openblog';
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
+const showGlobalSidebar = categories.length > 0 && !hideGlobalSidebar;
 const configuredAuthWorkerUrl = (import.meta.env.PUBLIC_GITHUB_AUTH_WORKER_URL ?? '').trim();
 const authWorkerBaseUrl = (() => {
   if (!configuredAuthWorkerUrl) return '';
@@ -212,7 +215,7 @@ const authWorkerBaseUrl = (() => {
         </div>
       </header>
 
-      {categories.length > 0 ? (
+      {showGlobalSidebar ? (
         <div class="content-layout">
           <main class="container">
             <slot />

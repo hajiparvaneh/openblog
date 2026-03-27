@@ -33,35 +33,36 @@ const quickCreatePrBody = `## Summary
 `;
 
 const pageDescription =
-  'Create a new OpenBlog post and open a pull request directly with your authenticated GitHub account.';
+  'Create a new OpenBlog post and open a Pull Request directly with your authenticated GitHub account.';
 const canonicalPath = '/contribute/create';
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const structuredData = {
   '@context': 'https://schema.org',
   '@type': 'WebPage',
-  name: 'Create post pull request',
+  name: 'Create post Pull Request',
   description: pageDescription,
   url: canonicalUrl
 };
 ---
 <BaseLayout
-  title="Create Post PR | OpenBlog"
+  title="Create Post Pull Request | OpenBlog"
   description={pageDescription}
   canonicalPath={canonicalPath}
   structuredData={structuredData}
+  hideGlobalSidebar={true}
 >
   <div class="contribute-page quick-contribute-page">
     <QuickContributeForm
       mode="create"
       title="New post editor"
-      description="GitHub-style flow: authenticate, edit markdown, then open a PR in one action."
+      description="GitHub-style flow: authenticate, edit markdown, then open a Pull Request in one action."
       initialCategory="networking"
       initialPostSlug="my-new-post"
       initialPrTitle="Add new post: my-new-post"
       initialPrBody={quickCreatePrBody}
       initialContent={quickCreateTemplate}
-      submitLabel="Create PR for new post"
+      submitLabel="Publish & open Pull Request"
     />
   </div>
 </BaseLayout>

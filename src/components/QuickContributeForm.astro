@@ -24,7 +24,7 @@ const {
   initialContent = '',
   initialPrTitle = '',
   initialPrBody = '',
-  submitLabel = 'Create pull request'
+  submitLabel = 'Create Pull Request'
 } = Astro.props as Props;
 
 const configuredAuthWorkerUrl = (import.meta.env.PUBLIC_GITHUB_AUTH_WORKER_URL ?? '').trim();
@@ -41,254 +41,194 @@ const authWorkerBaseUrl = (() => {
 
 const normalizedMode: QuickContributeMode = mode === 'create' ? 'create' : 'edit';
 const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : '';
+const fixedPathMatch = resolvedFixedFilePath.match(/^content\/posts\/([^/]+)\/([^/]+)\.md$/);
+const resolvedCategoryFromPath = fixedPathMatch?.[1] ?? '';
+const resolvedSlugFromPath = fixedPathMatch?.[2] ?? '';
+const resolvedInitialCategory = normalizedMode === 'create' ? initialCategory : resolvedCategoryFromPath;
+const resolvedInitialPostSlug = normalizedMode === 'create' ? initialPostSlug : resolvedSlugFromPath;
+const categoryOptions = [
+  'networking',
+  'security',
+  'database',
+  'devops',
+  'javascript',
+  'csharp',
+  'blog'
+];
+if (resolvedInitialCategory && !categoryOptions.includes(resolvedInitialCategory)) {
+  categoryOptions.unshift(resolvedInitialCategory);
+}
+const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'networking';
 ---
 <section
-  class="card quick-contribute"
+  class="quick-contribute"
   data-quick-contribute
   data-mode={normalizedMode}
   data-fixed-file-path={resolvedFixedFilePath}
   data-auth-worker-base={authWorkerBaseUrl}
 >
-  <h2 class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>{title}</h2>
-  <p class="meta">{description}</p>
-
   <form class="quick-contribute-form" data-quick-contribute-form>
-    {normalizedMode === 'create' ? (
-      <div class="quick-contribute-grid">
-        <label class="quick-contribute-field">
+    <input type="hidden" name="postSlug" value={resolvedInitialPostSlug} />
+    <div class="quick-editor-layout">
+      <div class="quick-editor-main card">
+        <h2 class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>{title}</h2>
+        <p class="meta">{description}</p>
+        <label class="quick-contribute-field quick-title-field">
           <span class="quick-contribute-field-head">
-            <span>Category</span>
+            <span>Title</span>
             <button
               type="button"
               class="quick-contribute-help-trigger"
               data-help-trigger
-              data-help-title="Category"
-              data-help-body="Use lowercase with hyphens, for example: networking, security, database."
-              aria-label="Category hint"
+              data-help-title="Title"
+              data-help-body="Post title in frontmatter. Keep it specific and outcome-focused."
+              aria-label="Title hint"
             >?</button>
           </span>
-          <input
-            type="text"
-            name="category"
-            placeholder="networking"
-            autocomplete="off"
-            value={initialCategory}
-            required
-          />
+          <input type="text" name="postTitle" placeholder="How DNS resolution works in practice" autocomplete="off" required />
         </label>
+
+        <p class="meta quick-contribute-post-url">
+          <span class="quick-contribute-field-head">
+            <span>Post URL</span>
+          </span>
+          <code data-quick-post-url-label>https://openblog.cc/posts/&lt;category&gt;/&lt;slug&gt;</code>
+        </p>
 
         <label class="quick-contribute-field">
           <span class="quick-contribute-field-head">
-            <span>Post slug</span>
+            <span>Content</span>
             <button
               type="button"
               class="quick-contribute-help-trigger"
               data-help-trigger
-              data-help-title="Post slug"
-              data-help-body="Use lowercase with hyphens only, for example: how-dns-works. Do not include .md."
-              aria-label="Post slug hint"
+              data-help-title="Content"
+              data-help-body="Write markdown body content. Frontmatter is synced from the sidebar fields."
+              aria-label="Content hint"
             >?</button>
           </span>
-          <input
-            type="text"
-            name="postSlug"
-            placeholder="how-dns-works"
-            autocomplete="off"
-            value={initialPostSlug}
-            required
-          />
+          <textarea name="content" rows={20} required>{initialContent}</textarea>
         </label>
+
+        <section class="quick-contribute-preview" aria-label="Live preview">
+          <div class="quick-contribute-preview-head">
+            <strong class="icon-label"><i class="ti ti-eye icon-sm" aria-hidden="true"></i>Live preview</strong>
+          </div>
+          <p class="meta quick-contribute-preview-empty" data-quick-preview-empty>Start typing to see a rendered markdown preview.</p>
+          <div class="article-content quick-contribute-preview-body" data-quick-preview hidden></div>
+        </section>
       </div>
-    ) : null}
 
-    <p class="meta quick-contribute-target">
-      <span class="quick-contribute-field-head">
-        <span>Target file</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Target file"
-          data-help-body="Final markdown path in the repository. It must stay under content/posts/<category>/<post>.md."
-          aria-label="Target file hint"
-        >?</button>
-      </span>
-      <code data-quick-contribute-target-code>{resolvedFixedFilePath || 'content/posts/<category>/<slug>.md'}</code>
-    </p>
+      <aside class="quick-editor-sidebar card">
+        <section class="quick-sidebar-panel quick-publish-panel">
+          <strong class="quick-sidebar-title icon-label"><i class="ti ti-send icon-sm" aria-hidden="true"></i>Publish</strong>
+          <div class="quick-contribute-actions quick-contribute-actions-sidebar">
+            <a class="contribute-action" data-quick-contribute-login href="#" hidden>
+              <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+              Sign in with GitHub
+            </a>
+            <button class="contribute-action quick-contribute-submit" type="submit" data-quick-contribute-submit>
+              <i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>
+              {submitLabel}
+            </button>
+            <a class="contribute-action" data-quick-contribute-pr href="#" target="_blank" rel="noopener noreferrer" hidden>
+              <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
+              Open created Pull Request
+            </a>
+          </div>
+          <p class="meta quick-contribute-status" data-quick-contribute-status role="status" aria-live="polite"></p>
+        </section>
 
-    <p class="meta quick-contribute-post-url">
-      <span class="quick-contribute-field-head">
-        <span>Post URL</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Post URL"
-          data-help-body="Computed from category and post slug in create mode, or from the fixed target file in edit mode."
-          aria-label="Post URL hint"
-        >?</button>
-      </span>
-      <code data-quick-post-url-label>https://openblog.cc/posts/&lt;category&gt;/&lt;slug&gt;</code>
-    </p>
+        <section class="quick-sidebar-panel">
+          <label class="quick-contribute-check">
+            <input type="checkbox" name="postDraft" />
+            <span class="quick-contribute-check-copy">
+              <strong>Draft</strong>
+              <span class="meta">Keep this post hidden until ready.</span>
+            </span>
+          </label>
 
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>Title</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Title"
-          data-help-body="Post title in frontmatter. Keep it specific and outcome-focused."
-          aria-label="Title hint"
-        >?</button>
-      </span>
-      <input type="text" name="postTitle" placeholder="How DNS resolution works in practice" autocomplete="off" required />
-    </label>
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Date & time</span>
+            </span>
+            <input type="datetime-local" name="postDateTime" />
+          </label>
 
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>Description</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Description"
-          data-help-body="One concise sentence for readers and metadata snippets."
-          aria-label="Description hint"
-        >?</button>
-      </span>
-      <textarea name="postDescription" rows={3} placeholder="Explain what readers will learn and why it matters." required></textarea>
-    </label>
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Category</span>
+            </span>
+            <select name="category" required disabled={normalizedMode === 'edit'}>
+              {categoryOptions.map((option) => (
+                <option value={option} selected={option === defaultCategoryValue}>{option}</option>
+              ))}
+            </select>
+          </label>
+        </section>
 
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>Thumbnail URL</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Thumbnail URL"
-          data-help-body="Public image URL for post cards and social previews."
-          aria-label="Thumbnail URL hint"
-        >?</button>
-      </span>
-      <input
-        type="text"
-        name="thumbnailUrl"
-        placeholder="https://images.example.com/dns-cover.jpg"
-        autocomplete="off"
-      />
-    </label>
+        <section class="quick-sidebar-panel">
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Thumbnail URL</span>
+            </span>
+            <input
+              type="text"
+              name="thumbnailUrl"
+              placeholder="https://images.example.com/dns-cover.jpg"
+              autocomplete="off"
+            />
+          </label>
 
-    <section class="quick-contribute-thumbnail-preview" aria-label="Post card preview">
-      <div class="quick-contribute-preview-head">
-        <strong class="icon-label"><i class="ti ti-photo icon-sm" aria-hidden="true"></i>Thumbnail preview</strong>
-      </div>
-      <div class="quick-contribute-thumbnail-card">
-        <div class="quick-contribute-thumbnail-media">
-          <img class="quick-contribute-thumbnail-image" data-quick-thumbnail-image alt="" loading="lazy" decoding="async" hidden />
-          <p class="meta quick-contribute-thumbnail-empty" data-quick-thumbnail-empty>
-            Set a thumbnail URL to preview the post card image.
+          <section class="quick-contribute-thumbnail-preview" aria-label="Post card preview">
+            <div class="quick-contribute-preview-head">
+              <strong class="icon-label"><i class="ti ti-photo icon-sm" aria-hidden="true"></i>Thumbnail preview</strong>
+            </div>
+            <div class="quick-contribute-thumbnail-card">
+              <div class="quick-contribute-thumbnail-media">
+                <img class="quick-contribute-thumbnail-image" data-quick-thumbnail-image alt="" loading="lazy" decoding="async" hidden />
+                <p class="meta quick-contribute-thumbnail-empty" data-quick-thumbnail-empty>
+                  Set a thumbnail URL to preview the post card image.
+                </p>
+              </div>
+            </div>
+          </section>
+        </section>
+
+        <section class="quick-sidebar-panel">
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Tags</span>
+            </span>
+            <input type="text" name="postTags" placeholder="networking, dns, troubleshooting" autocomplete="off" />
+            <div class="quick-contribute-tags-preview" data-quick-tags-preview hidden></div>
+          </label>
+        </section>
+
+        <section class="quick-sidebar-panel">
+          <p class="meta quick-contribute-target">
+            <span class="quick-contribute-field-head">
+              <span>Target file</span>
+            </span>
+            <code data-quick-contribute-target-code>{resolvedFixedFilePath || 'content/posts/<category>/<slug>.md'}</code>
           </p>
-        </div>
-        <div class="quick-contribute-thumbnail-copy">
-          <p class="quick-contribute-thumbnail-url">
-            <code data-quick-post-url-text>https://openblog.cc/posts/&lt;category&gt;/&lt;slug&gt;</code>
-          </p>
-          <strong class="quick-contribute-thumbnail-title" data-quick-thumbnail-title-preview>Post title preview</strong>
-          <p class="meta quick-contribute-thumbnail-description" data-quick-thumbnail-description-preview>
-            Post description preview will appear from frontmatter.
-          </p>
-        </div>
-      </div>
-    </section>
 
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>Tags</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Tags"
-          data-help-body="Comma-separated tags. Example: networking, dns, troubleshooting."
-          aria-label="Tags hint"
-        >?</button>
-      </span>
-      <input type="text" name="postTags" placeholder="networking, dns, troubleshooting" autocomplete="off" />
-      <div class="quick-contribute-tags-preview" data-quick-tags-preview hidden></div>
-    </label>
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Pull Request title</span>
+            </span>
+            <input type="text" name="prTitle" value={initialPrTitle} placeholder="Improve article clarity and examples" maxlength="120" required />
+          </label>
 
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>Content</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="Content"
-          data-help-body="Write markdown body content. Frontmatter is synced from the fields above."
-          aria-label="Content hint"
-        >?</button>
-      </span>
-      <textarea name="content" rows={18} required>{initialContent}</textarea>
-    </label>
-
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>PR title</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="PR title"
-          data-help-body="Use a clear action title, for example: Improve DNS guide references and examples."
-          aria-label="PR title hint"
-        >?</button>
-      </span>
-      <input type="text" name="prTitle" value={initialPrTitle} placeholder="Improve article clarity and examples" maxlength="120" required />
-    </label>
-
-    <label class="quick-contribute-field">
-      <span class="quick-contribute-field-head">
-        <span>PR summary</span>
-        <button
-          type="button"
-          class="quick-contribute-help-trigger"
-          data-help-trigger
-          data-help-title="PR summary"
-          data-help-body="Describe what changed, why it is better, and which post slug is affected."
-          aria-label="PR summary hint"
-        >?</button>
-      </span>
-      <textarea name="prBody" rows={5} placeholder="What changed and why it is better.">{initialPrBody}</textarea>
-    </label>
-
-    <div class="quick-contribute-actions">
-      <a class="contribute-action" data-quick-contribute-login href="#" hidden>
-        <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-        Sign in with GitHub
-      </a>
-      <button class="contribute-action quick-contribute-submit" type="submit" data-quick-contribute-submit>
-        <i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>
-        {submitLabel}
-      </button>
-      <a class="contribute-action" data-quick-contribute-pr href="#" target="_blank" rel="noopener noreferrer" hidden>
-        <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
-        Open created PR
-      </a>
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Pull Request summary</span>
+            </span>
+            <textarea name="prBody" rows={4} placeholder="What changed and why it is better.">{initialPrBody}</textarea>
+          </label>
+        </section>
+      </aside>
     </div>
-
-    <p class="meta quick-contribute-status" data-quick-contribute-status role="status" aria-live="polite"></p>
-
-    <section class="quick-contribute-preview" aria-label="Live preview">
-      <div class="quick-contribute-preview-head">
-        <strong class="icon-label"><i class="ti ti-eye icon-sm" aria-hidden="true"></i>Live preview</strong>
-      </div>
-      <p class="meta quick-contribute-preview-empty" data-quick-preview-empty>Start typing to see a rendered markdown preview.</p>
-      <div class="article-content quick-contribute-preview-body" data-quick-preview hidden></div>
-    </section>
   </form>
 
   <div class="quick-contribute-help-modal" data-help-modal hidden>
@@ -650,6 +590,31 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       return '/posts/' + encodeURIComponent(match[1]) + '/' + encodeURIComponent(match[2]);
     };
 
+    var toDateTimeLocalValue = function (value) {
+      var raw = String(value || '').trim();
+      if (!raw) return '';
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(raw)) return raw;
+
+      if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) {
+        return raw + 'T00:00';
+      }
+
+      var parsed = new Date(raw);
+      if (Number.isNaN(parsed.getTime())) return '';
+      var year = String(parsed.getFullYear());
+      var month = String(parsed.getMonth() + 1).padStart(2, '0');
+      var day = String(parsed.getDate()).padStart(2, '0');
+      var hours = String(parsed.getHours()).padStart(2, '0');
+      var minutes = String(parsed.getMinutes()).padStart(2, '0');
+      return year + '-' + month + '-' + day + 'T' + hours + ':' + minutes;
+    };
+
+    var toBooleanFromField = function (value) {
+      var normalized = String(value || '').trim().toLowerCase();
+      if (!normalized) return false;
+      return normalized === 'true' || normalized === '1' || normalized === 'yes';
+    };
+
     var getPreviewMetaFromContent = function (content, fallbackTitle) {
       var title = readFrontmatterField(content, 'title') || String(fallbackTitle || '').trim() || 'Post title preview';
       var description = readFrontmatterField(content, 'description');
@@ -697,7 +662,9 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
 
       var categoryInput = form.elements.namedItem('category');
       var postSlugInput = form.elements.namedItem('postSlug');
-      var category = categoryInput instanceof HTMLInputElement ? slugifySegment(categoryInput.value) : '';
+      var category = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
+        ? slugifySegment(categoryInput.value)
+        : '';
       var postSlug = postSlugInput instanceof HTMLInputElement ? slugifySegment(postSlugInput.value) : '';
 
       var filePath = category && postSlug ? 'content/posts/' + category + '/' + postSlug + '.md' : '';
@@ -732,17 +699,17 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       var prTitleInput = form.elements.namedItem('prTitle');
       var contentInput = form.elements.namedItem('content');
       var postTitleInput = form.elements.namedItem('postTitle');
-      var postDescriptionInput = form.elements.namedItem('postDescription');
+      var postDraftInput = form.elements.namedItem('postDraft');
+      var postDateTimeInput = form.elements.namedItem('postDateTime');
       var thumbnailUrlInput = form.elements.namedItem('thumbnailUrl');
       var postTagsInput = form.elements.namedItem('postTags');
+      var categoryInput = form.elements.namedItem('category');
+      var postSlugInput = form.elements.namedItem('postSlug');
       var preview = form.querySelector('[data-quick-preview]');
       var previewEmpty = form.querySelector('[data-quick-preview-empty]');
       var thumbnailImage = form.querySelector('[data-quick-thumbnail-image]');
       var thumbnailEmpty = form.querySelector('[data-quick-thumbnail-empty]');
       var postUrlLabel = form.querySelector('[data-quick-post-url-label]');
-      var postUrlText = form.querySelector('[data-quick-post-url-text]');
-      var thumbnailTitlePreview = form.querySelector('[data-quick-thumbnail-title-preview]');
-      var thumbnailDescriptionPreview = form.querySelector('[data-quick-thumbnail-description-preview]');
       var tagsPreview = form.querySelector('[data-quick-tags-preview]');
 
       if (!(submitButton instanceof HTMLButtonElement)) return;
@@ -760,11 +727,22 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
           return getPostUrlFromFilePath(root.getAttribute('data-fixed-file-path') || '');
         }
 
-        var categoryInput = form.elements.namedItem('category');
-        var postSlugInput = form.elements.namedItem('postSlug');
-        var category = categoryInput instanceof HTMLInputElement ? categoryInput.value : '';
+        var category = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
+          ? categoryInput.value
+          : '';
         var postSlug = postSlugInput instanceof HTMLInputElement ? postSlugInput.value : '';
         return toPostUrlFromParts(category, postSlug);
+      };
+      var syncSlugFromTitle = function () {
+        var mode = root.getAttribute('data-mode') === 'create' ? 'create' : 'edit';
+        if (mode !== 'create') return;
+        if (!(postTitleInput instanceof HTMLInputElement)) return;
+        if (!(postSlugInput instanceof HTMLInputElement)) return;
+        var nextSlug = slugifySegment(postTitleInput.value);
+        if (!nextSlug) return;
+        if (postSlugInput.value !== nextSlug) {
+          postSlugInput.value = nextSlug;
+        }
       };
       var toFullPostUrl = function (pathValue) {
         var normalizedPath = String(pathValue || '').trim();
@@ -784,9 +762,6 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         var fullPostUrl = toFullPostUrl(computedPostPath);
         if (postUrlLabel instanceof HTMLElement) {
           postUrlLabel.textContent = fullPostUrl;
-        }
-        if (postUrlText instanceof HTMLElement) {
-          postUrlText.textContent = fullPostUrl;
         }
         return fullPostUrl;
       };
@@ -822,11 +797,12 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
             postTitleInput.value = contentTitle;
           }
         }
-        if (postDescriptionInput instanceof HTMLTextAreaElement) {
-          var contentDescription = readFrontmatterField(contentInput.value, 'description');
-          if (postDescriptionInput.value !== contentDescription) {
-            postDescriptionInput.value = contentDescription;
-          }
+        if (postDraftInput instanceof HTMLInputElement) {
+          postDraftInput.checked = toBooleanFromField(readFrontmatterField(contentInput.value, 'draft'));
+        }
+        if (postDateTimeInput instanceof HTMLInputElement) {
+          var contentDate = readFrontmatterField(contentInput.value, 'date');
+          postDateTimeInput.value = toDateTimeLocalValue(contentDate);
         }
         if (!(thumbnailUrlInput instanceof HTMLInputElement)) return;
         var thumbnailInFrontmatter = readFrontmatterField(contentInput.value, 'thumbnail');
@@ -846,8 +822,10 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         var nextContent = contentInput.value;
         if (sourceField === 'title' && postTitleInput instanceof HTMLInputElement) {
           nextContent = syncFrontmatterTitle(nextContent, postTitleInput.value);
-        } else if (sourceField === 'description' && postDescriptionInput instanceof HTMLTextAreaElement) {
-          nextContent = syncFrontmatterField(nextContent, 'description', postDescriptionInput.value);
+        } else if (sourceField === 'draft' && postDraftInput instanceof HTMLInputElement) {
+          nextContent = syncFrontmatterField(nextContent, 'draft', postDraftInput.checked ? 'true' : 'false');
+        } else if (sourceField === 'date' && postDateTimeInput instanceof HTMLInputElement) {
+          nextContent = syncFrontmatterField(nextContent, 'date', postDateTimeInput.value);
         } else if (sourceField === 'thumbnail' && thumbnailUrlInput instanceof HTMLInputElement) {
           nextContent = syncFrontmatterField(nextContent, 'thumbnail', thumbnailUrlInput.value);
         } else if (sourceField === 'tags' && postTagsInput instanceof HTMLInputElement) {
@@ -865,12 +843,6 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         var thumbnailUrl = thumbnailUrlFromInput || meta.thumbnail;
         var thumbnailAlt = meta.thumbnailAlt || meta.title || 'Post thumbnail preview';
         syncComputedPostUrl();
-        if (thumbnailTitlePreview instanceof HTMLElement) {
-          thumbnailTitlePreview.textContent = meta.title;
-        }
-        if (thumbnailDescriptionPreview instanceof HTMLElement) {
-          thumbnailDescriptionPreview.textContent = meta.description || 'Post description preview will appear from frontmatter.';
-        }
         if (!(thumbnailImage instanceof HTMLImageElement) || !(thumbnailEmpty instanceof HTMLElement)) {
           return;
         }
@@ -973,20 +945,20 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
 
       refreshTargetPath();
       syncMetaInputsFromContent();
+      syncSlugFromTitle();
+      refreshTargetPath();
       syncComputedPostUrl();
       renderPreview();
       renderThumbnailPreview();
 
-      var categoryInput = form.elements.namedItem('category');
-      var postSlugInput = form.elements.namedItem('postSlug');
       var refreshPathAndPreview = function () {
         refreshTargetPath();
         syncComputedPostUrl();
         renderThumbnailPreview();
       };
 
-      if (categoryInput instanceof HTMLInputElement) {
-        categoryInput.addEventListener('input', refreshPathAndPreview);
+      if (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement) {
+        categoryInput.addEventListener('change', refreshPathAndPreview);
       }
       if (postSlugInput instanceof HTMLInputElement) {
         postSlugInput.addEventListener('input', refreshPathAndPreview);
@@ -994,15 +966,22 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
       if (postTitleInput instanceof HTMLInputElement) {
         postTitleInput.addEventListener('input', function () {
           syncContentMetaFromInputs('title');
+          syncSlugFromTitle();
+          refreshPathAndPreview();
           renderPreview();
           renderThumbnailPreview();
         });
       }
-      if (postDescriptionInput instanceof HTMLTextAreaElement) {
-        postDescriptionInput.addEventListener('input', function () {
-          syncContentMetaFromInputs('description');
+      if (postDraftInput instanceof HTMLInputElement) {
+        postDraftInput.addEventListener('change', function () {
+          syncContentMetaFromInputs('draft');
           renderPreview();
-          renderThumbnailPreview();
+        });
+      }
+      if (postDateTimeInput instanceof HTMLInputElement) {
+        postDateTimeInput.addEventListener('change', function () {
+          syncContentMetaFromInputs('date');
+          renderPreview();
         });
       }
       if (thumbnailUrlInput instanceof HTMLInputElement) {
@@ -1023,6 +1002,8 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         contentInput.addEventListener('input', function () {
           renderPreview();
           syncMetaInputsFromContent();
+          syncSlugFromTitle();
+          refreshPathAndPreview();
           renderThumbnailPreview();
         });
       }
@@ -1032,7 +1013,7 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         if (loginButton instanceof HTMLAnchorElement) {
           loginButton.hidden = true;
         }
-        setStatus(statusEl, 'Quick PR flow requires PUBLIC_GITHUB_AUTH_WORKER_URL to be configured.', 'error');
+        setStatus(statusEl, 'Quick Pull Request flow requires PUBLIC_GITHUB_AUTH_WORKER_URL to be configured.', 'error');
         return;
       }
 
@@ -1056,7 +1037,7 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
           if (loginButton instanceof HTMLAnchorElement) {
             loginButton.hidden = false;
           }
-          setStatus(statusEl, 'Sign in first, then create your pull request from this form.', 'info');
+          setStatus(statusEl, 'Sign in first, then create your Pull Request from this form.', 'info');
         }
       } catch (_) {
         submitButton.disabled = true;
@@ -1082,7 +1063,7 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
         var content = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
 
         if (!prTitle) {
-          setStatus(statusEl, 'PR title is required.', 'error');
+          setStatus(statusEl, 'Pull Request title is required.', 'error');
           return;
         }
 
@@ -1093,7 +1074,7 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
 
         submitButton.disabled = true;
         submitButton.setAttribute('aria-busy', 'true');
-        setStatus(statusEl, 'Creating branch, committing markdown, and opening PR...', 'info');
+        setStatus(statusEl, 'Creating branch, committing markdown, and opening Pull Request...', 'info');
         if (prLink instanceof HTMLAnchorElement) {
           prLink.hidden = true;
           prLink.href = '#';
@@ -1126,7 +1107,7 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
           if (!response.ok) {
             var errorMessage = data && typeof data.error === 'string'
               ? data.error
-              : 'Unable to create pull request. Try again.';
+              : 'Unable to create Pull Request. Try again.';
             throw new Error(errorMessage);
           }
 
@@ -1159,7 +1140,7 @@ const resolvedFixedFilePath = normalizedMode === 'edit' ? fixedFilePath ?? '' : 
             setStatus(statusEl, 'Pull request created successfully.', 'success');
           }
         } catch (error) {
-          var message = error instanceof Error ? error.message : 'Unable to create pull request.';
+          var message = error instanceof Error ? error.message : 'Unable to create Pull Request.';
           setStatus(statusEl, message, 'error');
         } finally {
           submitButton.disabled = false;
