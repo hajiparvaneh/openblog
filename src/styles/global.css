@@ -871,6 +871,31 @@ p {
   outline-offset: 1px;
 }
 
+.quick-contribute-mode-toggle {
+  margin-left: auto;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1;
+  padding: 0.2rem 0.46rem;
+  cursor: pointer;
+}
+
+.quick-contribute-mode-toggle:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: var(--surface);
+}
+
+.quick-contribute-mode-toggle:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--primary) 45%, transparent);
+  outline-offset: 1px;
+}
+
 .quick-contribute-field input,
 .quick-contribute-field textarea,
 .quick-contribute-field select {

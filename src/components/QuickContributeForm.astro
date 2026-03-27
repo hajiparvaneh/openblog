@@ -102,6 +102,12 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
             <span>Content</span>
             <button
               type="button"
+              class="quick-contribute-mode-toggle"
+              data-quick-toggle-full-file
+              aria-pressed="false"
+            >Show full file</button>
+            <button
+              type="button"
               class="quick-contribute-help-trigger"
               data-help-trigger
               data-help-title="Content"
@@ -321,6 +327,23 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
     var stripFrontmatter = function (source) {
       var normalized = String(source || '').replace(/\r\n/g, '\n');
       return normalized.replace(/^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/, '');
+    };
+
+    var ensureFrontmatterBlock = function (source) {
+      var normalized = String(source || '').replace(/\r\n/g, '\n');
+      if (/^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/.test(normalized)) {
+        return normalized;
+      }
+      var body = normalized.replace(/^\n+/, '');
+      return body ? '---\n---\n\n' + body : '---\n---\n';
+    };
+
+    var replaceBodyWithFrontmatter = function (source, nextBody) {
+      var normalized = String(source || '').replace(/\r\n/g, '\n');
+      var frontmatterMatch = normalized.match(/^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/);
+      var body = String(nextBody || '').replace(/\r\n/g, '\n').replace(/^\n+/, '');
+      if (!frontmatterMatch) return body;
+      return frontmatterMatch[0] + body;
     };
 
     var renderMarkdownPreview = function (source) {
@@ -790,6 +813,11 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       var thumbnailEmpty = form.querySelector('[data-quick-thumbnail-empty]');
       var postUrlLabel = form.querySelector('[data-quick-post-url-label]');
       var tagsPreview = form.querySelector('[data-quick-tags-preview]');
+      var fullFileToggleButton = form.querySelector('[data-quick-toggle-full-file]');
+      var contentSourceWithFrontmatter = contentInput instanceof HTMLTextAreaElement
+        ? ensureFrontmatterBlock(String(contentInput.value || ''))
+        : '---\n---\n';
+      var isFullFileView = false;
 
       if (!(submitButton instanceof HTMLButtonElement)) return;
       if (loginButton instanceof HTMLAnchorElement) {
@@ -921,60 +949,106 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         });
         tagsPreview.hidden = false;
       };
-      var syncMetaInputsFromContent = function () {
-        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+      var syncMetaInputsFromContent = function (sourceContent) {
+        var source = typeof sourceContent === 'string'
+          ? sourceContent
+          : (contentInput instanceof HTMLTextAreaElement ? contentInput.value : '');
         if (postTitleInput instanceof HTMLInputElement) {
-          var contentTitle = readFrontmatterField(contentInput.value, 'title');
+          var contentTitle = readFrontmatterField(source, 'title');
           if (contentTitle && postTitleInput.value !== contentTitle) {
             postTitleInput.value = contentTitle;
           }
         }
         if (postDraftInput instanceof HTMLInputElement) {
-          postDraftInput.checked = toBooleanFromField(readFrontmatterField(contentInput.value, 'draft'));
+          postDraftInput.checked = toBooleanFromField(readFrontmatterField(source, 'draft'));
         }
         if (postDateTimeInput instanceof HTMLInputElement) {
-          var contentDate = readFrontmatterField(contentInput.value, 'date');
+          var contentDate = readFrontmatterField(source, 'date');
           postDateTimeInput.value = toDateTimeLocalValue(contentDate);
         }
         if (!(thumbnailUrlInput instanceof HTMLInputElement)) return;
-        var thumbnailInFrontmatter = readFrontmatterField(contentInput.value, 'thumbnail');
+        var thumbnailInFrontmatter = readFrontmatterField(source, 'thumbnail');
         if (thumbnailUrlInput.value !== thumbnailInFrontmatter) {
           thumbnailUrlInput.value = thumbnailInFrontmatter;
         }
         if (postTagsInput instanceof HTMLInputElement) {
-          var contentTags = readFrontmatterTags(contentInput.value);
+          var contentTags = readFrontmatterTags(source);
           if (postTagsInput.value !== contentTags) {
             postTagsInput.value = contentTags;
           }
         }
         if (postLangInput instanceof HTMLSelectElement) {
-          var contentLang = readFrontmatterField(contentInput.value, 'lang');
+          var contentLang = readFrontmatterField(source, 'lang');
           setLanguageInputsFromValue(contentLang);
         }
         renderTagBadges();
       };
-      var syncContentMetaFromInputs = function (sourceField) {
-        if (!(contentInput instanceof HTMLTextAreaElement)) return;
-        var nextContent = contentInput.value;
-        if (sourceField === 'title' && postTitleInput instanceof HTMLInputElement) {
+      var getEditorBodyContent = function () {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return '';
+        var source = String(contentInput.value || '');
+        if (isFullFileView) {
+          return stripFrontmatter(source).replace(/^\n+/, '');
+        }
+        return source;
+      };
+      var buildContentForSubmission = function (bodyOverride) {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return '';
+        var sourceForFrontmatter = isFullFileView
+          ? ensureFrontmatterBlock(String(contentInput.value || ''))
+          : ensureFrontmatterBlock(contentSourceWithFrontmatter);
+        var nextContent = sourceForFrontmatter;
+        if (postTitleInput instanceof HTMLInputElement) {
           nextContent = syncFrontmatterTitle(nextContent, postTitleInput.value);
-        } else if (sourceField === 'draft' && postDraftInput instanceof HTMLInputElement) {
+        }
+        if (postDraftInput instanceof HTMLInputElement) {
           nextContent = syncFrontmatterField(nextContent, 'draft', postDraftInput.checked ? 'true' : 'false');
-        } else if (sourceField === 'date' && postDateTimeInput instanceof HTMLInputElement) {
+        }
+        if (postDateTimeInput instanceof HTMLInputElement) {
           nextContent = syncFrontmatterField(nextContent, 'date', postDateTimeInput.value);
-        } else if (sourceField === 'thumbnail' && thumbnailUrlInput instanceof HTMLInputElement) {
+        }
+        if (thumbnailUrlInput instanceof HTMLInputElement) {
           nextContent = syncFrontmatterField(nextContent, 'thumbnail', thumbnailUrlInput.value);
-        } else if (sourceField === 'tags' && postTagsInput instanceof HTMLInputElement) {
+        }
+        if (postTagsInput instanceof HTMLInputElement) {
           nextContent = syncFrontmatterTags(nextContent, postTagsInput.value);
-        } else if (sourceField === 'lang' && postLangInput instanceof HTMLSelectElement) {
+        }
+        if (postLangInput instanceof HTMLSelectElement) {
           nextContent = syncFrontmatterField(nextContent, 'lang', getSelectedLanguageValue());
         }
-        if (nextContent !== contentInput.value) {
-          contentInput.value = nextContent;
+        var bodyContent = typeof bodyOverride === 'string' ? bodyOverride : getEditorBodyContent();
+        return replaceBodyWithFrontmatter(nextContent, bodyContent);
+      };
+      var syncContentMetaFromInputs = function () {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+        if (!isFullFileView) return;
+        var bodyContent = getEditorBodyContent();
+        contentInput.value = buildContentForSubmission(bodyContent);
+      };
+      var syncFullFileToggleLabel = function () {
+        if (!(fullFileToggleButton instanceof HTMLButtonElement)) return;
+        fullFileToggleButton.textContent = isFullFileView ? 'Hide metadata' : 'Show full file';
+        fullFileToggleButton.setAttribute('aria-pressed', isFullFileView ? 'true' : 'false');
+      };
+      var toggleFullFileView = function () {
+        if (!(contentInput instanceof HTMLTextAreaElement)) return;
+        var bodyContent = getEditorBodyContent();
+
+        if (isFullFileView) {
+          contentSourceWithFrontmatter = ensureFrontmatterBlock(String(contentInput.value || ''));
+          isFullFileView = false;
+          contentInput.value = bodyContent;
+        } else {
+          contentSourceWithFrontmatter = buildContentForSubmission(bodyContent);
+          isFullFileView = true;
+          contentInput.value = contentSourceWithFrontmatter;
         }
+
+        syncFullFileToggleLabel();
+        renderPreview();
+        renderThumbnailPreview();
       };
       var renderThumbnailPreview = function () {
-        var source = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
+        var source = buildContentForSubmission();
         var fallbackTitle = postTitleInput instanceof HTMLInputElement ? postTitleInput.value : '';
         var meta = getPreviewMetaFromContent(source, fallbackTitle);
         var thumbnailUrlFromInput = thumbnailUrlInput instanceof HTMLInputElement ? thumbnailUrlInput.value.trim() : '';
@@ -1084,7 +1158,11 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       syncCustomCategoryField();
       syncCustomLanguageField();
       refreshTargetPath();
-      syncMetaInputsFromContent();
+      syncMetaInputsFromContent(contentSourceWithFrontmatter);
+      if (contentInput instanceof HTMLTextAreaElement) {
+        contentInput.value = stripFrontmatter(contentSourceWithFrontmatter).replace(/^\n+/, '');
+      }
+      syncFullFileToggleLabel();
       syncSlugFromTitle();
       refreshTargetPath();
       syncComputedPostUrl();
@@ -1165,10 +1243,14 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           renderPreview();
         });
       }
+      if (fullFileToggleButton instanceof HTMLButtonElement) {
+        fullFileToggleButton.addEventListener('click', function () {
+          toggleFullFileView();
+        });
+      }
       if (contentInput instanceof HTMLTextAreaElement) {
         contentInput.addEventListener('input', function () {
           renderPreview();
-          syncMetaInputsFromContent();
           syncSlugFromTitle();
           refreshPathAndPreview();
           renderThumbnailPreview();
@@ -1227,17 +1309,19 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         var prBodyInput = form.elements.namedItem('prBody');
         var prTitle = prTitleInput instanceof HTMLInputElement ? prTitleInput.value.trim() : '';
         var prBody = prBodyInput instanceof HTMLTextAreaElement ? prBodyInput.value.trim() : '';
-        var content = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
+        var contentBody = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
 
         if (!prTitle) {
           setStatus(statusEl, 'Pull Request title is required.', 'error');
           return;
         }
 
-        if (!content.trim()) {
+        if (!contentBody.trim()) {
           setStatus(statusEl, 'Markdown content cannot be empty.', 'error');
           return;
         }
+
+        var content = buildContentForSubmission();
 
         submitButton.disabled = true;
         submitButton.setAttribute('aria-busy', 'true');
