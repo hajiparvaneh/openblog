@@ -931,6 +931,78 @@ p {
   line-height: 1.48;
 }
 
+.quick-content-editor {
+  display: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface);
+}
+
+.quick-contribute-form.is-content-editor-ready .quick-content-editor {
+  display: block;
+}
+
+.quick-contribute-form.is-content-editor-ready .quick-content-source {
+  display: none;
+}
+
+.quick-content-editor .toastui-editor-defaultUI {
+  border: 0;
+  border-radius: 0;
+  font-family: var(--font-main);
+}
+
+.quick-content-editor .toastui-editor-toolbar {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.quick-content-editor .toastui-editor-defaultUI-toolbar {
+  padding: 0 8px;
+}
+
+.quick-content-editor .toastui-editor-toolbar-group {
+  border-right-color: var(--border);
+}
+
+.quick-content-editor .toastui-editor-defaultUI-toolbar button {
+  width: 28px;
+  height: 28px;
+  margin: 8px 2px;
+}
+
+.quick-content-editor .toastui-editor-toolbar-divider {
+  margin: 12px 6px;
+}
+
+.quick-content-editor .toastui-editor-main {
+  background: var(--surface);
+}
+
+.quick-content-editor .toastui-editor-md-container,
+.quick-content-editor .toastui-editor-ww-container {
+  background: var(--surface);
+}
+
+.quick-content-editor .toastui-editor-md-container .toastui-editor,
+.quick-content-editor .toastui-editor-ww-container .ProseMirror {
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.quick-content-editor .toastui-editor-md-tab-container {
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-soft);
+}
+
+.quick-content-editor .toastui-editor-mode-switch,
+.quick-content-editor .toastui-editor-md-tab-container {
+  display: none !important;
+}
+
 .quick-contribute-target {
   margin: 0;
   display: grid;

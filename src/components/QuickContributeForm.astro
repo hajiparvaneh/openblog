@@ -97,7 +97,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           <code data-quick-post-url-label>https://openblog.cc/posts/&lt;category&gt;/&lt;slug&gt;</code>
         </p>
 
-        <label class="quick-contribute-field">
+        <div class="quick-contribute-field">
           <span class="quick-contribute-field-head">
             <span>Content</span>
             <button
@@ -115,16 +115,10 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
               aria-label="Content hint"
             >?</button>
           </span>
-          <textarea name="content" rows={20} required>{initialContent}</textarea>
-        </label>
+          <div class="quick-content-editor" data-quick-content-editor></div>
+          <textarea class="quick-content-source" name="content" rows={20} required>{initialContent}</textarea>
+        </div>
 
-        <section class="quick-contribute-preview" aria-label="Live preview">
-          <div class="quick-contribute-preview-head">
-            <strong class="icon-label"><i class="ti ti-eye icon-sm" aria-hidden="true"></i>Live preview</strong>
-          </div>
-          <p class="meta quick-contribute-preview-empty" data-quick-preview-empty>Start typing to see a rendered markdown preview.</p>
-          <div class="article-content quick-contribute-preview-body" data-quick-preview hidden></div>
-        </section>
       </div>
 
       <aside class="quick-editor-sidebar card">
@@ -306,7 +300,11 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
   </div>
 </section>
 
-<script is:inline>
+<script>
+  // @ts-nocheck
+  import Editor from '@toast-ui/editor';
+  import '@toast-ui/editor/dist/toastui-editor.css';
+
   (function () {
     var escapeHtml = function (value) {
       return String(value || '')
@@ -813,7 +811,10 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       var thumbnailEmpty = form.querySelector('[data-quick-thumbnail-empty]');
       var postUrlLabel = form.querySelector('[data-quick-post-url-label]');
       var tagsPreview = form.querySelector('[data-quick-tags-preview]');
+      var editorHost = form.querySelector('[data-quick-content-editor]');
       var fullFileToggleButton = form.querySelector('[data-quick-toggle-full-file]');
+      var contentEditor = null;
+      var isSyncingEditorValue = false;
       var contentSourceWithFrontmatter = contentInput instanceof HTMLTextAreaElement
         ? ensureFrontmatterBlock(String(contentInput.value || ''))
         : '---\n---\n';
@@ -825,6 +826,31 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       }
 
       var currentUsername = '';
+      var readContentValue = function () {
+        if (contentEditor && typeof contentEditor.getMarkdown === 'function') {
+          return String(contentEditor.getMarkdown() || '');
+        }
+        return contentInput instanceof HTMLTextAreaElement ? String(contentInput.value || '') : '';
+      };
+      var writeContentValue = function (value) {
+        var nextValue = String(value || '');
+        if (contentInput instanceof HTMLTextAreaElement && contentInput.value !== nextValue) {
+          contentInput.value = nextValue;
+        }
+        if (contentEditor && typeof contentEditor.setMarkdown === 'function') {
+          var currentValue = '';
+          try {
+            currentValue = String(contentEditor.getMarkdown() || '');
+          } catch (_) {
+            currentValue = '';
+          }
+          if (currentValue !== nextValue) {
+            isSyncingEditorValue = true;
+            contentEditor.setMarkdown(nextValue, false);
+            isSyncingEditorValue = false;
+          }
+        }
+      };
       var getSelectedCategoryValue = function () {
         var selectedCategory = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
           ? categoryInput.value
@@ -952,7 +978,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       var syncMetaInputsFromContent = function (sourceContent) {
         var source = typeof sourceContent === 'string'
           ? sourceContent
-          : (contentInput instanceof HTMLTextAreaElement ? contentInput.value : '');
+          : readContentValue();
         if (postTitleInput instanceof HTMLInputElement) {
           var contentTitle = readFrontmatterField(source, 'title');
           if (contentTitle && postTitleInput.value !== contentTitle) {
@@ -984,8 +1010,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         renderTagBadges();
       };
       var getEditorBodyContent = function () {
-        if (!(contentInput instanceof HTMLTextAreaElement)) return '';
-        var source = String(contentInput.value || '');
+        var source = readContentValue();
         if (isFullFileView) {
           return stripFrontmatter(source).replace(/^\n+/, '');
         }
@@ -994,7 +1019,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       var buildContentForSubmission = function (bodyOverride) {
         if (!(contentInput instanceof HTMLTextAreaElement)) return '';
         var sourceForFrontmatter = isFullFileView
-          ? ensureFrontmatterBlock(String(contentInput.value || ''))
+          ? ensureFrontmatterBlock(readContentValue())
           : ensureFrontmatterBlock(contentSourceWithFrontmatter);
         var nextContent = sourceForFrontmatter;
         if (postTitleInput instanceof HTMLInputElement) {
@@ -1022,7 +1047,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         if (!(contentInput instanceof HTMLTextAreaElement)) return;
         if (!isFullFileView) return;
         var bodyContent = getEditorBodyContent();
-        contentInput.value = buildContentForSubmission(bodyContent);
+        writeContentValue(buildContentForSubmission(bodyContent));
       };
       var syncFullFileToggleLabel = function () {
         if (!(fullFileToggleButton instanceof HTMLButtonElement)) return;
@@ -1034,13 +1059,13 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         var bodyContent = getEditorBodyContent();
 
         if (isFullFileView) {
-          contentSourceWithFrontmatter = ensureFrontmatterBlock(String(contentInput.value || ''));
+          contentSourceWithFrontmatter = ensureFrontmatterBlock(readContentValue());
           isFullFileView = false;
-          contentInput.value = bodyContent;
+          writeContentValue(bodyContent);
         } else {
           contentSourceWithFrontmatter = buildContentForSubmission(bodyContent);
           isFullFileView = true;
-          contentInput.value = contentSourceWithFrontmatter;
+          writeContentValue(contentSourceWithFrontmatter);
         }
 
         syncFullFileToggleLabel();
@@ -1079,11 +1104,10 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         }
       };
       var renderPreview = function () {
-        if (!(contentInput instanceof HTMLTextAreaElement)) return;
         if (!(preview instanceof HTMLElement)) return;
         if (!(previewEmpty instanceof HTMLElement)) return;
 
-        var source = contentInput.value || '';
+        var source = readContentValue();
         if (!source.trim()) {
           preview.innerHTML = '';
           preview.hidden = true;
@@ -1160,7 +1184,33 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       refreshTargetPath();
       syncMetaInputsFromContent(contentSourceWithFrontmatter);
       if (contentInput instanceof HTMLTextAreaElement) {
-        contentInput.value = stripFrontmatter(contentSourceWithFrontmatter).replace(/^\n+/, '');
+        writeContentValue(stripFrontmatter(contentSourceWithFrontmatter).replace(/^\n+/, ''));
+      }
+      if (editorHost instanceof HTMLElement && contentInput instanceof HTMLTextAreaElement) {
+        try {
+          contentEditor = new Editor({
+            el: editorHost,
+            initialEditType: 'markdown',
+            previewStyle: 'vertical',
+            hideModeSwitch: true,
+            usageStatistics: false,
+            height: '460px',
+            initialValue: contentInput.value,
+            toolbarItems: [
+              ['heading', 'bold', 'italic', 'strike'],
+              ['quote', 'ul', 'ol'],
+              ['image', 'link'],
+              ['code', 'codeblock']
+            ]
+          });
+          if (typeof contentEditor.changeMode === 'function') {
+            contentEditor.changeMode('markdown', true);
+          }
+          form.classList.add('is-content-editor-ready');
+        } catch (_) {
+          contentEditor = null;
+          form.classList.remove('is-content-editor-ready');
+        }
       }
       syncFullFileToggleLabel();
       syncSlugFromTitle();
@@ -1174,6 +1224,25 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         syncComputedPostUrl();
         renderThumbnailPreview();
       };
+      var handleEditableContentChanged = function () {
+        renderPreview();
+        syncSlugFromTitle();
+        refreshPathAndPreview();
+        renderThumbnailPreview();
+      };
+      if (contentEditor && contentInput instanceof HTMLTextAreaElement) {
+        contentEditor.on('change', function () {
+          if (isSyncingEditorValue) return;
+          var markdown = String(contentEditor.getMarkdown() || '');
+          if (!isFullFileView && /^---\n[\s\S]*?\n(?:---|\.\.\.)\n?/.test(markdown)) {
+            markdown = stripFrontmatter(markdown).replace(/^\n+/, '');
+            writeContentValue(markdown);
+          } else {
+            contentInput.value = markdown;
+          }
+          handleEditableContentChanged();
+        });
+      }
 
       if (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement) {
         categoryInput.addEventListener('change', function () {
@@ -1250,10 +1319,8 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       }
       if (contentInput instanceof HTMLTextAreaElement) {
         contentInput.addEventListener('input', function () {
-          renderPreview();
-          syncSlugFromTitle();
-          refreshPathAndPreview();
-          renderThumbnailPreview();
+          if (contentEditor) return;
+          handleEditableContentChanged();
         });
       }
 
@@ -1309,7 +1376,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         var prBodyInput = form.elements.namedItem('prBody');
         var prTitle = prTitleInput instanceof HTMLInputElement ? prTitleInput.value.trim() : '';
         var prBody = prBodyInput instanceof HTMLTextAreaElement ? prBodyInput.value.trim() : '';
-        var contentBody = contentInput instanceof HTMLTextAreaElement ? contentInput.value : '';
+        var contentBody = getEditorBodyContent();
 
         if (!prTitle) {
           setStatus(statusEl, 'Pull Request title is required.', 'error');
