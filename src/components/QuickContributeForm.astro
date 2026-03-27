@@ -127,7 +127,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           <strong class="quick-sidebar-title icon-label"><i class="ti ti-send icon-sm" aria-hidden="true"></i>Publish</strong>
           <p class="quick-contribute-auth-gate" data-quick-auth-gate hidden></p>
           <div class="quick-contribute-actions quick-contribute-actions-sidebar">
-            <a class="contribute-action" data-quick-contribute-login href="#" target="_blank" rel="noopener" hidden>
+            <a class="contribute-action" data-quick-contribute-login href="#" hidden>
               <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
               Sign in with GitHub
             </a>
@@ -780,6 +780,36 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         url.searchParams.set('return_to', window.location.href);
         return url.toString();
       };
+      var draftStorageKey = [
+        'openblog',
+        'quick-contribute',
+        window.location.pathname,
+        root.getAttribute('data-mode') || 'edit',
+        root.getAttribute('data-fixed-file-path') || ''
+      ].join('|');
+      var pendingAuthStorageKey = draftStorageKey + '|pending-auth';
+      var readSessionValue = function (key) {
+        try {
+          return window.sessionStorage.getItem(key);
+        } catch (_) {
+          return null;
+        }
+      };
+      var setSessionValue = function (key, value) {
+        try {
+          window.sessionStorage.setItem(key, value);
+          return true;
+        } catch (_) {
+          return false;
+        }
+      };
+      var removeSessionValue = function (key) {
+        try {
+          window.sessionStorage.removeItem(key);
+        } catch (_) {
+          // no-op
+        }
+      };
 
       var form = root.querySelector('[data-quick-contribute-form]');
       if (!(form instanceof HTMLFormElement)) return;
@@ -826,13 +856,15 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       if (!(submitButton instanceof HTMLButtonElement)) return;
       if (loginButton instanceof HTMLAnchorElement) {
         loginButton.href = toLoginUrl();
+        loginButton.removeAttribute('target');
+        loginButton.removeAttribute('rel');
       }
 
       var currentUsername = '';
       var authState = 'checking';
       var isSubmitting = false;
-      var loginPopup = null;
-      var loginPollTimer = 0;
+      var pendingAuthAfterRedirect = readSessionValue(pendingAuthStorageKey) === '1';
+      var draftSaveTimer = 0;
       var syncSubmitAvailability = function () {
         submitButton.disabled = isSubmitting || authState !== 'authenticated';
         submitButton.setAttribute('aria-disabled', submitButton.disabled ? 'true' : 'false');
@@ -860,10 +892,18 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           setStatus(statusEl, message, kind || 'info');
         }
       };
-      var stopLoginPolling = function () {
-        if (!loginPollTimer) return;
-        window.clearInterval(loginPollTimer);
-        loginPollTimer = 0;
+      var saveDraftState = function () {
+        return false;
+      };
+      var queueDraftSave = function () {
+        if (draftSaveTimer) {
+          window.clearTimeout(draftSaveTimer);
+          draftSaveTimer = 0;
+        }
+        draftSaveTimer = window.setTimeout(function () {
+          draftSaveTimer = 0;
+          saveDraftState();
+        }, 220);
       };
       var refreshAuthStatus = async function (options) {
         var silent = Boolean(options && options.silent);
@@ -878,12 +918,27 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
             var currentUser = await authResponse.json();
             if (currentUser && typeof currentUser.login === 'string') {
               currentUsername = currentUser.login;
-              applyAuthState('authenticated', 'Signed in as @' + currentUsername + '. You can now create or edit this page.', 'info');
+              applyAuthState(
+                'authenticated',
+                pendingAuthAfterRedirect
+                  ? 'Signed in as @' + currentUsername + '. Your draft is still here.'
+                  : 'Signed in as @' + currentUsername + '. You can now create or edit this page.',
+                'info'
+              );
             } else {
               currentUsername = '';
-              applyAuthState('authenticated', 'Signed in. You can now create or edit this page.', 'info');
+              applyAuthState(
+                'authenticated',
+                pendingAuthAfterRedirect
+                  ? 'Signed in. Your draft is still here.'
+                  : 'Signed in. You can now create or edit this page.',
+                'info'
+              );
             }
-            stopLoginPolling();
+            if (pendingAuthAfterRedirect) {
+              removeSessionValue(pendingAuthStorageKey);
+              pendingAuthAfterRedirect = false;
+            }
             return true;
           }
           currentUsername = '';
@@ -903,41 +958,11 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           return false;
         }
       };
-      var openLoginPopup = function () {
-        var loginUrl = toLoginUrl();
-        try {
-          loginPopup = window.open(loginUrl, 'openblog-github-login', 'popup=yes,width=620,height=760');
-        } catch (_) {
-          loginPopup = null;
-        }
-        if (!loginPopup) {
-          setStatus(statusEl, 'Popup blocked. Allow popups, then try Sign in with GitHub again.', 'error');
-          return false;
-        }
-        setStatus(statusEl, 'Complete sign in in the new window. This page will update automatically.', 'info');
-        stopLoginPolling();
-        var attempts = 0;
-        loginPollTimer = window.setInterval(function () {
-          attempts += 1;
-          void refreshAuthStatus({ silent: true }).then(function (isAuthenticated) {
-            if (isAuthenticated) {
-              stopLoginPolling();
-            }
-          });
-          var popupClosed = false;
-          try {
-            popupClosed = Boolean(loginPopup && loginPopup.closed);
-          } catch (_) {
-            popupClosed = true;
-          }
-          if (popupClosed && attempts > 2) {
-            stopLoginPolling();
-            void refreshAuthStatus({ silent: false });
-          }
-          if (attempts >= 120) {
-            stopLoginPolling();
-          }
-        }, 1500);
+      var startLoginRedirect = function () {
+        saveDraftState();
+        setSessionValue(pendingAuthStorageKey, '1');
+        setStatus(statusEl, 'Redirecting to GitHub sign in...', 'info');
+        window.location.assign(toLoginUrl());
         return true;
       };
       applyAuthState('checking', 'Checking sign-in status...', 'info');
@@ -1158,6 +1183,107 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         var bodyContent = typeof bodyOverride === 'string' ? bodyOverride : getEditorBodyContent();
         return replaceBodyWithFrontmatter(nextContent, bodyContent);
       };
+      saveDraftState = function () {
+        var payload = {
+          version: 1,
+          mode: root.getAttribute('data-mode') || 'edit',
+          fixedFilePath: root.getAttribute('data-fixed-file-path') || '',
+          postTitle: postTitleInput instanceof HTMLInputElement ? postTitleInput.value : '',
+          postDraft: postDraftInput instanceof HTMLInputElement ? postDraftInput.checked : false,
+          postDateTime: postDateTimeInput instanceof HTMLInputElement ? postDateTimeInput.value : '',
+          category:
+            categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement
+              ? categoryInput.value
+              : '',
+          customCategory: customCategoryInput instanceof HTMLInputElement ? customCategoryInput.value : '',
+          thumbnailUrl: thumbnailUrlInput instanceof HTMLInputElement ? thumbnailUrlInput.value : '',
+          postTags: postTagsInput instanceof HTMLInputElement ? postTagsInput.value : '',
+          postLang: postLangInput instanceof HTMLSelectElement ? postLangInput.value : '',
+          customPostLang: customPostLangInput instanceof HTMLInputElement ? customPostLangInput.value : '',
+          prTitle: prTitleInput instanceof HTMLInputElement ? prTitleInput.value : '',
+          prBody:
+            form.elements.namedItem('prBody') instanceof HTMLTextAreaElement
+              ? form.elements.namedItem('prBody').value
+              : '',
+          content: buildContentForSubmission(),
+          isFullFileView: Boolean(isFullFileView),
+          updatedAt: Date.now()
+        };
+        return setSessionValue(draftStorageKey, JSON.stringify(payload));
+      };
+      var restoreDraftState = function () {
+        var raw = readSessionValue(draftStorageKey);
+        if (!raw) return false;
+
+        var saved = null;
+        try {
+          saved = JSON.parse(raw);
+        } catch (_) {
+          removeSessionValue(draftStorageKey);
+          return false;
+        }
+        if (!saved || typeof saved !== 'object') return false;
+        if ((saved.mode || '') !== (root.getAttribute('data-mode') || '')) return false;
+        if ((saved.fixedFilePath || '') !== (root.getAttribute('data-fixed-file-path') || '')) return false;
+
+        if (postTitleInput instanceof HTMLInputElement && typeof saved.postTitle === 'string') {
+          postTitleInput.value = saved.postTitle;
+        }
+        if (postDraftInput instanceof HTMLInputElement) {
+          postDraftInput.checked = Boolean(saved.postDraft);
+        }
+        if (postDateTimeInput instanceof HTMLInputElement && typeof saved.postDateTime === 'string') {
+          postDateTimeInput.value = saved.postDateTime;
+        }
+        if (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement) {
+          if (typeof saved.category === 'string' && saved.category) {
+            if (categoryInput instanceof HTMLSelectElement && !hasSelectOption(categoryInput, saved.category)) {
+              categoryInput.value = '__new__';
+            } else {
+              categoryInput.value = saved.category;
+            }
+          }
+        }
+        if (customCategoryInput instanceof HTMLInputElement && typeof saved.customCategory === 'string') {
+          customCategoryInput.value = saved.customCategory;
+        }
+        if (thumbnailUrlInput instanceof HTMLInputElement && typeof saved.thumbnailUrl === 'string') {
+          thumbnailUrlInput.value = saved.thumbnailUrl;
+        }
+        if (postTagsInput instanceof HTMLInputElement && typeof saved.postTags === 'string') {
+          postTagsInput.value = saved.postTags;
+        }
+        if (postLangInput instanceof HTMLSelectElement && typeof saved.postLang === 'string') {
+          if (hasSelectOption(postLangInput, saved.postLang)) {
+            postLangInput.value = saved.postLang;
+          } else {
+            postLangInput.value = '__new_lang__';
+          }
+        }
+        if (customPostLangInput instanceof HTMLInputElement && typeof saved.customPostLang === 'string') {
+          customPostLangInput.value = saved.customPostLang;
+        }
+        if (prTitleInput instanceof HTMLInputElement && typeof saved.prTitle === 'string') {
+          prTitleInput.value = saved.prTitle;
+        }
+        var prBodyInputForRestore = form.elements.namedItem('prBody');
+        if (prBodyInputForRestore instanceof HTMLTextAreaElement && typeof saved.prBody === 'string') {
+          prBodyInputForRestore.value = saved.prBody;
+        }
+        if (typeof saved.content === 'string') {
+          contentSourceWithFrontmatter = ensureFrontmatterBlock(saved.content);
+          isFullFileView = Boolean(saved.isFullFileView);
+          if (isFullFileView) {
+            writeContentValue(contentSourceWithFrontmatter);
+          } else {
+            writeContentValue(stripFrontmatter(contentSourceWithFrontmatter).replace(/^\n+/, ''));
+          }
+        }
+        syncCustomCategoryField();
+        syncCustomLanguageField();
+        syncMetaInputsFromContent(contentSourceWithFrontmatter);
+        return true;
+      };
       var syncContentMetaFromInputs = function () {
         if (!(contentInput instanceof HTMLTextAreaElement)) return;
         if (!isFullFileView) return;
@@ -1186,6 +1312,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         syncFullFileToggleLabel();
         renderPreview();
         renderThumbnailPreview();
+        queueDraftSave();
       };
       var renderThumbnailPreview = function () {
         var source = buildContentForSubmission();
@@ -1327,6 +1454,10 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           form.classList.remove('is-content-editor-ready');
         }
       }
+      var restoredDraft = restoreDraftState();
+      if (restoredDraft && !pendingAuthAfterRedirect) {
+        setStatus(statusEl, 'Restored your unsaved draft from this browser session.', 'info');
+      }
       syncFullFileToggleLabel();
       syncSlugFromTitle();
       refreshTargetPath();
@@ -1344,6 +1475,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         syncSlugFromTitle();
         refreshPathAndPreview();
         renderThumbnailPreview();
+        queueDraftSave();
       };
       if (contentEditor && contentInput instanceof HTMLTextAreaElement) {
         contentEditor.on('change', function () {
@@ -1438,11 +1570,16 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           handleEditableContentChanged();
         });
       }
+      form.addEventListener('input', queueDraftSave);
+      form.addEventListener('change', queueDraftSave);
+      window.addEventListener('beforeunload', function () {
+        saveDraftState();
+      });
 
       if (loginButton instanceof HTMLAnchorElement) {
         loginButton.addEventListener('click', function (event) {
           event.preventDefault();
-          openLoginPopup();
+          startLoginRedirect();
         });
       }
       window.addEventListener('focus', function () {
@@ -1460,10 +1597,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         event.preventDefault();
         if (authState !== 'authenticated') {
           applyAuthState('anonymous', 'Sign in with GitHub first to create or edit this page.', 'info');
-          var popupOpened = openLoginPopup();
-          if (!popupOpened && loginButton instanceof HTMLAnchorElement) {
-            loginButton.focus();
-          }
+          startLoginRedirect();
           return;
         }
         if (submitButton.disabled) return;
@@ -1561,8 +1695,14 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
                 : 'Pull request created successfully. Use the link to open it.',
               'success'
             );
+            removeSessionValue(draftStorageKey);
+            removeSessionValue(pendingAuthStorageKey);
+            pendingAuthAfterRedirect = false;
           } else {
             setStatus(statusEl, 'Pull request created successfully.', 'success');
+            removeSessionValue(draftStorageKey);
+            removeSessionValue(pendingAuthStorageKey);
+            pendingAuthAfterRedirect = false;
           }
         } catch (error) {
           var message = error instanceof Error ? error.message : 'Unable to create Pull Request.';
