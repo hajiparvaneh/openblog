@@ -46,6 +46,8 @@ const resolvedCategoryFromPath = fixedPathMatch?.[1] ?? '';
 const resolvedSlugFromPath = fixedPathMatch?.[2] ?? '';
 const resolvedInitialCategory = normalizedMode === 'create' ? initialCategory : resolvedCategoryFromPath;
 const resolvedInitialPostSlug = normalizedMode === 'create' ? initialPostSlug : resolvedSlugFromPath;
+const customCategoryOptionValue = '__new__';
+const customLanguageOptionValue = '__new_lang__';
 const categoryOptions = [
   'networking',
   'security',
@@ -163,8 +165,23 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
               {categoryOptions.map((option) => (
                 <option value={option} selected={option === defaultCategoryValue}>{option}</option>
               ))}
+              {normalizedMode === 'create' && <option value={customCategoryOptionValue}>+ Add new category</option>}
             </select>
           </label>
+          {normalizedMode === 'create' && (
+            <label class="quick-contribute-field" data-quick-category-custom-wrap hidden>
+              <span class="quick-contribute-field-head">
+                <span>New category</span>
+              </span>
+              <input
+                type="text"
+                name="customCategory"
+                placeholder="ai-ops"
+                autocomplete="off"
+                spellcheck="false"
+              />
+            </label>
+          )}
         </section>
 
         <section class="quick-sidebar-panel">
@@ -202,6 +219,39 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
             </span>
             <input type="text" name="postTags" placeholder="networking, dns, troubleshooting" autocomplete="off" />
             <div class="quick-contribute-tags-preview" data-quick-tags-preview hidden></div>
+          </label>
+          <label class="quick-contribute-field">
+            <span class="quick-contribute-field-head">
+              <span>Language</span>
+            </span>
+            <select name="postLang">
+              <option value="en" selected>English - en 🇺🇸</option>
+              <option value="fa">Persian - fa 🇮🇷</option>
+              <option value="de">German - de 🇩🇪</option>
+              <option value="fr">French - fr 🇫🇷</option>
+              <option value="es">Spanish - es 🇪🇸</option>
+              <option value="it">Italian - it 🇮🇹</option>
+              <option value="tr">Turkish - tr 🇹🇷</option>
+              <option value="ar">Arabic - ar 🇸🇦</option>
+              <option value="pt">Portuguese - pt 🇵🇹</option>
+              <option value="hi">Hindi - hi 🇮🇳</option>
+              <option value="ja">Japanese - ja 🇯🇵</option>
+              <option value="ko">Korean - ko 🇰🇷</option>
+              <option value="zh">Chinese - zh 🇨🇳</option>
+              <option value={customLanguageOptionValue}>Other languages</option>
+            </select>
+          </label>
+          <label class="quick-contribute-field" data-quick-lang-custom-wrap hidden>
+            <span class="quick-contribute-field-head">
+              <span>New language</span>
+            </span>
+            <input
+              type="text"
+              name="customPostLang"
+              placeholder="pt-br"
+              autocomplete="off"
+              spellcheck="false"
+            />
           </label>
         </section>
 
@@ -576,6 +626,18 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       return updatedFrontmatter + source.slice(frontmatterMatch[0].length);
     };
 
+    var hasSelectOption = function (selectInput, value) {
+      if (!(selectInput instanceof HTMLSelectElement)) return false;
+      var normalizedValue = String(value || '').trim();
+      if (!normalizedValue) return false;
+      for (var optionIndex = 0; optionIndex < selectInput.options.length; optionIndex += 1) {
+        if (selectInput.options[optionIndex].value === normalizedValue) {
+          return true;
+        }
+      }
+      return false;
+    };
+
     var toPostUrlFromParts = function (category, postSlug) {
       var normalizedCategory = slugifySegment(category);
       var normalizedPostSlug = slugifySegment(postSlug);
@@ -639,6 +701,13 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         .replace(/^-+|-+$/g, '');
     };
 
+    var normalizeLanguageValue = function (value) {
+      return String(value || '')
+        .trim()
+        .replace(/_/g, '-')
+        .toLowerCase();
+    };
+
     var setStatus = function (statusEl, message, kind) {
       if (!statusEl) return;
       statusEl.textContent = message || '';
@@ -661,10 +730,15 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       }
 
       var categoryInput = form.elements.namedItem('category');
+      var customCategoryInput = form.elements.namedItem('customCategory');
       var postSlugInput = form.elements.namedItem('postSlug');
-      var category = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
-        ? slugifySegment(categoryInput.value)
+      var selectedCategory = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
+        ? categoryInput.value
         : '';
+      var categoryValue = selectedCategory === '__new__'
+        ? (customCategoryInput instanceof HTMLInputElement ? customCategoryInput.value : '')
+        : selectedCategory;
+      var category = slugifySegment(categoryValue);
       var postSlug = postSlugInput instanceof HTMLInputElement ? slugifySegment(postSlugInput.value) : '';
 
       var filePath = category && postSlug ? 'content/posts/' + category + '/' + postSlug + '.md' : '';
@@ -703,8 +777,13 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       var postDateTimeInput = form.elements.namedItem('postDateTime');
       var thumbnailUrlInput = form.elements.namedItem('thumbnailUrl');
       var postTagsInput = form.elements.namedItem('postTags');
+      var postLangInput = form.elements.namedItem('postLang');
+      var customPostLangInput = form.elements.namedItem('customPostLang');
       var categoryInput = form.elements.namedItem('category');
+      var customCategoryInput = form.elements.namedItem('customCategory');
       var postSlugInput = form.elements.namedItem('postSlug');
+      var categoryCustomWrap = form.querySelector('[data-quick-category-custom-wrap]');
+      var langCustomWrap = form.querySelector('[data-quick-lang-custom-wrap]');
       var preview = form.querySelector('[data-quick-preview]');
       var previewEmpty = form.querySelector('[data-quick-preview-empty]');
       var thumbnailImage = form.querySelector('[data-quick-thumbnail-image]');
@@ -718,6 +797,61 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       }
 
       var currentUsername = '';
+      var getSelectedCategoryValue = function () {
+        var selectedCategory = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
+          ? categoryInput.value
+          : '';
+        if (selectedCategory === '__new__') {
+          return customCategoryInput instanceof HTMLInputElement ? customCategoryInput.value : '';
+        }
+        return selectedCategory;
+      };
+      var syncCustomCategoryField = function () {
+        var mode = root.getAttribute('data-mode') === 'create' ? 'create' : 'edit';
+        var isCustomCategorySelected = mode === 'create'
+          && categoryInput instanceof HTMLSelectElement
+          && categoryInput.value === '__new__';
+
+        if (categoryCustomWrap instanceof HTMLElement) {
+          categoryCustomWrap.hidden = !isCustomCategorySelected;
+        }
+        if (customCategoryInput instanceof HTMLInputElement) {
+          customCategoryInput.required = isCustomCategorySelected;
+        }
+      };
+      var getSelectedLanguageValue = function () {
+        if (!(postLangInput instanceof HTMLSelectElement)) return '';
+        if (postLangInput.value === '__new_lang__') {
+          return customPostLangInput instanceof HTMLInputElement ? normalizeLanguageValue(customPostLangInput.value) : '';
+        }
+        return normalizeLanguageValue(postLangInput.value);
+      };
+      var syncCustomLanguageField = function () {
+        var isCustomLangSelected = postLangInput instanceof HTMLSelectElement
+          && postLangInput.value === '__new_lang__';
+        if (langCustomWrap instanceof HTMLElement) {
+          langCustomWrap.hidden = !isCustomLangSelected;
+        }
+        if (customPostLangInput instanceof HTMLInputElement) {
+          customPostLangInput.required = isCustomLangSelected;
+        }
+      };
+      var setLanguageInputsFromValue = function (value) {
+        if (!(postLangInput instanceof HTMLSelectElement)) return;
+        var normalizedLang = normalizeLanguageValue(value) || 'en';
+        if (hasSelectOption(postLangInput, normalizedLang)) {
+          postLangInput.value = normalizedLang;
+          if (customPostLangInput instanceof HTMLInputElement) {
+            customPostLangInput.value = '';
+          }
+        } else {
+          postLangInput.value = '__new_lang__';
+          if (customPostLangInput instanceof HTMLInputElement) {
+            customPostLangInput.value = normalizedLang;
+          }
+        }
+        syncCustomLanguageField();
+      };
       var refreshTargetPath = function () {
         return updateTargetFilePath(form, root);
       };
@@ -727,9 +861,7 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           return getPostUrlFromFilePath(root.getAttribute('data-fixed-file-path') || '');
         }
 
-        var category = (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement)
-          ? categoryInput.value
-          : '';
+        var category = getSelectedCategoryValue();
         var postSlug = postSlugInput instanceof HTMLInputElement ? postSlugInput.value : '';
         return toPostUrlFromParts(category, postSlug);
       };
@@ -815,6 +947,10 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
             postTagsInput.value = contentTags;
           }
         }
+        if (postLangInput instanceof HTMLSelectElement) {
+          var contentLang = readFrontmatterField(contentInput.value, 'lang');
+          setLanguageInputsFromValue(contentLang);
+        }
         renderTagBadges();
       };
       var syncContentMetaFromInputs = function (sourceField) {
@@ -830,6 +966,8 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           nextContent = syncFrontmatterField(nextContent, 'thumbnail', thumbnailUrlInput.value);
         } else if (sourceField === 'tags' && postTagsInput instanceof HTMLInputElement) {
           nextContent = syncFrontmatterTags(nextContent, postTagsInput.value);
+        } else if (sourceField === 'lang' && postLangInput instanceof HTMLSelectElement) {
+          nextContent = syncFrontmatterField(nextContent, 'lang', getSelectedLanguageValue());
         }
         if (nextContent !== contentInput.value) {
           contentInput.value = nextContent;
@@ -943,6 +1081,8 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
         });
       }
 
+      syncCustomCategoryField();
+      syncCustomLanguageField();
       refreshTargetPath();
       syncMetaInputsFromContent();
       syncSlugFromTitle();
@@ -958,7 +1098,13 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
       };
 
       if (categoryInput instanceof HTMLInputElement || categoryInput instanceof HTMLSelectElement) {
-        categoryInput.addEventListener('change', refreshPathAndPreview);
+        categoryInput.addEventListener('change', function () {
+          syncCustomCategoryField();
+          refreshPathAndPreview();
+        });
+      }
+      if (customCategoryInput instanceof HTMLInputElement) {
+        customCategoryInput.addEventListener('input', refreshPathAndPreview);
       }
       if (postSlugInput instanceof HTMLInputElement) {
         postSlugInput.addEventListener('input', refreshPathAndPreview);
@@ -996,6 +1142,27 @@ const defaultCategoryValue = resolvedInitialCategory || categoryOptions[0] || 'n
           syncContentMetaFromInputs('tags');
           renderTagBadges();
           renderThumbnailPreview();
+        });
+      }
+      if (postLangInput instanceof HTMLSelectElement) {
+        postLangInput.addEventListener('change', function () {
+          syncCustomLanguageField();
+          if (
+            postLangInput.value === '__new_lang__'
+            && customPostLangInput instanceof HTMLInputElement
+            && !customPostLangInput.value.trim()
+          ) {
+            renderPreview();
+            return;
+          }
+          syncContentMetaFromInputs('lang');
+          renderPreview();
+        });
+      }
+      if (customPostLangInput instanceof HTMLInputElement) {
+        customPostLangInput.addEventListener('input', function () {
+          syncContentMetaFromInputs('lang');
+          renderPreview();
         });
       }
       if (contentInput instanceof HTMLTextAreaElement) {
