@@ -1015,11 +1015,9 @@ p {
   gap: 0.28rem;
 }
 
-.quick-contribute-post-url code {
+.quick-contribute-post-url-value {
   display: block;
-  border: 1px solid var(--border);
-  background: var(--surface-soft);
-  padding: 0.5rem 0.58rem;
+  color: var(--muted);
   font-family: var(--font-mono);
   font-size: 0.8rem;
   line-height: 1.35;
