@@ -22,7 +22,7 @@ jobs:
           token: ${{ secrets.OPENBLOG_BOT_TOKEN }}
 
       - name: Validate changed files
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.OPENBLOG_BOT_TOKEN }}
           script: |

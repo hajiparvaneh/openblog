@@ -59,7 +59,7 @@ jobs:
       - name: Resolve post slugs from eligible PR file changes
         if: github.event_name != 'workflow_dispatch'
         id: resolve_post_slug
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           result-encoding: string
           script: |
@@ -156,7 +156,7 @@ jobs:
 
       - name: Comment contributed post links on PR
         if: github.event_name != 'workflow_dispatch' && steps.resolve_post_slug.outputs.has_eligible_changes == 'true'
-        uses: actions/github-script@v8
+        uses: actions/github-script@v9
         with:
           github-token: ${{ secrets.OPENBLOG_BOT_TOKEN != '' && secrets.OPENBLOG_BOT_TOKEN || github.token }}
           script: |
