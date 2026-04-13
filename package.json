@@ -14,13 +14,13 @@
   },
   "dependencies": {
     "@toast-ui/editor": "^3.2.2",
-    "astro": "^6.0.4",
+    "astro": "^6.1.5",
     "gray-matter": "^4.0.3",
     "marked": "^17.0.4"
   },
   "devDependencies": {
-    "@astrojs/check": "^0.9.7",
-    "@types/node": "^25.5.0",
+    "@astrojs/check": "^0.9.8",
+    "@types/node": "^25.6.0",
     "typescript": "^5.9.3"
   }
 }
