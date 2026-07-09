@@ -123,12 +123,6 @@ Points are determined by labels in `openblog/enums/scoring-labels.json`:
 - `translation`: +30
 - `new-post`: +50
 
-Each label entry stores:
-
-- `points`: numeric score value
-- `icon`: Tabler icon name (for example `file-plus`)
-- `color`: display color used in the UI
-
 Rules:
 
 - Only merged PRs are eligible.
@@ -163,9 +157,3 @@ These commands are primarily for maintainers/automation:
 npm run openblog:add-event
 npm run openblog:generate
 ```
-
-Recommended guardrails:
-
-- Protect `main` branch
-- Keep `openblog/generated/*` maintainer/bot-managed
-- Enforce scoring-label policy
