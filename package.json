@@ -16,7 +16,7 @@
     "@toast-ui/editor": "^3.2.2",
     "astro": "^6.0.4",
     "gray-matter": "^4.0.3",
-    "marked": "^17.0.4"
+    "marked": "^18.0.6"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.7",
