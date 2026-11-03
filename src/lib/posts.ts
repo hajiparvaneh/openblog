@@ -159,6 +159,12 @@ export function getTagRecords(): TagRecord[] {
   return [...counts.values()].sort((a, b) => b.postCount - a.postCount || a.label.localeCompare(b.label));
 }
 
+export function getTagLabelBySlug(tagSlug: string): string | undefined {
+  const normalizedTagSlug = slugifyTag(tagSlug);
+  if (!normalizedTagSlug) return undefined;
+  return getTagRecords().find((tag) => tag.slug === normalizedTagSlug)?.label;
+}
+
 export function getPostsByTagSlug(tagSlug: string): Post[] {
   const normalized = slugifyTag(tagSlug);
   return getPosts().filter((post) => post.tags.some((tag) => slugifyTag(tag) === normalized));

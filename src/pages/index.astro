@@ -559,6 +559,46 @@ const structuredData = [
       line-height: 1.2;
     }
 
+    .list-limit-note {
+      margin: 0.05rem 0 0;
+      font-size: 0.76rem;
+      line-height: 1.25;
+    }
+
+    .tag-cloud {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.38rem;
+    }
+
+    .tag-cloud-item {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.38rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.3rem 0.42rem;
+      text-decoration: none;
+    }
+
+    .tag-cloud-item .badge {
+      font-size: 0.68rem;
+      padding: 0.12rem 0.35rem;
+      background: var(--surface);
+    }
+
+    .tag-cloud-item:hover {
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      color: var(--text);
+    }
+
     .faq-list {
       display: grid;
       gap: 0.45rem;
