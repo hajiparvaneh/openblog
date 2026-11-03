@@ -13,5 +13,5 @@ const markdown = fs.existsSync(aboutPath)
 const html = marked.parse(markdown.replace(/^---[\s\S]*?---\n?/, ''));
 ---
 <BlogLayout title={`About | ${config.title}`} description={config.description}>
-  <article class="card prose" set:html={html} />
+  <article class="card article-content" set:html={html} />
 </BlogLayout>

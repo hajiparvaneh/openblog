@@ -110,8 +110,12 @@ export function getPosts(): Post[] {
   return posts;
 }
 
+export function normalizeCategoryKey(category: string): string {
+  return category.trim().toLowerCase().replace(/\s+/g, '-');
+}
+
 export function getCategoryPath(category: string): string {
-  return `/categories/${encodeURIComponent(category)}`;
+  return `/categories/${encodeURIComponent(normalizeCategoryKey(category))}`;
 }
 
 export function getTagPath(tag: string): string {

@@ -1,9 +1,11 @@
 ---
 import { marked } from 'marked';
 import BlogLayout from '../../layouts/BlogLayout.astro';
+import IconBadge from '../../components/IconBadge.astro';
 import TagBadge from '../../components/TagBadge.astro';
 import { formatPostDate, getCategoryPath, getPosts, type Post } from '../../lib/posts';
-import { getOpenBlogConfig } from '../../lib/site';
+import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
+import { toAbsoluteUrl } from '../../lib/seo';
 import { withBase } from '../../lib/paths';
 
 export function getStaticPaths() {
@@ -19,29 +21,99 @@ const thumbnailSrc = post.thumbnail
     ? post.thumbnail
     : withBase(post.thumbnail)
   : undefined;
+const showLanguageBadge = post.lang.toLowerCase() !== 'en';
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalPath = withBase(`/posts/${post.slug}`);
+const pageDescription = post.description || config.description;
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'BlogPosting',
+  headline: post.title,
+  description: pageDescription,
+  datePublished: post.date,
+  inLanguage: post.lang,
+  url: toAbsoluteUrl(canonicalPath, siteUrl),
+  image: thumbnailSrc
+    ? thumbnailSrc.startsWith('http')
+      ? thumbnailSrc
+      : toAbsoluteUrl(thumbnailSrc, siteUrl)
+    : undefined
+};
 ---
 <BlogLayout
   title={`${post.title} | ${config.title}`}
-  description={post.description}
+  description={pageDescription}
   lang={post.lang}
+  canonicalPath={canonicalPath}
+  ogType="article"
   ogImagePath={post.thumbnail ?? config.ogImage}
+  ogImageAlt={post.thumbnailAlt ?? post.title}
+  publishedTime={post.date}
+  structuredData={structuredData}
 >
-  <article class="card">
+  <article class="card post-article">
     <header class="post-header">
-      <h1>{post.title}</h1>
-      <p class="meta">
-        <time datetime={post.date}>{formatPostDate(post.date)}</time>
-        <span aria-hidden="true">·</span>
+      <p class="kicker icon-label">
+        <i class="ti ti-category icon-sm" aria-hidden="true"></i>
         <a href={withBase(getCategoryPath(post.category))}>{post.categoryLabel}</a>
       </p>
+      <h1>{post.title}</h1>
+      <p class="meta meta-inline">
+        <span class="meta-item">
+          <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
+          <time datetime={post.date}>{formatPostDate(post.date)}</time>
+        </span>
+      </p>
       {post.description ? <p class="lead">{post.description}</p> : null}
-      {thumbnailSrc ? <img class="post-hero" src={thumbnailSrc} alt={post.thumbnailAlt ?? post.title} /> : null}
-      {post.tags.length > 0 ? (
-        <div class="post-card-tags">
-          {post.tags.map((tag) => <TagBadge tag={tag} />)}
+      {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
+        <div class="post-card-taxonomy">
+          {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-card-flag" /> : null}
+          {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
+          {post.tags.map((tag) => <TagBadge tag={tag} class="post-card-tag" />)}
         </div>
       ) : null}
+      {thumbnailSrc ? (
+        <img
+          class="post-hero"
+          src={thumbnailSrc}
+          alt={post.thumbnailAlt ?? post.title}
+          loading="eager"
+          decoding="async"
+        />
+      ) : null}
     </header>
-    <div class="prose" set:html={html} />
+    <div class="article-content" set:html={html} />
   </article>
+
+  <style>
+    .post-article {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .post-header {
+      display: grid;
+      gap: 0.55rem;
+    }
+
+    .post-header h1 {
+      margin: 0;
+    }
+
+    .post-header .lead {
+      margin: 0;
+      color: var(--muted);
+      font-size: 1.02rem;
+      line-height: 1.5;
+    }
+
+    .post-hero {
+      width: 100%;
+      max-height: 22rem;
+      object-fit: cover;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface-soft);
+    }
+  </style>
 </BlogLayout>

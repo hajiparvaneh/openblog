@@ -2,7 +2,16 @@
 import { getTagPath } from '../lib/posts';
 import { withBase } from '../lib/paths';
 
-type Props = { tag: string; class?: string };
-const { tag, class: className = '' } = Astro.props;
+type Props = {
+  tag: string;
+  class?: string;
+};
+
+const { tag, class: className = '' } = Astro.props as Props;
+const rootClass = `post-chip-label post-tag-link icon-label ${className}`.trim();
 ---
-<a class={`tag-badge ${className}`.trim()} href={withBase(getTagPath(tag))}>{tag}</a>
+
+<a class={rootClass} href={withBase(getTagPath(tag))} rel="nofollow">
+  <i class="ti ti-tag post-chip-icon" aria-hidden="true"></i>
+  <span>{tag}</span>
+</a>

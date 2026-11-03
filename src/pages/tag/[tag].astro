@@ -11,12 +11,24 @@ export function getStaticPaths() {
   }));
 }
 
+interface Props {
+  label: string;
+  posts: ReturnType<typeof getPostsByTagSlug>;
+}
+
 const { label, posts } = Astro.props;
 const config = getOpenBlogConfig();
 ---
-<BlogLayout title={`${label} | ${config.title}`}>
-  <h1>Posts tagged {label}</h1>
-  <div class="grid">
-    {posts.map((post) => <PostCard post={post} />)}
-  </div>
+<BlogLayout title={`${label} | ${config.title}`} description={`Posts tagged ${label} on ${config.title}.`}>
+  <section class="card">
+    <p class="kicker icon-label"><i class="ti ti-tag icon-sm" aria-hidden="true"></i>Tag</p>
+    <h1>{label}</h1>
+    <p class="meta">{posts.length} post{posts.length === 1 ? '' : 's'}</p>
+  </section>
+
+  <section class="card list">
+    <div class="post-grid">
+      {posts.map((post) => <PostCard post={post} />)}
+    </div>
+  </section>
 </BlogLayout>

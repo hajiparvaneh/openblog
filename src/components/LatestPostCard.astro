@@ -1,0 +1,56 @@
+---
+import { formatPostDate, getCategoryPath, getPostPath, type Post } from '../lib/posts';
+import IconBadge from './IconBadge.astro';
+import TagBadge from './TagBadge.astro';
+import { withBase } from '../lib/paths';
+
+type Props = { post: Post };
+
+const { post } = Astro.props as Props;
+const postPath = withBase(getPostPath(post.slug));
+const categoryPath = withBase(getCategoryPath(post.category));
+const thumbnailSrc = post.thumbnail
+  ? post.thumbnail.startsWith('http')
+    ? post.thumbnail
+    : withBase(post.thumbnail)
+  : undefined;
+const visibleTags = post.tags.slice(0, 3);
+const hiddenTagCount = Math.max(0, post.tags.length - visibleTags.length);
+const showLanguageBadge = post.lang.toLowerCase() !== 'en';
+---
+
+<article class="card post-card post-card-standard">
+  {thumbnailSrc ? (
+    <a class="post-card-inline-thumbnail-link" href={postPath} aria-label={`Read ${post.title}`}>
+      <img
+        class="post-card-inline-thumbnail"
+        src={thumbnailSrc}
+        alt={post.thumbnailAlt ?? post.title}
+        loading="eager"
+        decoding="async"
+      />
+    </a>
+  ) : null}
+  <div class="post-card-standard-body">
+    <p class="kicker icon-label"><i class="ti ti-clock-hour-4 icon-sm" aria-hidden="true"></i>Latest post</p>
+    <h2 class="post-card-title"><a href={postPath}>{post.title}</a></h2>
+    <p class="post-card-description">{post.description}</p>
+    {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
+      <div class="post-card-taxonomy">
+        {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-card-flag" /> : null}
+        {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
+        {visibleTags.map((tag) => (
+          <TagBadge tag={tag} class="post-card-tag" />
+        ))}
+        {hiddenTagCount > 0 ? <span class="post-card-tag post-tag-more">+{hiddenTagCount}</span> : null}
+      </div>
+    ) : null}
+    <p class="meta meta-inline">
+      <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
+      <span class="meta-item">
+        <i class="ti ti-category icon-sm" aria-hidden="true"></i>
+        <a href={categoryPath}>{post.categoryLabel}</a>
+      </span>
+    </p>
+  </div>
+</article>

@@ -5,7 +5,10 @@ export type OpenBlogNavItem = { label: string; href: string };
 
 export type OpenBlogConfig = {
   title: string;
+  tagline: string;
   description: string;
+  heroHeadline: string;
+  heroSupporting: string;
   /** Origin only, e.g. https://you.github.io/ — pair with basePath for project Pages */
   siteUrl: string;
   /** `/` for custom domain / root; `/repo-name` for GitHub project Pages */
@@ -40,7 +43,12 @@ function normalizeSiteUrl(value: string): string {
 
 const config: OpenBlogConfig = {
   title: 'OpenBlog',
-  description: 'A free Markdown blog. Clone, brand, write, and publish — no secrets required.',
+  tagline: 'Markdown blogging for developers',
+  description:
+    'A free Git-based Markdown blog. Write posts as pull requests, brand your site from config, and publish with no secrets.',
+  heroHeadline: 'Write in public and grow with every pull request.',
+  heroSupporting:
+    'Publish technical posts from Markdown in Git. Improve writing through reviews, keep a clean archive, and share a site that looks ready for readers.',
   siteUrl: normalizeSiteUrl(env('OPENBLOG_BASE_URL') ?? env('SITE_URL') ?? 'https://example.com/'),
   basePath: normalizeBasePath(env('OPENBLOG_BASE_PATH') ?? '/'),
   logo: {
@@ -53,11 +61,11 @@ const config: OpenBlogConfig = {
   accentColor: '#0969da',
   defaultTheme: 'light',
   nav: [
-    { label: 'Blog', href: '/' },
+    { label: 'Home', href: '/' },
     { label: 'About', href: '/about' }
   ],
   aboutMarkdownPath: 'content/about.md',
-  footerText: 'Published with OpenBlog',
+  footerText: 'Built with OpenBlog. Write a post, open a PR, and publish.',
   repositoryUrl: 'https://github.com/hajiparvaneh/openblog'
 };
 

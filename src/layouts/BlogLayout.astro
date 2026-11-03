@@ -1,15 +1,25 @@
 ---
 import '../styles/global.css';
-import { getCategoryPath, getPosts } from '../lib/posts';
+import { getCategoryPath, getPosts, getTagRecords } from '../lib/posts';
 import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
 import { toAbsoluteUrl } from '../lib/seo';
 import { withBase } from '../lib/paths';
+
+type JsonLd = Record<string, unknown>;
 
 interface Props {
   title?: string;
   description?: string;
   lang?: string;
+  canonicalPath?: string;
+  ogType?: 'website' | 'article';
   ogImagePath?: string;
+  ogImageAlt?: string;
+  robots?: string;
+  publishedTime?: string;
+  modifiedTime?: string;
+  structuredData?: JsonLd | JsonLd[];
+  hideGlobalSidebar?: boolean;
 }
 
 const config = getOpenBlogConfig();
@@ -17,67 +27,371 @@ const {
   title = config.title,
   description = config.description,
   lang = 'en',
-  ogImagePath = config.ogImage
+  canonicalPath = Astro.url.pathname,
+  ogType = 'website',
+  ogImagePath = config.ogImage,
+  ogImageAlt = config.title,
+  robots = 'index, follow',
+  publishedTime,
+  modifiedTime,
+  structuredData,
+  hideGlobalSidebar = false
 } = Astro.props;
 
 const siteUrl = getSiteUrl(Astro.site);
-const canonical = toAbsoluteUrl(Astro.url.pathname, siteUrl);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const ogImageUrl = ogImagePath.startsWith('http')
   ? ogImagePath
   : toAbsoluteUrl(withBase(ogImagePath), siteUrl);
-const categories = [...new Map(getPosts().map((post) => [post.category, post.categoryLabel])).entries()];
+const logoDarkSrc = withBase(config.logo.dark);
+const logoLightSrc = withBase(config.logo.light);
+const faviconHref = withBase(config.favicon);
+const appleTouchIconHref = withBase(config.appleTouchIcon);
+const jsonLdEntries = Array.isArray(structuredData) ? structuredData : structuredData ? [structuredData] : [];
+const serializedStructuredData = jsonLdEntries.map((entry) => JSON.stringify(entry).replace(/</g, '\\u003c'));
+
+const posts = getPosts();
+const categories = [...posts.reduce((map, post) => {
+  const current = map.get(post.category);
+  if (current) {
+    current.postCount += 1;
+  } else {
+    map.set(post.category, { label: post.categoryLabel, postCount: 1 });
+  }
+  return map;
+}, new Map<string, { label: string; postCount: number }>()).entries()]
+  .sort((a, b) => b[1].postCount - a[1].postCount || a[1].label.localeCompare(b[1].label));
+
+const topTags = getTagRecords().slice(0, 16);
+const hasSidebarExtra = Astro.slots.has('sidebar-extra');
+const showGlobalSidebar = categories.length > 0 && !hideGlobalSidebar;
+const homeHref = withBase('/');
+const repoUrl = config.repositoryUrl;
+const issuesUrl = `${repoUrl.replace(/\/$/, '')}/issues/new`;
+const defaultTheme = config.defaultTheme === 'dark' ? 'dark' : 'light';
+
+const brandParts = (() => {
+  const raw = config.title.trim();
+  const match = raw.match(/^(.*?)(blog)$/i);
+  if (match && match[1]) {
+    return { lead: match[1], accent: match[2] };
+  }
+  return { lead: raw, accent: '' };
+})();
+
+const navIconFor = (label: string, href: string): string => {
+  const key = `${label} ${href}`.toLowerCase();
+  if (key.includes('home') || href === '/' || href === '') return 'ti-home';
+  if (key.includes('about')) return 'ti-info-circle';
+  if (key.includes('blog') || key.includes('post')) return 'ti-news';
+  return 'ti-link';
+};
 ---
-<html lang={lang} data-theme={config.defaultTheme}>
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{title}</title>
     <meta name="description" content={description} />
-    <meta name="theme-color" content={config.accentColor} />
-    <link rel="canonical" href={canonical} />
-    <link rel="icon" href={withBase(config.favicon)} sizes="any" />
-    <link rel="apple-touch-icon" href={withBase(config.appleTouchIcon)} />
-    <meta property="og:type" content="website" />
+    <meta name="robots" content={robots} />
+    <meta name="theme-color" content="#f6f8fa" />
+    <meta name="application-name" content={config.title} />
+    <meta name="apple-mobile-web-app-title" content={config.title} />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <link rel="canonical" href={canonicalUrl} />
+    <link rel="icon" href={faviconHref} sizes="any" />
+    <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconHref} />
+    <link rel="shortcut icon" href={faviconHref} />
+
+    <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={config.title} />
+    <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
+    <meta property="og:url" content={canonicalUrl} />
     <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:alt" content={ogImageAlt} />
+    {ogType === 'article' && publishedTime ? <meta property="article:published_time" content={publishedTime} /> : null}
+    {ogType === 'article' && modifiedTime ? <meta property="article:modified_time" content={modifiedTime} /> : null}
+
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={ogImageAlt} />
+
+    {serializedStructuredData.map((item) => (
+      <script type="application/ld+json" set:html={item} />
+    ))}
+
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" />
+    <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
     <style define:vars={{ accent: config.accentColor }}>
       :root {
         --primary: var(--accent);
         --primary-strong: var(--accent);
       }
     </style>
+    <script is:inline define:vars={{ defaultTheme }}>
+      (function () {
+        var storageKey = 'openblog-theme';
+        var saved = null;
+        try {
+          saved = localStorage.getItem(storageKey);
+        } catch (_) {}
+        var theme = saved === 'light' || saved === 'dark' ? saved : defaultTheme;
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.style.colorScheme = theme;
+      })();
+    </script>
   </head>
   <body>
     <div class="page-shell">
-      <header class="site-header">
-        <a class="brand" href={withBase('/')}>
-          <img class="brand-logo" src={withBase(config.logo.dark)} alt="" width="28" height="28" />
-          <span>{config.title}</span>
+      <header class="site-header card">
+        <a class="brand" href={homeHref}>
+          <span class="brand-main">
+            <span class="brand-icon-wrap" aria-hidden="true">
+              <img class="brand-icon brand-icon-dark" src={logoDarkSrc} alt="" loading="eager" decoding="async" width="44" height="44" />
+              <img class="brand-icon brand-icon-light" src={logoLightSrc} alt="" loading="eager" decoding="async" width="44" height="44" />
+            </span>
+          </span>
+          <span class="brand-copy">
+            <span class="brand-mark">
+              {brandParts.lead}{brandParts.accent ? <span class="brand-mark-primary">{brandParts.accent}</span> : null}
+            </span>
+            <span class="brand-tagline">{config.tagline}</span>
+          </span>
         </a>
-        <nav class="nav" aria-label="Main navigation">
-          {config.nav.map((item) => (
-            <a href={withBase(item.href)}>{item.label}</a>
-          ))}
-        </nav>
+        <div class="site-header-actions" id="site-header-actions" data-menu-open="false">
+          <button
+            class="header-menu-toggle"
+            id="header-menu-toggle"
+            type="button"
+            aria-label="Toggle navigation menu"
+            aria-controls="main-nav"
+            aria-expanded="false"
+          >
+            <span class="icon-label">
+              <i class="ti ti-menu-2 menu-icon menu-icon-open icon-sm" aria-hidden="true"></i>
+              <i class="ti ti-x menu-icon menu-icon-close icon-sm" aria-hidden="true"></i>
+            </span>
+          </button>
+          <nav class="nav" id="main-nav" aria-label="Main navigation">
+            {config.nav.map((item) => (
+              <a href={withBase(item.href)}>
+                <i class={`ti ${navIconFor(item.label, item.href)} icon-sm`} aria-hidden="true"></i>
+                {item.label}
+              </a>
+            ))}
+          </nav>
+          <a class="header-auth-login" href={repoUrl} target="_blank" rel="noopener noreferrer">
+            <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+            <span class="header-auth-label">GitHub</span>
+          </a>
+          <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
+            <span class="icon-label">
+              <i class="ti ti-sun theme-icon theme-icon-sun icon-sm" aria-hidden="true"></i>
+              <i class="ti ti-moon theme-icon theme-icon-moon icon-sm" aria-hidden="true"></i>
+              <span id="theme-toggle-label">Theme: Light</span>
+            </span>
+          </button>
+        </div>
       </header>
-      <main class="container">
-        <slot />
-      </main>
-      <footer class="site-footer">
-        <nav class="category-links" aria-label="Post categories">
-          {categories.map(([category, label]) => (
-            <a href={withBase(getCategoryPath(category))}>{label}</a>
-          ))}
-        </nav>
-        <p class="meta">{config.footerText}</p>
+
+      {showGlobalSidebar ? (
+        <div class="content-layout">
+          <main class="container">
+            <slot />
+          </main>
+
+          <aside class="category-sidebar card">
+            <section class="sidebar-block">
+              <p class="kicker icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>Write a post</p>
+              <p class="meta">Add Markdown under <code>content/posts/</code>, open a pull request, and publish from Git.</p>
+              <a class="sidebar-link" href={repoUrl} target="_blank" rel="noopener noreferrer">
+                <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+                Open GitHub repo
+              </a>
+              <a class="sidebar-sub-link" href={withBase('/about')}>About this blog</a>
+            </section>
+
+            <hr class="sidebar-sep" />
+            <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Categories</p>
+            <nav aria-label="Post categories">
+              <div class="category-links category-links-sidebar">
+                {categories.map(([category, categoryMeta]) => (
+                  <a class="category-link" href={withBase(getCategoryPath(category))}>
+                    <span>{categoryMeta.label}</span>
+                    <span class="badge">{categoryMeta.postCount}</span>
+                  </a>
+                ))}
+              </div>
+            </nav>
+
+            {topTags.length > 0 ? (
+              <>
+                <hr class="sidebar-sep" />
+                <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
+                <nav aria-label="Popular tags">
+                  <div class="tag-cloud" role="list">
+                    {topTags.map((tag) => (
+                      <a role="listitem" class="tag-cloud-item" href={withBase(`/tag/${encodeURIComponent(tag.slug)}`)}>
+                        <span>{tag.label}</span>
+                        <span class="badge">{tag.postCount}</span>
+                      </a>
+                    ))}
+                  </div>
+                </nav>
+              </>
+            ) : null}
+
+            {hasSidebarExtra ? (
+              <>
+                <hr class="sidebar-sep" />
+                <slot name="sidebar-extra" />
+              </>
+            ) : null}
+
+            <hr class="sidebar-sep" />
+            <section class="sidebar-block">
+              <p class="kicker icon-label"><i class="ti ti-alert-circle icon-sm" aria-hidden="true"></i>Seeing an issue?</p>
+              <p class="meta">Found a bug or typo? Open an issue on GitHub.</p>
+              <a class="sidebar-link" href={issuesUrl} target="_blank" rel="noopener noreferrer">
+                <i class="ti ti-bug icon-sm" aria-hidden="true"></i>
+                Open an issue
+              </a>
+            </section>
+          </aside>
+        </div>
+      ) : (
+        <main class="container">
+          <slot />
+        </main>
+      )}
+
+      <footer class="site-footer meta">
+        <span class="icon-label">
+          <i class="ti ti-edit icon-sm" aria-hidden="true"></i>
+          {config.footerText}
+        </span>
       </footer>
     </div>
+
+    <style>
+      .tag-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.38rem;
+      }
+
+      .tag-cloud-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--font-main);
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1;
+        padding: 0.3rem 0.42rem;
+        text-decoration: none;
+      }
+
+      .tag-cloud-item .badge {
+        font-size: 0.68rem;
+        padding: 0.12rem 0.35rem;
+        background: var(--surface);
+      }
+
+      .tag-cloud-item:hover {
+        border-color: var(--primary);
+        background: var(--surface-soft);
+        color: var(--text);
+      }
+    </style>
+
+    <script is:inline>
+      (function () {
+        var storageKey = 'openblog-theme';
+        var button = document.getElementById('theme-toggle');
+        var label = document.getElementById('theme-toggle-label');
+        var themeColor = document.querySelector('meta[name="theme-color"]');
+        var headerActions = document.getElementById('site-header-actions');
+        var menuButton = document.getElementById('header-menu-toggle');
+        var mainNav = document.getElementById('main-nav');
+
+        var applyTheme = function (theme) {
+          document.documentElement.setAttribute('data-theme', theme);
+          document.documentElement.style.colorScheme = theme;
+          if (themeColor) {
+            themeColor.setAttribute('content', theme === 'dark' ? '#0d1117' : '#f6f8fa');
+          }
+          if (label) {
+            label.textContent = theme === 'dark' ? 'Theme: Dark' : 'Theme: Light';
+          }
+          if (button) {
+            button.setAttribute('aria-pressed', String(theme === 'dark'));
+          }
+        };
+
+        var current = document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light';
+        applyTheme(current);
+
+        if (button) {
+          button.addEventListener('click', function () {
+            current = current === 'dark' ? 'light' : 'dark';
+            applyTheme(current);
+            try {
+              localStorage.setItem(storageKey, current);
+            } catch (_) {}
+          });
+        }
+
+        if (!headerActions || !menuButton || !mainNav) return;
+
+        var mobileMenu = window.matchMedia('(max-width: 860px)');
+
+        var setMenuOpen = function (isOpen) {
+          var open = Boolean(isOpen);
+          headerActions.setAttribute('data-menu-open', String(open));
+          menuButton.setAttribute('aria-expanded', String(open));
+        };
+
+        setMenuOpen(false);
+
+        menuButton.addEventListener('click', function () {
+          var isOpen = menuButton.getAttribute('aria-expanded') === 'true';
+          setMenuOpen(!isOpen);
+        });
+
+        mainNav.addEventListener('click', function (event) {
+          if (!mobileMenu.matches) return;
+          if (!(event.target instanceof Element)) return;
+          if (!event.target.closest('a')) return;
+          setMenuOpen(false);
+        });
+
+        document.addEventListener('click', function (event) {
+          if (!(event.target instanceof Node)) return;
+          if (!mobileMenu.matches) return;
+          if (headerActions.contains(event.target)) return;
+          setMenuOpen(false);
+        });
+
+        document.addEventListener('keydown', function (event) {
+          if (event.key !== 'Escape') return;
+          setMenuOpen(false);
+        });
+
+        mobileMenu.addEventListener('change', function () {
+          setMenuOpen(false);
+        });
+      })();
+    </script>
   </body>
 </html>

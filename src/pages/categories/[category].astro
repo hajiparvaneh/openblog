@@ -1,24 +1,51 @@
 ---
 import BlogLayout from '../../layouts/BlogLayout.astro';
+import FeaturedPostsSlider from '../../components/FeaturedPostsSlider.astro';
 import PostCard from '../../components/PostCard.astro';
-import { getPosts } from '../../lib/posts';
+import { getPosts, normalizeCategoryKey } from '../../lib/posts';
 import { getOpenBlogConfig } from '../../lib/site';
 
 export function getStaticPaths() {
   const posts = getPosts();
   return [...new Set(posts.map((post) => post.category))].map((category) => ({
     params: { category },
-    props: { posts: posts.filter((post) => post.category === category) }
+    props: {
+      category,
+      posts: posts.filter((post) => post.category === category)
+    }
   }));
 }
 
-const { posts } = Astro.props;
-const label = posts[0].categoryLabel;
+interface Props {
+  category: string;
+  posts: ReturnType<typeof getPosts>;
+}
+
+const { category, posts } = Astro.props;
+const label = posts[0]?.categoryLabel ?? category;
 const config = getOpenBlogConfig();
+const featuredInCategory = posts.filter((post) => post.featured);
 ---
-<BlogLayout title={`${label} | ${config.title}`}>
-  <h1>{label}</h1>
-  <div class="grid">
-    {posts.map((post) => <PostCard post={post} showCategory={false} />)}
-  </div>
+<BlogLayout title={`${label} | ${config.title}`} description={`Posts in ${label} on ${config.title}.`}>
+  <section class="card">
+    <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Category</p>
+    <h1>{label}</h1>
+    <p class="meta">{posts.length} post{posts.length === 1 ? '' : 's'} · folder <code>{normalizeCategoryKey(category)}</code></p>
+  </section>
+
+  {featuredInCategory.length > 0 ? (
+    <FeaturedPostsSlider posts={posts} category={category} limit={5} class="card" title={`Featured in ${label}`} />
+  ) : null}
+
+  <section class="card list home-posts-section">
+    <div class="section-head">
+      <div>
+        <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>All posts</p>
+        <h2>{label} archive</h2>
+      </div>
+    </div>
+    <div class="post-grid">
+      {posts.map((post) => <PostCard post={post} showCategory={false} />)}
+    </div>
+  </section>
 </BlogLayout>
