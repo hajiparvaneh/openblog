@@ -1,28 +1,41 @@
-# OpenBlog
+<p align="center">
+  <img src="public/openblog-logo-light.png" alt="OpenBlog" width="160" />
+</p>
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01)](https://astro.build/)
+<h1 align="center">OpenBlog</h1>
 
-**OpenBlog** is a free, open-source blog template. Write posts as Markdown files, brand the site from one config file, and publish a static site with GitHub Pages.
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" /></a>
+  <a href="https://astro.build/"><img src="https://img.shields.io/badge/Built%20with-Astro-ff5d01" alt="Built with Astro" /></a>
+</p>
 
-Demo: [openblog.cc](https://openblog.cc)
+<p align="center">
+  <strong>A free, open-source blog powered by Markdown files in git.</strong><br />
+  Brand it, write posts as <code>.md</code> files, and publish a static site — MIT licensed.
+</p>
 
-## Features
+<p align="center">
+  🌐 Demo: <a href="https://openblog.cc">openblog.cc</a>
+</p>
 
-- Markdown posts in Git (`content/posts/`)
-- Categories from folders, tags from frontmatter
-- Home page with featured posts, archive, and About page
-- Light / dark theme
-- Config-first branding (`openblog.config.ts` + `public/`)
-- Static build — no accounts or API secrets required
-- MIT license
+---
 
-## Requirements
+## ✨ Features
+
+- 📝 **Markdown posts** stored as files in your git repo
+- 📁 **Categories** from folders, **tags** from frontmatter
+- 🏠 Home page with featured posts, archive, and About
+- 🌓 Light / dark theme
+- 🎨 Branding from `openblog.config.ts` + `public/`
+- 📦 Static build — no accounts or API secrets required
+- 📄 **MIT** license
+
+## 📋 Requirements
 
 - [Node.js](https://nodejs.org/) 22 or newer
-- A GitHub account (optional, for GitHub Pages)
+- [git](https://git-scm.com/)
 
-## Quick start
+## 🚀 Quick start
 
 ```bash
 git clone https://github.com/hajiparvaneh/openblog.git my-blog
@@ -33,9 +46,9 @@ npm run dev
 
 Open the local URL shown in the terminal (usually `http://localhost:4321`).
 
-Or click **Use this template** on GitHub to create your own repository.
+You can also fork the repo or use it as a git template and clone your own copy.
 
-## Brand your blog
+## 🎨 Brand your blog
 
 1. Edit [`openblog.config.ts`](openblog.config.ts) — title, tagline, colors, navigation, footer, and asset paths.
 2. Replace images under [`public/`](public/) (logo, favicon, social image).
@@ -43,9 +56,9 @@ Or click **Use this template** on GitHub to create your own repository.
 
 You usually do not need to edit layouts for a normal site.
 
-## Write a post
+## ✍️ Write a post
 
-Create a file:
+Posts are plain Markdown files in git:
 
 ```text
 content/posts/<category>/<post-name>.md
@@ -79,14 +92,19 @@ Your content in Markdown.
 
 More detail: [POSTS-README.md](POSTS-README.md)
 
-## Deploy to GitHub Pages
+Commit and push when you are ready — your git history *is* your editorial history.
 
-1. Push your repository to GitHub.
-2. Open **Settings → Pages**.
-3. Under **Build and deployment**, choose **GitHub Actions**.
-4. Push to `main` (or run the workflow manually).
+## 🌍 Publish the site
 
-Default site URL:
+OpenBlog builds a **static** site in `dist/`. Host that folder anywhere that serves static files.
+
+This repo includes a workflow for **GitHub Pages** as one easy option:
+
+1. Push your git repository to a remote.
+2. If you use GitHub: **Settings → Pages → GitHub Actions**.
+3. Push to `main` (or run the workflow manually).
+
+Default GitHub Pages URL:
 
 ```text
 https://<your-username>.github.io/<your-repo>/
@@ -94,35 +112,34 @@ https://<your-username>.github.io/<your-repo>/
 
 ### Custom domain or project path
 
-Set these **repository variables** (Settings → Secrets and variables → Actions → Variables) if needed:
+Optional repository variables:
 
 | Variable | When to use | Example |
 | --- | --- | --- |
 | `OPENBLOG_BASE_URL` | Site origin only | `https://blog.example.com/` or `https://you.github.io/` |
-| `OPENBLOG_BASE_PATH` | Path under that origin | `/` for a custom domain, or `/your-repo` for project Pages |
+| `OPENBLOG_BASE_PATH` | Path under that origin | `/` for a root/custom domain, or `/your-repo` for a project path |
 
 Do not put the same path in both variables.
 
 Preview a production build locally:
 
 ```bash
-OPENBLOG_BASE_URL=https://you.github.io/ OPENBLOG_BASE_PATH=/your-repo npm run build
+OPENBLOG_BASE_URL=https://example.com/ OPENBLOG_BASE_PATH=/ npm run build
 npm run preview
 ```
 
-## Project layout
+## 📂 Project layout
 
 ```text
 content/
   about.md                 About page
-  posts/<category>/*.md    Blog posts
+  posts/<category>/*.md    Blog posts (in git)
 openblog.config.ts         Site title, nav, branding paths
 public/                    Logos, favicon, images
 src/                       Site theme and pages
-.github/workflows/         GitHub Pages deploy
 ```
 
-## Scripts
+## 🛠️ Scripts
 
 | Command | Description |
 | --- | --- |
@@ -131,6 +148,6 @@ src/                       Site theme and pages
 | `npm run preview` | Preview the production build |
 | `npm run check` | Type / Astro checks |
 
-## License
+## 📜 License
 
 [MIT](LICENSE) — free to use, modify, and share.

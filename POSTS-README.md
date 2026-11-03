@@ -1,6 +1,6 @@
-# Writing posts
+# ✍️ Writing posts
 
-Posts are Markdown files:
+Posts are Markdown files in git:
 
 ```text
 content/posts/<category>/<post-name>.md
@@ -38,8 +38,8 @@ Write the body in Markdown below the frontmatter.
 | `draft` | no | Set `true` to exclude the post from the build |
 | `lang` | no | Defaults to `en` |
 
-## Tips
+## 💡 Tips
 
 - One clear idea per post keeps the archive easy to browse.
 - Run `npm run dev` and check the home page, category page, and tags before you publish.
-- After you push to `main`, GitHub Pages rebuilds the site automatically.
+- Commit your `.md` files with git; after you push, your host can rebuild the static site.
