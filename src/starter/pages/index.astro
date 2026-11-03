@@ -1,0 +1,15 @@
+---
+import BlogLayout from '../layouts/BlogLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getPosts } from '../../lib/openblog';
+const posts = getPosts();
+---
+<BlogLayout>
+  <section aria-labelledby="posts-heading">
+    <h1 id="posts-heading">Latest posts</h1>
+    <div class="grid">
+      {posts.map(post => <PostCard post={post} showContributors={false} />)}
+    </div>
+    {posts.length === 0 && <p>No posts published yet.</p>}
+  </section>
+</BlogLayout>

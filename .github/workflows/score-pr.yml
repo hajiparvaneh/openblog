@@ -36,7 +36,7 @@ permissions:
 
 jobs:
   score:
-    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true
+    if: vars.OPENBLOG_COMMUNITY == 'true' && (github.event_name == 'workflow_dispatch' || github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
 
     steps:

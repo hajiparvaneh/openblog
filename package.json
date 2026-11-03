@@ -10,7 +10,8 @@
     "deploy": "npx wrangler deploy --config worker/wrangler.toml",
     "check": "astro check",
     "openblog:generate": "node scripts/generate-openblog-state.mjs",
-    "openblog:add-event": "node scripts/add-event-from-pr.mjs"
+    "openblog:add-event": "node scripts/add-event-from-pr.mjs",
+    "test:standalone": "node scripts/test-standalone.mjs"
   },
   "dependencies": {
     "@toast-ui/editor": "^3.2.2",

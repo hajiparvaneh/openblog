@@ -11,9 +11,10 @@ type Props = {
   dataAttribute?: string;
   dateSortValue?: string;
   displayDate?: string;
+  showContributors?: boolean;
 };
 
-const { post, showCategory = true, dataAttribute, dateSortValue, displayDate } = Astro.props as Props;
+const { post, showCategory = true, showContributors = true, dataAttribute, dateSortValue, displayDate } = Astro.props as Props;
 const cardAttributes = {
   ...(dataAttribute ? { [dataAttribute]: '' } : {}),
   ...(dateSortValue ? { 'data-post-date': dateSortValue } : {})
@@ -50,7 +51,7 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
       </div>
     ) : null}
     <p class="meta meta-inline">
-      <PostContributorsStack slug={post.slug} />
+      {showContributors && <PostContributorsStack slug={post.slug} />}
       <span class="meta-item">
         <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
         {formatPostDate(displayDate ?? post.date)}

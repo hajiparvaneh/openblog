@@ -1,0 +1,39 @@
+---
+import '../../styles/global.css';
+import { getCategoryPath, getPosts } from '../../lib/openblog';
+import { getSiteUrl } from '../../lib/site';
+import { toAbsoluteUrl } from '../../lib/seo';
+interface Props { title?: string; description?: string; lang?: string; }
+const { title = 'OpenBlog', description = 'A blog published with Markdown.', lang = 'en' } = Astro.props;
+const canonical = toAbsoluteUrl(Astro.url.pathname, getSiteUrl(Astro.site));
+const categories = [...new Map(getPosts().map(post => [post.category, post.categoryLabel])).entries()];
+---
+<html lang={lang}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header card">
+        <a class="brand" href="/">OpenBlog</a>
+        <nav class="nav" aria-label="Main navigation"><a href="/">Blog</a></nav>
+      </header>
+      <main class="container"><slot /></main>
+      <footer class="site-footer meta">
+        <nav class="category-links" aria-label="Post categories">
+          {categories.map(([category, label]) => <a href={getCategoryPath(category)}>{label}</a>)}
+        </nav>
+        <span>Published with OpenBlog</span>
+      </footer>
+    </div>
+  </body>
+</html>

@@ -5,13 +5,57 @@
 [![Status](https://img.shields.io/badge/status-active-2ea44f)](https://github.com/hajiparvaneh/openblog)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-0a7f5a)](https://github.com/hajiparvaneh/openblog/pulls)
 [![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01)](https://astro.build/)
-[![Node](https://img.shields.io/badge/Node-%3E%3D18-43853d)](https://nodejs.org/)
+[![Node](https://img.shields.io/badge/Node-%3E%3D22.12-43853d)](https://nodejs.org/)
 
 Main website: [https://openblog.cc](https://openblog.cc)
 
 OpenBlog is a collaborative technical blog where contributors improve content through pull requests.  
 When a PR is merged and labeled, points are added to the public leaderboard.
 It is built for developers who want to show teamwork, improve public reputation, and make their GitHub activity more visible for hiring.
+
+## Standalone starter (default)
+
+`npm ci && npm run build` produces a static blog in `dist/`. No secrets, GitHub
+OAuth app, Worker, scoring events, or generated leaderboard data are required.
+Use Node.js 22.12 or newer. Preview with `npm run preview`.
+
+The default build publishes Markdown from `content/posts/<category>/<post>.md`,
+with home, post, category and tag pages, a sitemap, and robots.txt. Draft posts
+(`draft: true`) are excluded. It reuses the same content loader and post cards as
+the community app, without sign-in, profiles, contribution forms, scoring UI,
+leaderboards, or the OpenBlog.cc analytics account.
+
+Set `OPENBLOG_BASE_URL=https://your-blog.example/` (or `SITE_URL`) when building
+to generate canonical URLs and the sitemap for your own domain. The current
+fallback is `https://openblog.cc/`. Upload the generated `dist/` directory to a
+static host. Branding configuration and GitHub Pages subpath deployment are
+tracked separately in OPB-2 and OPB-4.
+
+### Optional community app
+
+To build the original OpenBlog.cc community publication:
+
+```bash
+OPENBLOG_COMMUNITY=true npm run build
+# or, for local development:
+OPENBLOG_COMMUNITY=true npm run dev
+```
+
+This enables the existing community routes, scoring displays and leaderboard.
+Browser sign-in and the contribution workspace additionally require a deployed
+Worker and `PUBLIC_GITHUB_AUTH_WORKER_URL` pointing to it. Worker secrets belong
+in the Worker deployment, never in the static blog. Worker configuration lives in `worker/wrangler.toml`; its OAuth environment
+requires `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and the appropriate
+`AUTH_ALLOWED_ORIGIN`. Neither the Worker nor its dependencies are installed or deployed
+by the root build.
+
+Merged-PR scoring automation is also opt-in: set the GitHub Actions repository
+variable `OPENBLOG_COMMUNITY` to `true` to enable the scoring workflow. That
+repository variable is separate from the build environment variable above.
+Leave both unset for a standalone blog.
+
+Run `npm run test:standalone` to build an isolated two-post fixture with no
+community data, Worker, or credentials and check its rendered output.
 
 ## 🎯 Why OpenBlog
 
@@ -32,7 +76,7 @@ It is built for developers who want to show teamwork, improve public reputation,
 
 ### Requirements
 
-- Node.js 18+ (or newer LTS)
+- Node.js 22.12+ (recommended supported LTS)
 - npm
 
 ### Run locally
