@@ -15,8 +15,9 @@
 </p>
 
 <p align="center">
-  🌐 Community preview: <a href="https://openblog.cc">openblog.cc</a>
-  (<a href="https://github.com/hajiparvaneh/openblogcc">openblogcc</a> — demo with scoring; this repo is the clean template)
+  🏠 Project site: <a href="https://hajiparvaneh.github.io/openblog/">hajiparvaneh.github.io/openblog</a><br />
+  🌐 Community blog preview: <a href="https://openblog.cc">openblog.cc</a>
+  (<a href="https://github.com/hajiparvaneh/openblogcc">openblogcc</a>)
 </p>
 
 ---
@@ -31,8 +32,10 @@
 - 📦 Static build — no accounts, database, or API secrets required
 - 📄 **MIT** license
 
-> **Template vs preview:** Use **this repository** to start your own blog (GitHub → **Use this template**).  
-> [openblog.cc](https://openblog.cc) is a separate community preview ([openblogcc](https://github.com/hajiparvaneh/openblogcc)) with sign-in and a leaderboard — not what you get when you clone the template.
+> **Three surfaces:**  
+> • **This repo** — cloneable Markdown blog template (GitHub → **Use this template**).  
+> • **[GitHub Pages](https://hajiparvaneh.github.io/openblog/)** — project landing for OpenBlog (features / get started).  
+> • **[openblog.cc](https://openblog.cc)** — community preview with sign-in and scoring ([openblogcc](https://github.com/hajiparvaneh/openblogcc)), not the template.
 
 ## 📋 Requirements
 
@@ -117,11 +120,15 @@ This repo includes a workflow for **GitHub Pages** as one easy option:
 2. If you use GitHub: **Settings → Pages → GitHub Actions**.
 3. Push to `main` (or run the workflow manually).
 
-Default GitHub Pages URL:
+Default GitHub Pages URL for **your** clone (the blog):
 
 ```text
 https://<your-username>.github.io/<your-repo>/
 ```
+
+On the upstream OpenBlog repository, the same workflow sets `OPENBLOG_OFFICIAL_LANDING=1` so
+[hajiparvaneh.github.io/openblog](https://hajiparvaneh.github.io/openblog/) shows the **project landing page**.
+Your fork/template clone builds the normal blog home unless you set that variable yourself.
 
 ### Custom domain or project path
 

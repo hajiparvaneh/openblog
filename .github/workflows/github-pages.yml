@@ -44,6 +44,8 @@ jobs:
         env:
           OPENBLOG_BASE_URL: ${{ steps.site.outputs.site_url }}
           OPENBLOG_BASE_PATH: ${{ steps.site.outputs.base_path }}
+          # Project site landing (not the blog preview — that lives at openblog.cc).
+          OPENBLOG_OFFICIAL_LANDING: '1'
           ASTRO_TELEMETRY_DISABLED: '1'
         run: npm run build
       - uses: actions/upload-pages-artifact@v3

@@ -1,0 +1,554 @@
+---
+import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
+import { toAbsoluteUrl } from '../lib/seo';
+import { withBase } from '../lib/paths';
+
+const config = getOpenBlogConfig();
+const siteUrl = getSiteUrl(Astro.site);
+const abs = (path: string) => toAbsoluteUrl(withBase(path).replace(/^\/+/, ''), siteUrl);
+const canonicalUrl = abs('/');
+const logoHref = withBase(config.logo.light);
+const ogHref = withBase(config.ogImage);
+const ogAbsolute = abs(config.ogImage);
+const faviconHref = withBase(config.favicon);
+const templateUrl = 'https://github.com/new?template_name=openblog&template_owner=hajiparvaneh';
+const repoUrl = config.repositoryUrl || 'https://github.com/hajiparvaneh/openblog';
+const communityUrl = 'https://openblog.cc';
+const pageTitle = `${config.title} — Free Markdown blog template`;
+const pageDescription =
+  'OpenBlog is a free, open-source, file-based blog. Write Markdown in git, publish a static site, no database or secrets.';
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
+    <link rel="canonical" href={canonicalUrl} />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:image" content={ogAbsolute} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <link rel="icon" href={faviconHref} sizes="any" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;700&family=Syne:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="official-landing">
+    <div class="atmosphere" aria-hidden="true"></div>
+
+    <header class="topbar">
+      <a class="brand" href={withBase('/')}>
+        <img src={logoHref} alt="" width="36" height="36" />
+        <span>OpenBlog</span>
+      </a>
+      <nav class="topnav" aria-label="Project">
+        <a href={repoUrl}>GitHub</a>
+        <a href={communityUrl}>Community</a>
+        <a class="topnav-cta" href={templateUrl}>Use template</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="hero-media" aria-hidden="true">
+          <img src={ogHref} alt="" width="1600" height="900" />
+        </div>
+        <div class="hero-copy">
+          <p class="brand-mark">OpenBlog</p>
+          <h1>A free blog from Markdown files in git.</h1>
+          <p class="lede">
+            Brand it, write posts as <code>.md</code> files, and publish a static site — no database, no accounts, MIT licensed.
+          </p>
+          <div class="cta-row">
+            <a class="btn btn-primary" href={templateUrl}>Use this template</a>
+            <a class="btn btn-ghost" href={communityUrl}>See community preview</a>
+          </div>
+        </div>
+      </section>
+
+      <section class="section" id="why">
+        <h2>Built for people who want a real site, not a CMS.</h2>
+        <p class="section-lede">Everything lives in your repository. You keep the files, the history, and the hosting choice.</p>
+        <ul class="feature-list">
+          <li>
+            <strong>Markdown in git</strong>
+            <span>Posts are files under <code>content/posts/</code>. Categories are folders; tags are frontmatter.</span>
+          </li>
+          <li>
+            <strong>Static by default</strong>
+            <span>Astro builds plain HTML you can host on GitHub Pages or any static host.</span>
+          </li>
+          <li>
+            <strong>One config file</strong>
+            <span>Brand title, colors, nav, and assets from <code>openblog.config.ts</code> and <code>public/</code>.</span>
+          </li>
+          <li>
+            <strong>No secrets required</strong>
+            <span>Clone, write, publish. OAuth and scoring are not part of this template.</span>
+          </li>
+        </ul>
+      </section>
+
+      <section class="section section-alt" id="start">
+        <h2>Start in three steps</h2>
+        <p class="section-lede">If you can edit a Markdown file and push to git, you can run OpenBlog.</p>
+        <ol class="steps">
+          <li>
+            <span class="step-n">1</span>
+            <div>
+              <strong>Create from the template</strong>
+              <p>Use “Use this template” on GitHub, then clone your new repository.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n">2</span>
+            <div>
+              <strong>Brand and write</strong>
+              <p>Edit <code>openblog.config.ts</code>, replace images in <code>public/</code>, add posts as <code>.md</code> files.</p>
+            </div>
+          </li>
+          <li>
+            <span class="step-n">3</span>
+            <div>
+              <strong>Publish</strong>
+              <p>Push to <code>main</code> and let GitHub Pages (or any static host) serve <code>dist/</code>.</p>
+            </div>
+          </li>
+        </ol>
+        <div class="cta-row cta-row-center">
+          <a class="btn btn-primary" href={templateUrl}>Create your blog</a>
+          <a class="btn btn-ghost" href={repoUrl}>Read the README</a>
+        </div>
+      </section>
+
+      <section class="section" id="preview">
+        <h2>Want the community demo?</h2>
+        <p class="section-lede">
+          <a href={communityUrl}>openblog.cc</a> is a separate live preview with collaboration features.
+          This template stays simple — Markdown, git, and a static site.
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href={communityUrl}>Open openblog.cc</a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-end">
+      <p>
+        <strong>OpenBlog</strong> · MIT ·
+        <a href={repoUrl}>GitHub</a> ·
+        <a href={communityUrl}>Community preview</a>
+      </p>
+    </footer>
+
+    <style is:global>
+      .official-landing {
+        --ink: #102033;
+        --ink-soft: #3a4a5c;
+        --paper: #f3f6f4;
+        --paper-deep: #e5ece8;
+        --line: #c9d5ce;
+        --accent: #0b6e4f;
+        --accent-deep: #08553c;
+        --glow: #9fd7c2;
+        --font-display: 'Syne', 'Avenir Next', 'Segoe UI', sans-serif;
+        --font-body: 'Figtree', 'Avenir Next', 'Segoe UI', sans-serif;
+      }
+
+      .official-landing,
+      .official-landing * {
+        box-sizing: border-box;
+      }
+
+      .official-landing {
+        min-height: 100vh;
+        color: var(--ink);
+        background: var(--paper);
+        font-family: var(--font-body);
+        font-size: 1.05rem;
+        line-height: 1.6;
+        position: relative;
+        overflow-x: hidden;
+      }
+
+      .official-landing code {
+        font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+        font-size: 0.9em;
+        background: color-mix(in srgb, var(--paper-deep) 80%, white);
+        padding: 0.1em 0.35em;
+        border-radius: 0.25rem;
+      }
+
+      .official-landing a {
+        color: var(--accent-deep);
+      }
+
+      .atmosphere {
+        pointer-events: none;
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        background:
+          radial-gradient(ellipse 80% 55% at 12% -10%, color-mix(in srgb, var(--glow) 55%, transparent), transparent 60%),
+          radial-gradient(ellipse 60% 45% at 95% 15%, color-mix(in srgb, #7eb6ff 28%, transparent), transparent 55%),
+          linear-gradient(165deg, #f7faf8 0%, var(--paper) 45%, #eef3f0 100%);
+        animation: atmosphere-shift 18s ease-in-out infinite alternate;
+      }
+
+      @keyframes atmosphere-shift {
+        from {
+          filter: hue-rotate(0deg) saturate(1);
+        }
+        to {
+          filter: hue-rotate(8deg) saturate(1.08);
+        }
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 1.1rem 1.25rem;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.55rem;
+        color: var(--ink);
+        text-decoration: none;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: 1.05rem;
+        letter-spacing: -0.02em;
+      }
+
+      .brand img {
+        display: block;
+        border-radius: 0.35rem;
+      }
+
+      .topnav {
+        display: flex;
+        align-items: center;
+        gap: 0.85rem;
+        font-weight: 600;
+        font-size: 0.95rem;
+      }
+
+      .topnav a {
+        color: var(--ink-soft);
+        text-decoration: none;
+      }
+
+      .topnav a:hover {
+        color: var(--ink);
+      }
+
+      .topnav-cta {
+        color: #fff !important;
+        background: var(--accent);
+        padding: 0.45rem 0.8rem;
+        border-radius: 0.4rem;
+      }
+
+      .topnav-cta:hover {
+        background: var(--accent-deep);
+      }
+
+      .hero {
+        position: relative;
+        display: grid;
+        align-items: end;
+        min-height: min(92vh, 54rem);
+        padding: 0;
+        overflow: hidden;
+      }
+
+      .hero-media {
+        position: absolute;
+        inset: 0;
+        z-index: 0;
+      }
+
+      .hero-media img {
+        display: block;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center;
+        animation: media-drift 22s ease-in-out infinite alternate;
+      }
+
+      .hero-media::after {
+        content: '';
+        position: absolute;
+        inset: 0;
+        background:
+          linear-gradient(90deg, rgba(243, 246, 244, 0.96) 0%, rgba(243, 246, 244, 0.88) 38%, rgba(243, 246, 244, 0.35) 68%, rgba(243, 246, 244, 0.12) 100%),
+          linear-gradient(0deg, rgba(243, 246, 244, 0.55) 0%, transparent 42%);
+      }
+
+      .hero-copy {
+        position: relative;
+        z-index: 1;
+        max-width: 1100px;
+        width: 100%;
+        margin: 0 auto;
+        padding: 5.5rem 1.25rem 3.8rem;
+      }
+
+      .brand-mark {
+        margin: 0 0 0.75rem;
+        font-family: var(--font-display);
+        font-weight: 800;
+        font-size: clamp(2.8rem, 7vw, 5rem);
+        line-height: 0.92;
+        letter-spacing: -0.045em;
+        color: var(--ink);
+        animation: rise 0.8s ease both;
+      }
+
+      .hero h1 {
+        margin: 0 0 1rem;
+        max-width: 16ch;
+        font-family: var(--font-display);
+        font-weight: 700;
+        font-size: clamp(1.45rem, 2.8vw, 2.1rem);
+        line-height: 1.15;
+        letter-spacing: -0.03em;
+        animation: rise 0.8s ease 0.08s both;
+      }
+
+      .lede {
+        margin: 0 0 1.5rem;
+        max-width: 36ch;
+        color: var(--ink-soft);
+        font-size: 1.12rem;
+        animation: rise 0.8s ease 0.16s both;
+      }
+
+      .cta-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.7rem;
+        animation: rise 0.8s ease 0.24s both;
+      }
+
+      .cta-row-center {
+        justify-content: flex-start;
+        margin-top: 1.75rem;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 2.75rem;
+        padding: 0.65rem 1.1rem;
+        border-radius: 0.45rem;
+        font-weight: 700;
+        text-decoration: none;
+        transition: transform 0.2s ease, background 0.2s ease, color 0.2s ease;
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .btn-primary {
+        background: var(--accent);
+        color: #fff;
+      }
+
+      .btn-primary:hover {
+        background: var(--accent-deep);
+        color: #fff;
+      }
+
+      .btn-ghost {
+        background: color-mix(in srgb, white 72%, transparent);
+        color: var(--ink);
+        border: 1px solid var(--line);
+      }
+
+      .btn-ghost:hover {
+        background: white;
+      }
+
+      @keyframes media-drift {
+        from {
+          transform: scale(1.02) translate3d(0, 0, 0);
+        }
+        to {
+          transform: scale(1.08) translate3d(-1.5%, 1%, 0);
+        }
+      }
+
+      .section {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 3.5rem 1.25rem;
+      }
+
+      .section-alt {
+        background: color-mix(in srgb, white 45%, var(--paper-deep));
+        max-width: none;
+        padding-left: max(1.25rem, calc((100% - 1100px) / 2 + 1.25rem));
+        padding-right: max(1.25rem, calc((100% - 1100px) / 2 + 1.25rem));
+      }
+
+      .section h2 {
+        margin: 0 0 0.7rem;
+        font-family: var(--font-display);
+        font-size: clamp(1.55rem, 2.8vw, 2.1rem);
+        letter-spacing: -0.03em;
+        line-height: 1.15;
+        max-width: 22ch;
+      }
+
+      .section-lede {
+        margin: 0 0 1.8rem;
+        max-width: 52ch;
+        color: var(--ink-soft);
+      }
+
+      .feature-list {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 1.35rem;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .feature-list li {
+        display: grid;
+        gap: 0.35rem;
+        padding-top: 1rem;
+        border-top: 1px solid var(--line);
+      }
+
+      .feature-list strong {
+        font-family: var(--font-display);
+        font-size: 1.15rem;
+        letter-spacing: -0.02em;
+      }
+
+      .feature-list span {
+        color: var(--ink-soft);
+      }
+
+      .steps {
+        list-style: none;
+        margin: 0;
+        padding: 0;
+        display: grid;
+        gap: 1.1rem;
+      }
+
+      .steps li {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 0.9rem;
+        align-items: start;
+      }
+
+      .step-n {
+        display: inline-grid;
+        place-items: center;
+        width: 2.1rem;
+        height: 2.1rem;
+        border-radius: 999px;
+        background: var(--ink);
+        color: #fff;
+        font-family: var(--font-display);
+        font-weight: 700;
+      }
+
+      .steps strong {
+        display: block;
+        font-family: var(--font-display);
+        font-size: 1.1rem;
+        letter-spacing: -0.02em;
+      }
+
+      .steps p {
+        margin: 0.25rem 0 0;
+        color: var(--ink-soft);
+      }
+
+      .site-end {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 3rem;
+        color: var(--ink-soft);
+        font-size: 0.95rem;
+      }
+
+      .site-end a {
+        color: inherit;
+      }
+
+      @keyframes rise {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @media (max-width: 860px) {
+        .hero {
+          min-height: min(88vh, 44rem);
+        }
+
+        .hero-media::after {
+          background:
+            linear-gradient(180deg, rgba(243, 246, 244, 0.55) 0%, rgba(243, 246, 244, 0.92) 58%, rgba(243, 246, 244, 0.98) 100%);
+        }
+
+        .hero-copy {
+          padding-top: 4.5rem;
+          padding-bottom: 2.8rem;
+        }
+
+        .feature-list {
+          grid-template-columns: 1fr;
+        }
+
+        .topnav a:not(.topnav-cta) {
+          display: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .atmosphere,
+        .brand-mark,
+        .hero h1,
+        .lede,
+        .cta-row,
+        .hero-media img,
+        .btn {
+          animation: none !important;
+          transition: none !important;
+        }
+      }
+    </style>
+    </div>
+  </body>
+</html>
