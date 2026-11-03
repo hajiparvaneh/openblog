@@ -107,9 +107,12 @@ npm run preview
 ```
 
 No Worker, OAuth app, scoring events, or leaderboard data required.  
-`npm run test:standalone` builds an isolated two-post fixture (including base-path branding checks) with no secrets.
+`npm run test:standalone` builds an isolated two-post fixture (including base-path branding checks) with no secrets.  
+`npm run verify:first-publish` times the branding → first post → Pages build path and writes `docs/FIRST-PUBLISH-VALIDATION.md`.
 
 Set `OPENBLOG_BASE_URL` (or `SITE_URL`) and optionally `OPENBLOG_BASE_PATH` when building for your own host.
+
+Release notes: [CHANGELOG.md](CHANGELOG.md) · Demo script: [docs/DEMO.md](docs/DEMO.md)
 
 ## Optional community app (openblog.cc)
 
@@ -157,6 +160,7 @@ Scoring automation: set repository variable `OPENBLOG_COMMUNITY=true` to enable 
 npm run openblog:add-event
 npm run openblog:generate
 npm run test:standalone
+npm run verify:first-publish
 ```
 
 Recommended guardrails:

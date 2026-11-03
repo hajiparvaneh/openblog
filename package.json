@@ -11,7 +11,8 @@
     "check": "astro check",
     "openblog:generate": "node scripts/generate-openblog-state.mjs",
     "openblog:add-event": "node scripts/add-event-from-pr.mjs",
-    "test:standalone": "node scripts/test-standalone.mjs"
+    "test:standalone": "node scripts/test-standalone.mjs",
+    "verify:first-publish": "node scripts/verify-first-publish.mjs"
   },
   "dependencies": {
     "@toast-ui/editor": "^3.2.2",

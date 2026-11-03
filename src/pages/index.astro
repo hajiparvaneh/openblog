@@ -119,7 +119,8 @@ const getPullRequestUrl = (prNumber: number): string =>
   `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
 
 const pageDescription =
-  'OpenBlog is a free collaborative technical blog where developers publish with pull requests, build a visible GitHub portfolio, and improve hiring reputation.';
+  'Start your own Markdown blog from the OpenBlog starter, or contribute to the openblog.cc community archive through pull requests and build a visible GitHub portfolio.';
+const starterTemplateUrl = 'https://github.com/hajiparvaneh/openblog/generate';
 const canonicalPath = '/';
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
@@ -163,26 +164,31 @@ const structuredData = [
   }
 ];
 ---
-<BaseLayout title="OpenBlog | Free Collaborative Blog for GitHub Portfolio Growth" description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
+<BaseLayout title="OpenBlog | Start your blog or contribute in public" description={pageDescription} canonicalPath={canonicalPath} structuredData={structuredData}>
   <section class="card hero">
     <div class="hero-main">
-      <p class="kicker icon-label"><i class="ti ti-news icon-sm" aria-hidden="true"></i>Open source publication</p>
-      <h1>Write together and grow your GitHub reputation.</h1>
-      <p class="meta">Every accepted pull request improves content and creates visible proof of teamwork, consistency, and technical communication.</p>
+      <p class="kicker icon-label"><i class="ti ti-news icon-sm" aria-hidden="true"></i>Markdown blog starter + community archive</p>
+      <h1>Start your blog. Or write with the community.</h1>
+      <p class="meta">Use the OpenBlog starter to publish your own site from GitHub in minutes — or contribute to the openblog.cc archive through pull requests and grow a public proof-of-work portfolio.</p>
       <div class="hero-actions">
-        <a class="home-cta" href="/how-to-contribute">
-          <i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>
-          Start contributing
+        <a class="home-cta" href={starterTemplateUrl} target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-rocket icon-sm" aria-hidden="true"></i>
+          Start your blog
         </a>
-        <a class="home-cta home-cta-soft" href="/leaderboard">
-          <i class="ti ti-trophy icon-sm" aria-hidden="true"></i>
-          View leaderboard
+        <a class="home-cta home-cta-soft" href="#home-posts">
+          <i class="ti ti-eye icon-sm" aria-hidden="true"></i>
+          View live demo
         </a>
       </div>
+      <p class="meta hero-secondary-links">
+        <a href="/how-to-contribute">Contribute to openblog.cc</a>
+        <span aria-hidden="true">·</span>
+        <a href="/leaderboard">Leaderboard</a>
+      </p>
       <ul class="hero-highlights">
-        <li class="hero-highlight"><i class="ti ti-badge-check icon-sm" aria-hidden="true"></i>Editorial reviews through pull requests</li>
-        <li class="hero-highlight"><i class="ti ti-certificate icon-sm" aria-hidden="true"></i>Public proof-of-work tied to your GitHub profile</li>
-        <li class="hero-highlight"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>Cross-category collaboration with visible contribution history</li>
+        <li class="hero-highlight"><i class="ti ti-template icon-sm" aria-hidden="true"></i>Config-first personal blog — no secrets to build</li>
+        <li class="hero-highlight"><i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>Publish with Markdown pull requests on GitHub Pages</li>
+        <li class="hero-highlight"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>Optional community scoring and public reputation on openblog.cc</li>
       </ul>
     </div>
 
@@ -482,6 +488,14 @@ const structuredData = [
       display: flex;
       flex-wrap: wrap;
       gap: 0.55rem;
+    }
+
+    .hero-secondary-links {
+      margin-top: 0.65rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.45rem;
     }
 
     .home-cta {
