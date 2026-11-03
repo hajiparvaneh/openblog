@@ -1,15 +1,15 @@
 # About
 
-Welcome — this is a technical blog for readers who want practical explanations without the noise.
+This site is powered by **OpenBlog** — a free, open-source blogging template.
 
-## What you will find
+## In short
 
-- Short, focused posts on networking, security, JavaScript, databases, DevOps, and related topics
-- Examples you can apply in real projects
-- An archive you can browse by category or tag
+- **Free** to use for your own blog
+- **Open source** on GitHub
+- **File-based** — posts are Markdown (`.md`) files
+- **GitHub-based** — write, review, and publish from a repository
+- **MIT licensed** — use it, change it, make it yours
 
-## How to read
+## For readers
 
-Start with a featured post on the home page, pick a category that matches what you are learning, or follow a tag such as `dns`, `security`, or `javascript`.
-
-New posts appear in the archive as they are published. If something is unclear, the tags and related posts under each article help you keep going.
+Browse the three starter posts to learn what OpenBlog is. Use categories and tags on the home page when more articles are published.

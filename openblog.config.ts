@@ -43,12 +43,12 @@ function normalizeSiteUrl(value: string): string {
 
 const config: OpenBlogConfig = {
   title: 'OpenBlog',
-  tagline: 'Practical notes on software and the web',
+  tagline: 'A free open-source Markdown blog',
   description:
-    'A technical blog with clear explainers on networking, security, JavaScript, databases, and more — written for readers who want useful, practical posts.',
-  heroHeadline: 'Clear technical writing for curious builders.',
+    'OpenBlog is a free, open-source, file-based blog. Write posts as Markdown on GitHub, publish a static site, and share it with readers under the MIT license.',
+  heroHeadline: 'A free blog built from Markdown files on GitHub.',
   heroSupporting:
-    'Browse featured stories, explore topics by category, or jump into the latest post. Short explainers, practical examples, and a clean archive.',
+    'Open source, MIT licensed, and file-based — no CMS lock-in. Read the starter posts to see how OpenBlog works, then make the archive your own.',
   siteUrl: normalizeSiteUrl(env('OPENBLOG_BASE_URL') ?? env('SITE_URL') ?? 'https://example.com/'),
   basePath: normalizeBasePath(env('OPENBLOG_BASE_PATH') ?? '/'),
   logo: {

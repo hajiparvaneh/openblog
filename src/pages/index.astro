@@ -64,24 +64,24 @@ const categoryInsights = [...categoryInsightsMap.values()]
 
 const faqEntries = [
   {
-    question: 'Where should I start?',
+    question: 'What is OpenBlog?',
     answer:
-      'Open a featured post on the home page, or pick a category that matches what you want to learn — networking, security, JavaScript, and more.'
+      'OpenBlog is a free, open-source blogging template. Posts are Markdown files in a GitHub repository, and the site publishes as static pages.'
+  },
+  {
+    question: 'How should I read this starter site?',
+    answer:
+      'Start with the featured posts. They explain that OpenBlog is free, file-based, GitHub-based, and MIT licensed. Use the Blog category or tags to jump between them.'
   },
   {
     question: 'How are posts organized?',
     answer:
-      'Every post belongs to a category (topic) and can have tags. Use category pages for a subject overview, and tag pages when you want a narrower thread across topics.'
+      'Each post sits in a category folder and can include tags. Category and tag pages help you browse without scrolling the full archive.'
   },
   {
-    question: 'Do I need to read posts in order?',
+    question: 'Can I share a post?',
     answer:
-      'No. Most articles stand alone. Related posts at the bottom of an article are optional next steps, not required reading.'
-  },
-  {
-    question: 'Can I share an article?',
-    answer:
-      'Yes. Each post has a share control. You can also copy the URL from your browser and send it directly.'
+      'Yes. Use the share control on a post page, or copy the URL from your browser.'
   }
 ] as const;
 
@@ -156,9 +156,9 @@ const structuredData = [
         </a>
       </div>
       <ul class="hero-highlights">
-        <li class="hero-highlight"><i class="ti ti-book icon-sm" aria-hidden="true"></i>Practical explainers you can finish in one sitting</li>
-        <li class="hero-highlight"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Browse by category or follow tags across topics</li>
-        <li class="hero-highlight"><i class="ti ti-star-filled icon-sm" aria-hidden="true"></i>Featured stories highlight strong starting points</li>
+        <li class="hero-highlight"><i class="ti ti-markdown icon-sm" aria-hidden="true"></i>Posts are plain Markdown files</li>
+        <li class="hero-highlight"><i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>Hosted and versioned on GitHub</li>
+        <li class="hero-highlight"><i class="ti ti-license icon-sm" aria-hidden="true"></i>Free and open source under MIT</li>
       </ul>
     </div>
 
