@@ -109,7 +109,7 @@ if (posts.length === 0) {
     </div>
 
     {postsTotalPages > 1 && (
-      <nav class="leaderboard-pagination" aria-label={`${categoryLabel} posts pages`}>
+      <nav class="posts-pagination" aria-label={`${categoryLabel} posts pages`}>
         <a
           id="category-posts-prev"
           class:list={['page-control', currentPage <= 1 && 'is-disabled']}
@@ -157,7 +157,7 @@ if (posts.length === 0) {
   </script>
 
   <style>
-    .leaderboard-pagination {
+    .posts-pagination {
       margin-top: 0.45rem;
       display: flex;
       flex-wrap: wrap;
@@ -207,7 +207,7 @@ if (posts.length === 0) {
     }
 
     @media (max-width: 860px) {
-      .leaderboard-pagination {
+      .posts-pagination {
         justify-content: center;
       }
     }
