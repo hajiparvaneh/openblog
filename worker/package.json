@@ -1,9 +1,0 @@
-{
-  "name": "openblog-worker",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "build": "echo 'No build step required (Wrangler compiles TypeScript during deploy)'",
-    "deploy": "npx --yes wrangler@4.40.2 deploy"
-  }
-}

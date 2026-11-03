@@ -1,42 +1,27 @@
 ---
-import fs from 'node:fs';
-import path from 'node:path';
+import { marked } from 'marked';
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import LatestInCategory from '../../components/LatestInCategory.astro';
-import LatestContributorsInCategory from '../../components/LatestContributorsInCategory.astro';
 import IconBadge from '../../components/IconBadge.astro';
-import PostContributorsStack from '../../components/PostContributorsStack.astro';
 import TagBadge from '../../components/TagBadge.astro';
-import UserAvatar from '../../components/UserAvatar.astro';
-import { marked } from 'marked';
 import {
-  evaluatePostQuality,
   formatPostDate,
   getCategoryPath,
-  getPosts,
   getPostBySlug,
-  getContributorsForPost
-} from '../../lib/openblog';
+  getPostPath,
+  getPosts
+} from '../../lib/posts';
+import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
 import { toAbsoluteUrl } from '../../lib/seo';
-import { getSiteUrl } from '../../lib/site';
+import { withBase } from '../../lib/paths';
 
-type ScoringLabelConfig = {
-  points: number;
-  displayName?: string;
-  icon: string;
-  color: string;
-};
-
-type ProofQualityTask = {
-  key: 'depth' | 'reference' | 'example';
-  title: string;
-  details: string;
-  labelMeta: ScoringLabelConfig;
-};
-
-type ManualContributionHint = {
-  labelMeta: ScoringLabelConfig;
-};
+// Eager glob keeps Markdown in this page's Vite graph so `astro dev` refreshes routes on content changes.
+const markdownModules = import.meta.glob('../../../content/posts/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default'
+}) as Record<string, string>;
+void markdownModules;
 
 export function getStaticPaths() {
   return getPosts().map((post) => ({ params: { slug: post.slug } }));
@@ -46,135 +31,24 @@ const slugParam = Astro.params.slug;
 const slug = Array.isArray(slugParam) ? slugParam.join('/') : slugParam ?? '';
 const post = getPostBySlug(slug);
 if (!post) throw new Error('Post not found');
-const contributors = getContributorsForPost(slug);
+
+const config = getOpenBlogConfig();
 const html = marked.parse(post.body);
-const getProfileUrl = (username: string) => `/profile/@${username}`;
-const getPostUrlBySlug = (postSlug: string) =>
-  `/posts/${postSlug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
-const getPullRequestUrl = (prNumber: number) => `https://github.com/hajiparvaneh/openblog/pull/${prNumber}`;
-const formatMergedDate = (isoDate: string) => {
-  const parsed = new Date(isoDate);
-  return Number.isNaN(parsed.getTime()) ? isoDate : parsed.toISOString().slice(0, 10);
-};
-
-const toLabelDisplayName = (label: string): string =>
-  label
-    .split('-')
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-
-const scoringLabelsPath = path.join(process.cwd(), 'openblog/enums/scoring-labels.json');
-const scoringLabels = JSON.parse(fs.readFileSync(scoringLabelsPath, 'utf8')) as Record<string, number | ScoringLabelConfig>;
-const getLabelMeta = (label: string): ScoringLabelConfig => {
-  const labelConfig = scoringLabels[label];
-  if (typeof labelConfig === 'number') {
-    return { points: labelConfig, displayName: toLabelDisplayName(label), icon: 'tag', color: '#64748b' };
-  }
-  if (labelConfig && typeof labelConfig === 'object') {
-    return {
-      points: typeof labelConfig.points === 'number' ? labelConfig.points : 0,
-      displayName: labelConfig.displayName || toLabelDisplayName(label),
-      icon: labelConfig.icon || 'tag',
-      color: labelConfig.color || '#64748b'
-    };
-  }
-  return { points: 0, displayName: toLabelDisplayName(label), icon: 'tag', color: '#64748b' };
-};
-
-const postQuality = evaluatePostQuality(post.body);
-const minimumDepthWords = postQuality.minimumDepthWords;
-const hasRicherText = postQuality.hasRicherText;
-const hasReferences = postQuality.hasReferences;
-const hasPracticalExample = postQuality.hasPracticalExample;
-const qualityMeterSegments = Array.from(
-  { length: postQuality.maxScore },
-  (_, index) => index < post.qualityScore
-);
-
-const proofQualityTasks: ProofQualityTask[] = [];
-
-if (!hasRicherText) {
-  proofQualityTasks.push({
-    key: 'depth',
-    title: 'Add richer technical depth',
-    details: `Expand this post to at least ${minimumDepthWords} words with clearer explanation, edge cases, and tradeoffs.`,
-    labelMeta: getLabelMeta('fact-check')
-  });
-}
-
-if (!hasReferences) {
-  proofQualityTasks.push({
-    key: 'reference',
-    title: 'Add trusted references',
-    details: 'Support core claims with reliable links (official docs, standards, or reputable technical sources).',
-    labelMeta: getLabelMeta('source-added')
-  });
-}
-
-if (!hasPracticalExample) {
-  proofQualityTasks.push({
-    key: 'example',
-    title: 'Add a practical example',
-    details: 'Include a concrete example such as code, command output, step-by-step flow, or a real scenario.',
-    labelMeta: getLabelMeta('new-example')
-  });
-}
-
-const proofQualityReady = proofQualityTasks.length === 0;
-const passedQualityHints: ManualContributionHint[] = [];
-if (hasRicherText) {
-  const labelMeta = getLabelMeta('fact-check');
-  passedQualityHints.push({
-    labelMeta: { ...labelMeta, displayName: 'Add richer technical depth' }
-  });
-}
-if (hasReferences) {
-  const labelMeta = getLabelMeta('source-added');
-  passedQualityHints.push({
-    labelMeta: { ...labelMeta, displayName: 'Add trusted references' }
-  });
-}
-if (hasPracticalExample) {
-  const labelMeta = getLabelMeta('new-example');
-  passedQualityHints.push({
-    labelMeta: { ...labelMeta, displayName: 'Add a practical example' }
-  });
-}
-
-const manualContributionHints: ManualContributionHint[] = [
-  ...['fix-metadata', 'typo', 'fact-check', 'translation'].map((label) => ({
-    labelMeta: getLabelMeta(label)
-  })),
-  ...passedQualityHints
-];
-const categoryPath = getCategoryPath(post.category);
-const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
-const quickEditPath = `/contribute/edit/${postSourcePath}`;
-const postSourceUrl = `https://github.com/hajiparvaneh/openblog/blob/main/content/posts/${postSourcePath}.md`;
-const canonicalPath = `/posts/${postSourcePath}`;
-const pageDescription = post.description || `Read ${post.title} on OpenBlog.`;
-const translatedFromPost = post.translateOf ? getPostBySlug(post.translateOf) : undefined;
-const translatedFromPath = post.translateOf ? getPostUrlBySlug(post.translateOf) : undefined;
+const categoryPath = withBase(getCategoryPath(post.category));
+const canonicalPath = getPostPath(post.slug);
+const pageDescription = post.description || `Read ${post.title} on ${config.title}.`;
 const siteUrl = getSiteUrl(Astro.site);
-const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
-const ogImagePath = post.thumbnail ?? '/og-default.png';
-const latestContributionAt = contributors
-  .flatMap((contributor) => contributor.pullRequests.map((pullRequest) => pullRequest.mergedAt))
-  .sort((a, b) => b.localeCompare(a))[0];
-const contributorsTotalPoints = contributors.reduce((sum, contributor) => sum + contributor.totalPoints, 0);
-const contributorsTotalAcceptedPrs = contributors.reduce((sum, contributor) => sum + contributor.acceptedPrs, 0);
-const contributorsTotalLabelKinds = new Set(contributors.flatMap((contributor) => contributor.labels)).size;
+const canonicalUrl = toAbsoluteUrl(withBase(canonicalPath), siteUrl);
+const thumbnailSrc = post.thumbnail
+  ? post.thumbnail.startsWith('http')
+    ? post.thumbnail
+    : withBase(post.thumbnail)
+  : undefined;
+const ogImagePath = post.thumbnail ?? config.ogImage;
 const publishedTime = post.date ? `${post.date}T00:00:00Z` : undefined;
-const modifiedTime = latestContributionAt ?? publishedTime;
-const articleAuthors =
-  contributors.length > 0
-    ? contributors.map((contributor) => ({
-        '@type': 'Person',
-        name: contributor.username,
-        url: toAbsoluteUrl(getProfileUrl(contributor.username), siteUrl)
-      }))
-    : [{ '@type': 'Organization', name: 'OpenBlog Contributors' }];
+const showLanguageBadge = post.lang.toLowerCase() !== 'en';
+const homeHref = withBase('/');
+
 const blogPostingSchema: Record<string, unknown> = {
   '@context': 'https://schema.org',
   '@type': 'BlogPosting',
@@ -183,31 +57,19 @@ const blogPostingSchema: Record<string, unknown> = {
   url: canonicalUrl,
   mainEntityOfPage: canonicalUrl,
   articleSection: post.categoryLabel,
-  author: articleAuthors,
+  inLanguage: post.lang,
   publisher: {
     '@type': 'Organization',
-    name: 'OpenBlog',
-    url: toAbsoluteUrl('/', siteUrl)
+    name: config.title,
+    url: toAbsoluteUrl(withBase('/'), siteUrl)
   }
 };
-if (post.date) {
-  blogPostingSchema.datePublished = post.date;
+if (post.date) blogPostingSchema.datePublished = post.date;
+if (post.tags.length > 0) blogPostingSchema.keywords = post.tags;
+if (thumbnailSrc) {
+  blogPostingSchema.image = [thumbnailSrc.startsWith('http') ? thumbnailSrc : toAbsoluteUrl(thumbnailSrc, siteUrl)];
 }
-if (latestContributionAt) {
-  blogPostingSchema.dateModified = formatPostDate(latestContributionAt);
-}
-if (post.tags.length > 0) {
-  blogPostingSchema.keywords = post.tags;
-}
-if (post.thumbnail) {
-  blogPostingSchema.image = [post.thumbnail];
-}
-if (post.lang) {
-  blogPostingSchema.inLanguage = post.lang;
-}
-if (post.translateOf) {
-  blogPostingSchema.isBasedOn = toAbsoluteUrl(getPostUrlBySlug(post.translateOf), siteUrl);
-}
+
 const structuredData = [
   blogPostingSchema,
   {
@@ -218,7 +80,7 @@ const structuredData = [
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: toAbsoluteUrl('/', siteUrl)
+        item: toAbsoluteUrl(withBase('/'), siteUrl)
       },
       {
         '@type': 'ListItem',
@@ -237,22 +99,23 @@ const structuredData = [
 ];
 ---
 <BaseLayout
-  title={`${post.title} | OpenBlog`}
+  title={`${post.title} | ${config.title}`}
   description={pageDescription}
+  pageLang={post.lang}
   canonicalPath={canonicalPath}
   ogType="article"
   ogImagePath={ogImagePath}
   ogImageAlt={post.thumbnailAlt ?? post.title}
   publishedTime={publishedTime}
-  modifiedTime={modifiedTime}
-  pageLang={post.lang}
   structuredData={structuredData}
 >
   <article class="card">
-    <p class="kicker icon-label"><i class="ti ti-home icon-sm" aria-hidden="true"></i><a href="/">Home</a> / <a href={categoryPath}>{post.categoryLabel}</a></p>
+    <p class="kicker icon-label">
+      <i class="ti ti-home icon-sm" aria-hidden="true"></i>
+      <a href={homeHref}>Home</a> / <a href={categoryPath}>{post.categoryLabel}</a>
+    </p>
     <h1>{post.title}</h1>
     <p class="meta meta-inline">
-      <PostContributorsStack slug={slug} />
       <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
       <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.categoryLabel}</a></span>
       <span class="meta-item share-article-meta">
@@ -271,12 +134,12 @@ const structuredData = [
         <span id="share-article-status" class="share-article-status" role="status" aria-live="polite" hidden></span>
       </span>
     </p>
-    {post.thumbnail ? (
+    {thumbnailSrc ? (
       <>
         <figure class="post-thumbnail-wrap">
           <img
             class="post-thumbnail"
-            src={post.thumbnail}
+            src={thumbnailSrc}
             alt={post.thumbnailAlt ?? post.title}
             loading="eager"
             decoding="async"
@@ -317,7 +180,7 @@ const structuredData = [
             </button>
             <img
               class="post-thumbnail-lightbox-image"
-              src={post.thumbnail}
+              src={thumbnailSrc}
               alt={post.thumbnailAlt ?? post.title}
               loading="eager"
               decoding="async"
@@ -326,200 +189,19 @@ const structuredData = [
         </div>
       </>
     ) : null}
-    {(post.featured || post.tags.length > 0 || post.lang || post.translateOf) ? (
+    {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
       <div class="post-meta-chips">
         {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-meta-chip" /> : null}
-        {post.lang ? <IconBadge label={post.lang} icon="language" class="post-meta-chip" /> : null}
+        {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-meta-chip" /> : null}
         {post.tags.map((tag) => (
           <TagBadge tag={tag} class="post-meta-chip" />
         ))}
-        {post.translateOf && translatedFromPath ? (
-          <a class="badge post-meta-chip post-translation-link icon-label" href={translatedFromPath}>
-            <i class="ti ti-language-hiragana icon-sm" aria-hidden="true"></i>
-            {translatedFromPost ? `Translated from ${translatedFromPost.title}` : `Translated from ${post.translateOf}`}
-          </a>
-        ) : null}
       </div>
     ) : null}
     <div class="article-content" set:html={html} />
-    <section class="post-contribute meta">
-      <span class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>Want to contribute to this post?</span>
-      <a class="post-contribute-link" href={quickEditPath}>
-        Open quick edit workspace
-      </a>
-      or
-      <a class="post-contribute-link" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
-        edit directly on GitHub
-      </a>
-      and open a PR.
-    </section>
-
-    <section class="post-proof-quality">
-      <div class="post-proof-quality-head">
-        <p class="kicker icon-label"><i class="ti ti-sparkles icon-sm" aria-hidden="true"></i>Raise proof quality</p>
-        <p class="meta post-proof-quality-score">
-          <span class="icon-label"><i class="ti ti-meter-2 icon-sm" aria-hidden="true"></i>Quality score <strong>{post.qualityScore}/{postQuality.maxScore}</strong></span>
-          <span class="post-proof-quality-meter" role="img" aria-label={`Quality score ${post.qualityScore} out of ${postQuality.maxScore}`}>
-            {qualityMeterSegments.map((isFilled) => (
-              <span class:list={['post-proof-quality-meter-step', isFilled && 'is-filled']} />
-            ))}
-          </span>
-        </p>
-      </div>
-      {proofQualityReady ? (
-        <p class="meta post-proof-quality-intro">
-          This post already includes baseline depth, references, and practical examples.
-          You can still improve correctness, clarity, and fresh examples through new PRs.
-        </p>
-      ) : (
-        <>
-          <p class="meta post-proof-quality-intro">
-            This post can be improved to become stronger proof-of-work.
-            Pick one item, contribute in a focused PR, and help complete it.
-          </p>
-          <ul class="post-proof-quality-list">
-            {proofQualityTasks.map((task) => (
-              <li class="post-proof-quality-item">
-                <span class="post-proof-quality-item-head">
-                  <span class="post-proof-quality-title icon-label">
-                    <i class={`ti ti-${task.labelMeta.icon} icon-sm post-proof-quality-title-icon`} aria-hidden="true"></i>
-                    <span>{task.title}</span>
-                  </span>
-                  <span class="post-proof-quality-points" title={task.labelMeta.displayName}>
-                    <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{task.labelMeta.points}</span>
-                  </span>
-                  <a
-                    class="post-proof-quality-action"
-                    href={quickEditPath}
-                    aria-label={`Start contribution for ${task.title}`}
-                  >
-                    Start contribution
-                  </a>
-                </span>
-                <span class="meta">{task.details}</span>
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-      <p class="meta post-proof-quality-extra-intro">
-        Also valuable manual improvements (not auto-detected):
-      </p>
-      <ul class="post-proof-quality-extra-list">
-        {manualContributionHints.map((hint) => (
-          <li class="post-proof-quality-extra-item">
-            <a
-              class="post-proof-quality-extra-link"
-              href={quickEditPath}
-            >
-              <span class="icon-label">
-                <i class={`ti ti-${hint.labelMeta.icon} icon-sm post-proof-quality-extra-icon`} aria-hidden="true"></i>
-                <span>{hint.labelMeta.displayName}</span>
-              </span>
-              {hint.labelMeta.points > 0 ? (
-                <span class="points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{hint.labelMeta.points}</span>
-              ) : null}
-            </a>
-          </li>
-        ))}
-      </ul>
-      <p class="post-proof-quality-help">
-        Need help?
-        {' '}
-        <a href="/how-to-contribute">How to contribute</a>
-      </p>
-    </section>
   </article>
 
-  <section class="card">
-    <p class="kicker icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Contributors</p>
-    {contributors.length === 0 ? (
-      <p class="meta">No accepted contributions yet.</p>
-    ) : (
-      <>
-        <div class="contributor-overview" aria-label="Contributors summary">
-          <span class="contributor-overview-item icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>{contributors.length} contributor{contributors.length > 1 ? 's' : ''}</span>
-          <span class="contributor-overview-item icon-label"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i>{contributorsTotalAcceptedPrs} accepted PR{contributorsTotalAcceptedPrs > 1 ? 's' : ''}</span>
-          <span class="contributor-overview-item icon-label"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>{contributorsTotalPoints} points awarded</span>
-          <span class="contributor-overview-item icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>{contributorsTotalLabelKinds} label type{contributorsTotalLabelKinds > 1 ? 's' : ''}</span>
-        </div>
-        <ul class="contributors">
-        {contributors.map((contributor, index) => {
-          const latestPullRequest = contributor.pullRequests[0];
-          return (
-          <li class="contributor-card contributor-card-enhanced">
-            <div class="contributor-rank-row">
-              <span class="badge contributor-rank-badge">#{index + 1}</span>
-              {latestPullRequest ? (
-                <span class="meta icon-label">
-                  <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
-                  Last merged: {formatMergedDate(latestPullRequest.mergedAt)}
-                </span>
-              ) : null}
-            </div>
-            <div class="contributor-header">
-              <a class="user-chip user-link" href={getProfileUrl(contributor.username)}>
-                <UserAvatar username={contributor.username} avatarUrl={contributor.avatarUrl} size={80} />
-                <strong class="user-handle">@{contributor.username}</strong>
-              </a>
-              <span class="badge contributor-total-badge points-badge">
-                <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
-                {contributor.totalPoints}
-              </span>
-            </div>
-
-            <div class="contributor-meta-row meta">
-              <span class="icon-label"><i class="ti ti-git-merge icon-sm" aria-hidden="true"></i>{contributor.acceptedPrs} accepted PR{contributor.acceptedPrs > 1 ? 's' : ''}</span>
-              <span class="icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>{contributor.labels.length} label type{contributor.labels.length > 1 ? 's' : ''}</span>
-              {latestPullRequest ? (
-                <span class="icon-label">
-                  <i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>
-                  <a href={getPullRequestUrl(latestPullRequest.prNumber)} target="_blank" rel="noopener noreferrer">Latest PR #{latestPullRequest.prNumber}</a>
-                </span>
-              ) : null}
-            </div>
-
-            <div class="label-row contributor-label-row">
-              {contributor.labels.map((label) => {
-                const labelMeta = getLabelMeta(label);
-                return (
-                  <span class="badge contributor-label-badge" style={`--label-color: ${labelMeta.color};`} title={`Label: ${label}`}>
-                    <i class={`ti ti-${labelMeta.icon} icon-sm`} aria-hidden="true"></i>
-                    <span>{labelMeta.displayName}</span>
-                    {labelMeta.points > 0 ? <span class="contributor-label-points points-inline"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{labelMeta.points}</span> : null}
-                  </span>
-                );
-              })}
-            </div>
-
-            <div class="contributor-pr-block">
-              <p class="kicker icon-label"><i class="ti ti-git-pull-request icon-sm" aria-hidden="true"></i>Merged PRs</p>
-              <div class="contributor-pr-row">
-                {contributor.pullRequests.map((pullRequest) => (
-                  <a
-                    class="contributor-pr-chip"
-                    href={getPullRequestUrl(pullRequest.prNumber)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    title={`Merged on ${formatMergedDate(pullRequest.mergedAt)}`}
-                  >
-                    <span>PR #{pullRequest.prNumber}</span>
-                    <span class="contributor-pr-chip-date">{formatMergedDate(pullRequest.mergedAt)}</span>
-                    <span class="badge points-badge"><i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>+{pullRequest.points}</span>
-                  </a>
-                ))}
-              </div>
-            </div>
-          </li>
-          );
-        })}
-        </ul>
-      </>
-    )}
-  </section>
-
   <LatestInCategory category={post.category} currentPostSlug={post.slug} />
-  <LatestContributorsInCategory category={post.category} />
 
   <script is:inline>
     (function () {

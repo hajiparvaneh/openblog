@@ -1,9 +1,9 @@
 ---
-import PostContributorsStack from './PostContributorsStack.astro';
 import IconBadge from './IconBadge.astro';
 import TagBadge from './TagBadge.astro';
-import { formatPostDate, getCategoryPath, getPosts, normalizeCategoryKey } from '../lib/openblog';
-import type { Post } from '../lib/openblog';
+import { formatPostDate, getCategoryPath, getPostPath, getPosts, normalizeCategoryKey } from '../lib/posts';
+import { withBase } from '../lib/paths';
+import type { Post } from '../lib/posts';
 
 type Props = {
   posts?: Post[];
@@ -31,7 +31,13 @@ const featuredPosts = posts
   .slice(0, limit)
   .map((post) => ({
     ...post,
-    url: `/posts/${post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`,
+    url: withBase(getPostPath(post.slug)),
+    categoryUrl: withBase(getCategoryPath(post.category)),
+    thumbnailSrc: post.thumbnail
+      ? post.thumbnail.startsWith('http')
+        ? post.thumbnail
+        : withBase(post.thumbnail)
+      : undefined,
     visibleTags: post.tags.slice(0, 3),
     hiddenTagCount: Math.max(0, post.tags.length - 3)
   }));
@@ -72,10 +78,10 @@ const rootClass = `featured-slider ${className}`.trim();
           <li class="featured-slide" data-featured-slide data-featured-index={index}>
             <article class="featured-slide-card">
               <a class="featured-slide-image-link" href={post.url} aria-label={`Read ${post.title}`}>
-                {post.thumbnail ? (
+                {post.thumbnailSrc ? (
                   <img
                     class="featured-slide-image"
-                    src={post.thumbnail}
+                    src={post.thumbnailSrc}
                     alt={post.thumbnailAlt ?? post.title}
                     loading={index === 0 ? 'eager' : 'lazy'}
                     decoding="async"
@@ -94,7 +100,7 @@ const rootClass = `featured-slider ${className}`.trim();
                 <div class="featured-slide-bottom">
                   <p class="featured-slide-meta meta icon-label">
                     <i class="ti ti-category icon-sm" aria-hidden="true"></i>
-                    <a href={getCategoryPath(post.category)}>{post.categoryLabel}</a>
+                    <a href={post.categoryUrl}>{post.categoryLabel}</a>
                     <span aria-hidden="true">•</span>
                     <span class="icon-label"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
                   </p>
@@ -108,7 +114,6 @@ const rootClass = `featured-slider ${className}`.trim();
                     </div>
                   ) : null}
                   <p class="meta meta-inline featured-slide-footer">
-                    <PostContributorsStack slug={post.slug} />
                     <a class="featured-slide-link" href={post.url}>
                       Read post
                       <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
@@ -446,7 +451,7 @@ const rootClass = `featured-slider ${className}`.trim();
 
   .featured-slide-footer {
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-end;
     gap: 0.5rem;
   }
 

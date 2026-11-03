@@ -1,19 +1,19 @@
 ---
 import '../styles/global.css';
-import CookieConsentHead from '../components/CookieConsentHead.astro';
-import CookieConsentManager from '../components/CookieConsentManager.astro';
-import UserAvatar from '../components/UserAvatar.astro';
-import { getCategoryPath, getLatestContributors, getPosts, getProfilePath } from '../lib/openblog';
+import { getCategoryPath, getPosts } from '../lib/posts';
+import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
 import { toAbsoluteUrl } from '../lib/seo';
-import { getSiteUrl } from '../lib/site';
+import { withBase } from '../lib/paths';
+
 type JsonLd = Record<string, unknown>;
 
-type BaseLayoutProps = {
+interface Props {
   title?: string;
   description?: string;
-  canonicalPath?: string;
+  lang?: string;
   pageLang?: string;
-  ogType?: 'website' | 'article' | 'profile';
+  canonicalPath?: string;
+  ogType?: 'website' | 'article';
   ogImagePath?: string;
   ogImageAlt?: string;
   robots?: string;
@@ -21,35 +21,41 @@ type BaseLayoutProps = {
   modifiedTime?: string;
   structuredData?: JsonLd | JsonLd[];
   hideGlobalSidebar?: boolean;
-};
+}
 
+const config = getOpenBlogConfig();
 const {
-  title = 'OpenBlog',
-  description = 'OpenBlog is a Git-based collaborative blog where accepted pull requests create public proof of work and help contributors grow visibility.',
+  title = config.title,
+  description = config.description,
+  lang,
+  pageLang,
   canonicalPath = Astro.url.pathname,
-  pageLang = 'en',
   ogType = 'website',
-  ogImagePath = '/og-default.png',
-  ogImageAlt = 'OpenBlog',
+  ogImagePath = config.ogImage,
+  ogImageAlt = config.title,
   robots = 'index, follow',
   publishedTime,
   modifiedTime,
   structuredData,
   hideGlobalSidebar = false
-} = Astro.props as BaseLayoutProps;
+} = Astro.props;
+const documentLang = pageLang || lang || 'en';
 
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
-const ogImageUrl = toAbsoluteUrl(ogImagePath, siteUrl);
-const faviconIcoHref = '/favicon.ico';
-const favicon16Href = '/favicon-16x16.png';
-const favicon32Href = '/favicon-32x32.png';
-const appleTouchIconHref = '/apple-touch-icon.png';
-const manifestHref = '/site.webmanifest';
-const logoDarkSrc = '/openblog-logo-dark.png';
-const logoLightSrc = '/openblog-logo-light.png';
+const ogImageUrl = ogImagePath.startsWith('http')
+  ? ogImagePath
+  : toAbsoluteUrl(withBase(ogImagePath), siteUrl);
+const logoDarkSrc = withBase(config.logo.dark);
+const logoLightSrc = withBase(config.logo.light);
+const faviconHref = withBase(config.favicon);
+const favicon16Href = withBase('/favicon-16x16.png');
+const favicon32Href = withBase('/favicon-32x32.png');
+const appleTouchIconHref = withBase(config.appleTouchIcon);
+const manifestHref = withBase('/site.webmanifest');
 const jsonLdEntries = Array.isArray(structuredData) ? structuredData : structuredData ? [structuredData] : [];
 const serializedStructuredData = jsonLdEntries.map((entry) => JSON.stringify(entry).replace(/</g, '\\u003c'));
+
 const posts = getPosts();
 const categories = [...posts.reduce((map, post) => {
   const current = map.get(post.category);
@@ -61,23 +67,31 @@ const categories = [...posts.reduce((map, post) => {
   return map;
 }, new Map<string, { label: string; postCount: number }>()).entries()]
   .sort((a, b) => b[1].postCount - a[1].postCount || a[1].label.localeCompare(b[1].label));
-const latestContributors = getLatestContributors(10);
-const repoUrl = 'https://github.com/hajiparvaneh/openblog';
+
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
 const showGlobalSidebar = categories.length > 0 && !hideGlobalSidebar;
-const configuredAuthWorkerUrl = (import.meta.env.PUBLIC_GITHUB_AUTH_WORKER_URL ?? '').trim();
-const authWorkerBaseUrl = (() => {
-  if (!configuredAuthWorkerUrl) return '';
-  try {
-    const parsed = new URL(configuredAuthWorkerUrl);
-    const normalizedPath = parsed.pathname.replace(/\/+$/, '');
-    return `${parsed.origin}${normalizedPath}`;
-  } catch {
-    return '';
+const homeHref = withBase('/');
+const defaultTheme = config.defaultTheme === 'dark' ? 'dark' : 'light';
+
+const brandParts = (() => {
+  const raw = config.title.trim();
+  const match = raw.match(/^(.*?)(blog)$/i);
+  if (match && match[1]) {
+    return { lead: match[1], accent: match[2] };
   }
+  return { lead: raw, accent: '' };
 })();
+
+const navIconFor = (label: string, href: string): string => {
+  const key = `${label} ${href}`.toLowerCase();
+  if (key.includes('home') || href === '/' || href === '') return 'ti-home';
+  if (key.includes('contribute') || key.includes('how-to')) return 'ti-pencil';
+  if (key.includes('about')) return 'ti-info-circle';
+  if (key.includes('blog') || key.includes('post')) return 'ti-news';
+  return 'ti-link';
+};
 ---
-<html lang={pageLang}>
+<html lang={documentLang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -85,21 +99,20 @@ const authWorkerBaseUrl = (() => {
     <meta name="description" content={description} />
     <meta name="robots" content={robots} />
     <meta name="theme-color" content="#f6f8fa" />
-    <meta name="application-name" content="OpenBlog" />
-    <meta name="apple-mobile-web-app-title" content="OpenBlog" />
+    <meta name="application-name" content={config.title} />
+    <meta name="apple-mobile-web-app-title" content={config.title} />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
-    <meta name="msapplication-TileColor" content="#f6f8fa" />
     <link rel="canonical" href={canonicalUrl} />
-    <link rel="icon" href={faviconIcoHref} sizes="any" />
+    <link rel="icon" href={faviconHref} sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href={favicon32Href} />
     <link rel="icon" type="image/png" sizes="16x16" href={favicon16Href} />
     <link rel="apple-touch-icon" sizes="180x180" href={appleTouchIconHref} />
     <link rel="manifest" href={manifestHref} />
-    <link rel="shortcut icon" href={faviconIcoHref} />
+    <link rel="shortcut icon" href={faviconHref} />
 
     <meta property="og:type" content={ogType} />
-    <meta property="og:site_name" content="OpenBlog" />
+    <meta property="og:site_name" content={config.title} />
     <meta property="og:locale" content="en_US" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
@@ -119,19 +132,23 @@ const authWorkerBaseUrl = (() => {
       <script type="application/ld+json" set:html={item} />
     ))}
 
-    <CookieConsentHead />
-
     <link rel="preconnect" href="https://cdn.jsdelivr.net" />
     <link rel="dns-prefetch" href="//cdn.jsdelivr.net" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
-    <script is:inline>
+    <style define:vars={{ accent: config.accentColor }}>
+      :root {
+        --primary: var(--accent);
+        --primary-strong: var(--accent);
+      }
+    </style>
+    <script is:inline define:vars={{ defaultTheme }}>
       (function () {
         var storageKey = 'openblog-theme';
         var saved = null;
         try {
           saved = localStorage.getItem(storageKey);
         } catch (_) {}
-        var theme = saved === 'light' || saved === 'dark' ? saved : 'light';
+        var theme = saved === 'light' || saved === 'dark' ? saved : defaultTheme;
         document.documentElement.setAttribute('data-theme', theme);
         document.documentElement.style.colorScheme = theme;
       })();
@@ -140,7 +157,7 @@ const authWorkerBaseUrl = (() => {
   <body>
     <div class="page-shell">
       <header class="site-header card">
-        <a class="brand" href="/">
+        <a class="brand" href={homeHref}>
           <span class="brand-main">
             <span class="brand-icon-wrap" aria-hidden="true">
               <img class="brand-icon brand-icon-dark" src={logoDarkSrc} alt="" loading="eager" decoding="async" width="44" height="44" />
@@ -148,8 +165,10 @@ const authWorkerBaseUrl = (() => {
             </span>
           </span>
           <span class="brand-copy">
-            <span class="brand-mark">Open<span class="brand-mark-primary">Blog</span></span>
-            <span class="brand-tagline">Collaborative writing for portfolio and reputation growth</span>
+            <span class="brand-mark">
+              {brandParts.lead}{brandParts.accent ? <span class="brand-mark-primary">{brandParts.accent}</span> : null}
+            </span>
+            <span class="brand-tagline">{config.tagline}</span>
           </span>
         </a>
         <div class="site-header-actions" id="site-header-actions" data-menu-open="false">
@@ -167,44 +186,13 @@ const authWorkerBaseUrl = (() => {
             </span>
           </button>
           <nav class="nav" id="main-nav" aria-label="Main navigation">
-            <a href="/"><i class="ti ti-home icon-sm" aria-hidden="true"></i>Home</a>
-            <a href="/leaderboard"><i class="ti ti-trophy icon-sm" aria-hidden="true"></i>Leaderboard</a>
-            <a href="/how-to-contribute"><i class="ti ti-pencil icon-sm" aria-hidden="true"></i>Contribute</a>
+            {config.nav.map((item) => (
+              <a href={withBase(item.href)}>
+                <i class={`ti ${navIconFor(item.label, item.href)} icon-sm`} aria-hidden="true"></i>
+                {item.label}
+              </a>
+            ))}
           </nav>
-          <div class="header-auth" id="header-auth" data-open="false" data-state="guest">
-            <a class="header-auth-login" id="header-auth-login" href="/login">
-              <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-              <span class="header-auth-label">Sign in</span>
-            </a>
-            <div class="header-auth-user" id="header-auth-user" hidden>
-              <button
-                class="header-auth-trigger"
-                id="header-auth-trigger"
-                type="button"
-                aria-label="Open account menu"
-                aria-expanded="false"
-                aria-controls="header-auth-menu"
-              >
-                <img id="header-auth-avatar" class="header-auth-avatar" src="" alt="" loading="lazy" decoding="async" width="24" height="24" />
-                <span id="header-auth-name" class="header-auth-name">@github</span>
-                <i class="ti ti-chevron-down icon-sm" aria-hidden="true"></i>
-              </button>
-              <div class="header-auth-menu" id="header-auth-menu" role="menu" hidden>
-                <a id="header-auth-openblog-profile" href="/profile/@github" role="menuitem">
-                  <i class="ti ti-user icon-sm" aria-hidden="true"></i>
-                  OpenBlog profile
-                </a>
-                <a id="header-auth-profile" href="https://github.com" target="_blank" rel="noopener noreferrer" role="menuitem">
-                  <i class="ti ti-external-link icon-sm" aria-hidden="true"></i>
-                  GitHub profile
-                </a>
-                <button id="header-auth-logout" type="button" role="menuitem">
-                  <i class="ti ti-logout icon-sm" aria-hidden="true"></i>
-                  Sign out
-                </button>
-              </div>
-            </div>
-          </div>
           <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
             <span class="icon-label">
               <i class="ti ti-sun theme-icon theme-icon-sun icon-sm" aria-hidden="true"></i>
@@ -223,17 +211,13 @@ const authWorkerBaseUrl = (() => {
 
           <aside class="category-sidebar card">
             <section class="sidebar-block">
-              <p class="kicker icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>New Post</p>
-              <p class="meta">Want to contribute? Open the quick workspace or use GitHub directly to submit a focused PR.</p>
-              <a class="sidebar-link" href="/contribute/create">
-                <i class="ti ti-file-plus icon-sm" aria-hidden="true"></i>
-                Create Post PR
+              <p class="kicker icon-label"><i class="ti ti-book icon-sm" aria-hidden="true"></i>About this blog</p>
+              <p class="meta">A free, open-source Markdown blog on GitHub. Start with a featured post or browse the Blog category.</p>
+              <a class="sidebar-link" href={withBase('/about')}>
+                <i class="ti ti-info-circle icon-sm" aria-hidden="true"></i>
+                Read the About page
               </a>
-              <a class="sidebar-link" href={repoUrl} target="_blank" rel="noopener noreferrer">
-                <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-                Open GitHub repo
-              </a>
-              <a class="sidebar-sub-link" href="/how-to-contribute">How to contribute</a>
+              <a class="sidebar-sub-link" href={homeHref}>Back to home</a>
             </section>
 
             <hr class="sidebar-sep" />
@@ -241,7 +225,7 @@ const authWorkerBaseUrl = (() => {
             <nav aria-label="Post categories">
               <div class="category-links category-links-sidebar">
                 {categories.map(([category, categoryMeta]) => (
-                  <a class="category-link" href={getCategoryPath(category)}>
+                  <a class="category-link" href={withBase(getCategoryPath(category))}>
                     <span>{categoryMeta.label}</span>
                     <span class="badge">{categoryMeta.postCount}</span>
                   </a>
@@ -249,56 +233,12 @@ const authWorkerBaseUrl = (() => {
               </div>
             </nav>
 
-            {hasSidebarExtra && (
+            {hasSidebarExtra ? (
               <>
                 <hr class="sidebar-sep" />
                 <slot name="sidebar-extra" />
               </>
-            )}
-
-            {latestContributors.length > 0 && (
-              <>
-                <hr class="sidebar-sep" />
-                <p class="kicker icon-label"><i class="ti ti-users icon-sm" aria-hidden="true"></i>Latest contributors</p>
-                <ul class="sidebar-contributors" aria-label="Latest contributors">
-                  {latestContributors.map((contributor) => (
-                    <li>
-                      <a
-                        class="sidebar-contributor-link"
-                        href={getProfilePath(contributor.username)}
-                        aria-label={`@${contributor.username}`}
-                        title={`@${contributor.username}`}
-                      >
-                        <UserAvatar
-                          username={contributor.username}
-                          avatarUrl={contributor.avatarUrl}
-                          size={64}
-                          class="sidebar-avatar"
-                          alt=""
-                          width={28}
-                          height={28}
-                        />
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              </>
-            )}
-
-            <hr class="sidebar-sep" />
-            <section class="sidebar-block">
-              <p class="kicker icon-label"><i class="ti ti-alert-circle icon-sm" aria-hidden="true"></i>Seeing an issue?</p>
-              <p class="meta">Found a bug or typo? Let us know by opening an issue.</p>
-              <a
-                class="sidebar-link"
-                href="https://github.com/hajiparvaneh/openblog/issues/new"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                <i class="ti ti-bug icon-sm" aria-hidden="true"></i>
-                Open an issue
-              </a>
-            </section>
+            ) : null}
           </aside>
         </div>
       ) : (
@@ -310,167 +250,56 @@ const authWorkerBaseUrl = (() => {
       <footer class="site-footer meta">
         <span class="icon-label">
           <i class="ti ti-edit icon-sm" aria-hidden="true"></i>
-          Built by contributors in public. Improve a post, open a PR, and strengthen your portfolio visibility.
+          {config.footerText}
         </span>
-        <button class="cookie-settings-button" id="cookie-settings-button" type="button">
-          Cookie settings
-        </button>
       </footer>
     </div>
-    <script is:inline type="text/javascript">
-      var _Hasync = _Hasync || [];
-      _Hasync.push(['Histats.start', '1,5015609,4,0,0,0,00010000']);
-      _Hasync.push(['Histats.fasi', '1']);
-      _Hasync.push(['Histats.track_hits', '']);
-      (function () {
-        var hs = document.createElement('script');
-        hs.type = 'text/javascript';
-        hs.async = true;
-        hs.src = '//s10.histats.com/js15_as.js';
-        (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(hs);
-      })();
-    </script>
-    <noscript>
-      <a href="/" target="_blank">
-        <img src="//sstatic1.histats.com/0.gif?5015609&amp;101" alt="website hit counter" />
-      </a>
-    </noscript>
-    <CookieConsentManager />
-    <script is:inline define:vars={{ authWorkerBaseUrl }}>
+
+    <style>
+      .tag-cloud {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.38rem;
+      }
+
+      .tag-cloud-item {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.38rem;
+        border: 1px solid var(--border);
+        border-radius: var(--radius-sm);
+        background: var(--surface);
+        color: var(--text);
+        font-family: var(--font-main);
+        font-size: 0.82rem;
+        font-weight: 600;
+        line-height: 1;
+        padding: 0.3rem 0.42rem;
+        text-decoration: none;
+      }
+
+      .tag-cloud-item .badge {
+        font-size: 0.68rem;
+        padding: 0.12rem 0.35rem;
+        background: var(--surface);
+      }
+
+      .tag-cloud-item:hover {
+        border-color: var(--primary);
+        background: var(--surface-soft);
+        color: var(--text);
+      }
+    </style>
+
+    <script is:inline>
       (function () {
         var storageKey = 'openblog-theme';
-        var authApiBase = typeof authWorkerBaseUrl === 'string' ? authWorkerBaseUrl : '';
         var button = document.getElementById('theme-toggle');
         var label = document.getElementById('theme-toggle-label');
         var themeColor = document.querySelector('meta[name="theme-color"]');
         var headerActions = document.getElementById('site-header-actions');
         var menuButton = document.getElementById('header-menu-toggle');
         var mainNav = document.getElementById('main-nav');
-        var authRoot = document.getElementById('header-auth');
-        var authLoginLink = document.getElementById('header-auth-login');
-        var authUserWrap = document.getElementById('header-auth-user');
-        var authTrigger = document.getElementById('header-auth-trigger');
-        var authMenu = document.getElementById('header-auth-menu');
-        var authAvatar = document.getElementById('header-auth-avatar');
-        var authName = document.getElementById('header-auth-name');
-        var authOpenblogProfileLink = document.getElementById('header-auth-openblog-profile');
-        var authProfileLink = document.getElementById('header-auth-profile');
-        var authLogoutButton = document.getElementById('header-auth-logout');
-
-        var toAuthUrl = function (path) {
-          return authApiBase ? authApiBase + path : path;
-        };
-
-        var getLoginUrl = function () {
-          var url = new URL(toAuthUrl('/login'), window.location.origin);
-          url.searchParams.set('return_to', window.location.href);
-          return url.toString();
-        };
-
-        var getOpenblogProfilePath = function (username) {
-          if (typeof username !== 'string') return '/profile/@github';
-          var handle = username.trim().replace(/^@+/, '');
-          return handle ? '/profile/@' + encodeURIComponent(handle) : '/profile/@github';
-        };
-
-        var setAuthMenuOpen = function (open) {
-          if (!authRoot || !authTrigger || !authMenu) return;
-          var isOpen = Boolean(open);
-          authRoot.setAttribute('data-open', String(isOpen));
-          authTrigger.setAttribute('aria-expanded', String(isOpen));
-          authMenu.hidden = !isOpen;
-        };
-
-        var renderGuest = function () {
-          if (authRoot) authRoot.setAttribute('data-state', 'guest');
-          if (authUserWrap) authUserWrap.hidden = true;
-          if (authLoginLink) {
-            authLoginLink.hidden = false;
-            authLoginLink.setAttribute('href', getLoginUrl());
-          }
-          if (authAvatar) {
-            authAvatar.src = '';
-            authAvatar.alt = '';
-          }
-          if (authName) {
-            authName.textContent = '@github';
-          }
-          if (authOpenblogProfileLink) {
-            authOpenblogProfileLink.setAttribute('href', '/profile/@github');
-          }
-          if (authProfileLink) {
-            authProfileLink.setAttribute('href', 'https://github.com');
-          }
-          setAuthMenuOpen(false);
-        };
-
-        var renderUser = function (user) {
-          if (!user || typeof user !== 'object') {
-            renderGuest();
-            return;
-          }
-
-          if (authRoot) authRoot.setAttribute('data-state', 'authenticated');
-          if (authLoginLink) authLoginLink.hidden = true;
-          if (authUserWrap) authUserWrap.hidden = false;
-          if (authAvatar && typeof user.avatar_url === 'string') {
-            authAvatar.src = user.avatar_url;
-          }
-          if (authAvatar && typeof user.login === 'string') {
-            authAvatar.alt = user.login + ' avatar';
-          }
-          if (authName && typeof user.login === 'string') {
-            authName.textContent = '@' + user.login;
-          }
-          if (authOpenblogProfileLink && typeof user.login === 'string') {
-            authOpenblogProfileLink.setAttribute('href', getOpenblogProfilePath(user.login));
-          }
-          if (authProfileLink && typeof user.html_url === 'string') {
-            authProfileLink.setAttribute('href', user.html_url);
-          }
-        };
-
-        var loadAuthUser = async function () {
-          try {
-            var response = await fetch(toAuthUrl('/me'), { credentials: 'include' });
-            if (response.status === 401) {
-              renderGuest();
-              return;
-            }
-            if (!response.ok) {
-              throw new Error('Unexpected status: ' + response.status);
-            }
-            var user = await response.json();
-            renderUser(user);
-          } catch (_) {
-            renderGuest();
-          }
-        };
-
-        if (authTrigger) {
-          authTrigger.addEventListener('click', function () {
-            var isOpen = authTrigger.getAttribute('aria-expanded') === 'true';
-            setAuthMenuOpen(!isOpen);
-          });
-        }
-
-        if (authLogoutButton) {
-          authLogoutButton.addEventListener('click', async function () {
-            authLogoutButton.setAttribute('disabled', 'true');
-            try {
-              await fetch(toAuthUrl('/logout'), {
-                method: 'POST',
-                credentials: 'include'
-              });
-            } catch (_) {
-            } finally {
-              authLogoutButton.removeAttribute('disabled');
-              renderGuest();
-            }
-          });
-        }
-
-        void loadAuthUser();
 
         var applyTheme = function (theme) {
           document.documentElement.setAttribute('data-theme', theme);
@@ -525,9 +354,6 @@ const authWorkerBaseUrl = (() => {
 
         document.addEventListener('click', function (event) {
           if (!(event.target instanceof Node)) return;
-          if (authRoot && !authRoot.contains(event.target)) {
-            setAuthMenuOpen(false);
-          }
           if (!mobileMenu.matches) return;
           if (headerActions.contains(event.target)) return;
           setMenuOpen(false);
@@ -535,7 +361,6 @@ const authWorkerBaseUrl = (() => {
 
         document.addEventListener('keydown', function (event) {
           if (event.key !== 'Escape') return;
-          setAuthMenuOpen(false);
           setMenuOpen(false);
         });
 

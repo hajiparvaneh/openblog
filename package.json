@@ -7,13 +7,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "deploy": "npx wrangler deploy --config worker/wrangler.toml",
-    "check": "astro check",
-    "openblog:generate": "node scripts/generate-openblog-state.mjs",
-    "openblog:add-event": "node scripts/add-event-from-pr.mjs"
+    "check": "astro check"
   },
   "dependencies": {
-    "@toast-ui/editor": "^3.2.2",
     "astro": "^6.0.4",
     "gray-matter": "^4.0.3",
     "marked": "^17.0.4"

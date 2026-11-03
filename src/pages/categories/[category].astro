@@ -2,10 +2,17 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FeaturedPostsSlider from '../../components/FeaturedPostsSlider.astro';
 import PostCard from '../../components/PostCard.astro';
-import UserAvatar from '../../components/UserAvatar.astro';
-import { getCategoryLeaderboardByWindowWithFallback, getCategoryPath, getPosts, getProfilePath, normalizeCategoryKey } from '../../lib/openblog';
+import { getCategoryPath, getPosts, normalizeCategoryKey } from '../../lib/posts';
+import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
 import { toAbsoluteUrl } from '../../lib/seo';
-import { getSiteUrl } from '../../lib/site';
+import { withBase } from '../../lib/paths';
+
+const markdownModules = import.meta.glob('../../../content/posts/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default'
+}) as Record<string, string>;
+void markdownModules;
 
 export function getStaticPaths() {
   const categoryMap = new Map<string, string>();
@@ -21,12 +28,10 @@ export function getStaticPaths() {
   }));
 }
 
+const config = getOpenBlogConfig();
 const categoryParam = Astro.params.category ?? '';
 const category = normalizeCategoryKey(decodeURIComponent(categoryParam));
 const posts = getPosts().filter((post) => post.category === category);
-const categoryLeaderboardResult = getCategoryLeaderboardByWindowWithFallback(category, 'month');
-const categoryLeaderboard = categoryLeaderboardResult.entries;
-const categoryLeaderboardUsesFallback = categoryLeaderboardResult.resolvedWindow === 'all';
 const postsPerPage = 6;
 const postsTotalPages = Math.max(1, Math.ceil(posts.length / postsPerPage));
 const currentPage = 1;
@@ -34,18 +39,13 @@ const pageStart = (currentPage - 1) * postsPerPage;
 const paginatedPosts = posts.slice(pageStart, pageStart + postsPerPage);
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
-const categoryLeaderboardTitle = categoryLeaderboardUsesFallback
-  ? `${categoryLabel} leaderboard (all time)`
-  : `${categoryLabel} monthly leaderboard`;
-const categoryLeaderboardEmptyState = categoryLeaderboardUsesFallback
-  ? 'No scored contributions for this category yet.'
-  : 'No scored contributions for this category this month.';
 const categoryBasePath = getCategoryPath(category);
-const getCategoryPagePath = (page: number): string => (page <= 1 ? categoryBasePath : `${categoryBasePath}/page/${page}`);
+const getCategoryPagePath = (page: number): string =>
+  withBase(page <= 1 ? categoryBasePath : `${categoryBasePath}/page/${page}`);
 const canonicalPath = categoryBasePath;
-const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on OpenBlog and see the top ${categoryLeaderboardUsesFallback ? 'contributors' : 'monthly contributors'} for this category.`;
+const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on ${config.title}.`;
 const siteUrl = getSiteUrl(Astro.site);
-const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const canonicalUrl = toAbsoluteUrl(withBase(canonicalPath), siteUrl);
 const structuredData = [
   {
     '@context': 'https://schema.org',
@@ -62,7 +62,7 @@ const structuredData = [
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: toAbsoluteUrl('/', siteUrl)
+        item: toAbsoluteUrl(withBase('/'), siteUrl)
       },
       {
         '@type': 'ListItem',
@@ -79,7 +79,7 @@ if (posts.length === 0) {
 }
 ---
 <BaseLayout
-  title={`${categoryLabel} | Categories | OpenBlog`}
+  title={`${categoryLabel} | Categories | ${config.title}`}
   description={pageDescription}
   canonicalPath={canonicalPath}
   structuredData={structuredData}
@@ -104,10 +104,7 @@ if (posts.length === 0) {
     <p id="category-posts-page-info" class="meta pagination-info">Page {currentPage} of {postsTotalPages} ({posts.length} posts)</p>
     <div class="post-grid">
       {paginatedPosts.map((post) => (
-        <PostCard
-          post={post}
-          showCategory={false}
-        />
+        <PostCard post={post} showCategory={false} />
       ))}
     </div>
 
@@ -140,48 +137,10 @@ if (posts.length === 0) {
     )}
   </section>
 
-  <section class="card table-wrap">
-    <h2 class="icon-label"><i class="ti ti-trophy icon-sm" aria-hidden="true"></i>{categoryLeaderboardTitle}</h2>
-    {categoryLeaderboard.length === 0 ? (
-      <p class="meta">{categoryLeaderboardEmptyState}</p>
-    ) : (
-      <table class="table">
-        <thead>
-          <tr>
-            <th scope="col">Rank</th>
-            <th scope="col">User</th>
-            <th scope="col">Points</th>
-            <th scope="col">PRs</th>
-          </tr>
-        </thead>
-        <tbody>
-          {categoryLeaderboard.map((user, index) => (
-            <tr>
-              <td>#{index + 1}</td>
-              <td>
-                <a class="user-chip user-link" href={getProfilePath(user.username)}>
-                  <UserAvatar username={user.username} avatarUrl={user.avatarUrl} size={80} />
-                  <span class="user-handle">@{user.username}</span>
-                </a>
-              </td>
-              <td>
-                <span class="points-inline">
-                  <i class="ti ti-sparkles icon-sm points-icon" aria-hidden="true"></i>
-                  {user.totalPoints}
-                </span>
-              </td>
-              <td>{user.acceptedPrs}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    )}
-  </section>
-
   <script is:inline>
     (function () {
-      var basePath = window.location.pathname;
-      if (!basePath || basePath.indexOf('/categories/') !== 0) return;
+      var basePath = window.location.pathname.replace(/\/+$/, '');
+      if (!basePath || basePath.indexOf('/categories/') === -1) return;
       var params = new URLSearchParams(window.location.search);
       if (!params.has('page')) return;
       var requestedPage = Number(params.get('page') || '1');

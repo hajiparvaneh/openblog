@@ -1,159 +1,153 @@
-# OpenBlog
+<p align="center">
+  <img src="public/openblog-logo-light.png" alt="OpenBlog" width="160" />
+</p>
 
-![OpenBlog](public/og-default.png)
+<h1 align="center">OpenBlog</h1>
 
-[![Status](https://img.shields.io/badge/status-active-2ea44f)](https://github.com/hajiparvaneh/openblog)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-0a7f5a)](https://github.com/hajiparvaneh/openblog/pulls)
-[![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01)](https://astro.build/)
-[![Node](https://img.shields.io/badge/Node-%3E%3D18-43853d)](https://nodejs.org/)
+<p align="center">
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License" /></a>
+  <a href="https://astro.build/"><img src="https://img.shields.io/badge/Built%20with-Astro-ff5d01" alt="Built with Astro" /></a>
+</p>
 
-Main website: [https://openblog.cc](https://openblog.cc)
+<p align="center">
+  <strong>A free, open-source blog powered by Markdown files in git.</strong><br />
+  Brand it, write posts as <code>.md</code> files, and publish a static site — MIT licensed.
+</p>
 
-OpenBlog is a collaborative technical blog where contributors improve content through pull requests.  
-When a PR is merged and labeled, points are added to the public leaderboard.
-It is built for developers who want to show teamwork, improve public reputation, and make their GitHub activity more visible for hiring.
+<p align="center">
+  🌐 Demo: <a href="https://openblog.cc">openblog.cc</a>
+</p>
 
-## 🎯 Why OpenBlog
+---
 
-- Practice real collaboration in public through focused pull requests
-- Build a visible proof-of-work portfolio on GitHub
-- Improve technical writing and consistency over time
-- Strengthen your profile for job applications and referrals
+## ✨ Features
 
-## 🚀 First Contribution In 5 Steps
+- 📝 **Markdown posts** stored as files in your git repo
+- 📁 **Categories** from folders, **tags** from frontmatter
+- 🏠 Home page with featured posts, archive, and About
+- 🌓 Light / dark theme
+- 🎨 Branding from `openblog.config.ts` + `public/`
+- 📦 Static build — no accounts or API secrets required
+- 📄 **MIT** license
 
-1. Fork this repository and clone your fork.
-2. Create a branch: `git checkout -b my-post-update`.
-3. Add or edit a post in `content/posts/<category>/<post>.md`.
-4. Run locally and verify your changes.
-5. Open a PR and mention the changed slug (example: `networking/how-dns-works`).
+## 📋 Requirements
 
-## 🧰 Local Development
+- [Node.js](https://nodejs.org/) 22 or newer
+- [git](https://git-scm.com/)
 
-### Requirements
-
-- Node.js 18+ (or newer LTS)
-- npm
-
-### Run locally
+## 🚀 Quick start
 
 ```bash
+git clone https://github.com/hajiparvaneh/openblog.git my-blog
+cd my-blog
 npm install
 npm run dev
 ```
 
-Open the local URL shown in your terminal.
+Open the local URL shown in the terminal (usually `http://localhost:4321`).
 
-### Production preview
+You can also fork the repo or use it as a git template and clone your own copy.
 
-```bash
-npm run build
-npm run preview
+## 🎨 Brand your blog
+
+1. Edit [`openblog.config.ts`](openblog.config.ts) — title, tagline, colors, navigation, footer, and asset paths.
+2. Replace images under [`public/`](public/) (logo, favicon, social image).
+3. Update [`content/about.md`](content/about.md).
+
+You usually do not need to edit layouts for a normal site.
+
+## ✍️ Write a post
+
+Posts are plain Markdown files in git:
+
+```text
+content/posts/<category>/<post-name>.md
 ```
-
-## ✍️ Add A New Blog Post
-
-Create a file at:
-
-`content/posts/<category>/<post>.md`
-
-Important:
-
-- A new folder under `content/posts/` means a new category.
-- Be careful when creating categories and reuse existing ones whenever possible.
-- Create a new category only when the topic clearly does not fit any current category.
 
 Example:
 
-`content/posts/networking/how-http-works.md`
-
-Use this template:
-
 ```md
 ---
-title: How HTTP Works
-description: A beginner-friendly explanation of the HTTP request/response model.
-date: 2026-03-12
+title: My first post
+description: A short summary for cards and SEO.
+date: 2026-03-15
+tags: [notes, blogging]
+featured: true
 ---
 
-Start with a short intro.
-
-## Main section
-
-Add clear examples, references, and practical notes.
+Your content in Markdown.
 ```
 
-Content guidelines:
+| Field | Required | Description |
+| --- | --- | --- |
+| `title` | yes | Post title |
+| `description` | recommended | Short summary |
+| `date` | yes | `YYYY-MM-DD` |
+| `tags` | no | List of tags |
+| `thumbnail` | no | Image path or URL |
+| `thumbnailAlt` | no | Alt text for the image |
+| `featured` | no | Show in the featured slider |
+| `draft` | no | Hide from the site when `true` |
+| `lang` | no | Language code (default `en`) |
 
-- Keep category and filename lowercase and hyphenated.
-- Use clear, consistent category names (for example: `networking`, `security`, `javascript`).
-- Prefer clear, factual writing with practical examples.
-- Keep PR scope focused on one post/topic where possible.
+More detail: [POSTS-README.md](POSTS-README.md)
 
-Detailed post-writing guide (including all metadata fields):
+Commit and push when you are ready — your git history *is* your editorial history.
 
-- [POSTS-README.md](POSTS-README.md)
+## 🌍 Publish the site
 
-## 🛠️ Improve Existing Posts
+OpenBlog builds a **static** site in `dist/`. Host that folder anywhere that serves static files.
 
-Common contribution types:
+This repo includes a workflow for **GitHub Pages** as one easy option:
 
-- Fix typos and wording
-- Add trusted sources
-- Fact-check outdated statements
-- Add examples and clearer explanations
-- Add translations
+1. Push your git repository to a remote.
+2. If you use GitHub: **Settings → Pages → GitHub Actions**.
+3. Push to `main` (or run the workflow manually).
 
-## ✅ PR Checklist
+Default GitHub Pages URL:
 
-- Changes are in `content/posts/<category>/<post>.md`
-- PR description explains what improved and why
-- Changed slug(s) are mentioned in the PR
-- `openblog/generated/*` is not manually edited
+```text
+https://<your-username>.github.io/<your-repo>/
+```
 
-## 🏷️ Scoring Labels
+### Custom domain or project path
 
-Points are determined by labels in `openblog/enums/scoring-labels.json`:
+Optional repository variables:
 
-- `typo`: +5
-- `source-added`: +10
-- `fix-metadata`: +10
-- `fact-check`: +15
-- `new-example`: +20
-- `translation`: +30
-- `new-post`: +50
+| Variable | When to use | Example |
+| --- | --- | --- |
+| `OPENBLOG_BASE_URL` | Site origin only | `https://blog.example.com/` or `https://you.github.io/` |
+| `OPENBLOG_BASE_PATH` | Path under that origin | `/` for a root/custom domain, or `/your-repo` for a project path |
 
-Rules:
+Do not put the same path in both variables.
 
-- Only merged PRs are eligible.
-- At least one scoring label is required unless the PR adds a new post file.
-- New files under `content/posts/<category>/<post>.md` automatically receive `new-post` scoring in automation (even if the label was not applied manually).
-- Frontmatter metadata edits (`title`, `description`, `date`, `thumbnail`, `thumbnailAlt`, `tags`, `draft`, `featured`, `lang`, `translateOf`) automatically receive `fix-metadata` scoring (+10) when no `new-post` label applies.
-- If multiple scoring labels are applied, points are summed.
-
-Event schema:
-
-- Legacy single-post event: `postSlug`, `labels`, `points`
-- Multi-post event (recommended): `contributions` array with `postSlug`, `labels`, and `points`
-
-This allows one merged PR (same `prNumber`) to contribute to multiple posts.
-
-## 📁 Project Structure
-
-- `content/posts/<category>/*.md`: blog content
-- `openblog/events/*.json`: immutable merged-PR score events
-- `openblog/enums/scoring-labels.json`: score labels metadata (points, icon, color)
-- `openblog/generated/users/*.json`: generated user stats
-- `openblog/generated/leaderboard.json`: generated leaderboard
-- `openblog/generated/categories/*.json`: generated per-category leaderboards
-- `scripts/add-event-from-pr.mjs`: create event from merged PR metadata
-- `scripts/generate-openblog-state.mjs`: regenerate users, overall leaderboard, and category leaderboards
-
-## 🔧 Maintainer Notes
-
-These commands are primarily for maintainers/automation:
+Preview a production build locally:
 
 ```bash
-npm run openblog:add-event
-npm run openblog:generate
+OPENBLOG_BASE_URL=https://example.com/ OPENBLOG_BASE_PATH=/ npm run build
+npm run preview
 ```
+
+## 📂 Project layout
+
+```text
+content/
+  about.md                 About page
+  posts/<category>/*.md    Blog posts (in git)
+openblog.config.ts         Site title, nav, branding paths
+public/                    Logos, favicon, images
+src/                       Site theme and pages
+```
+
+## 🛠️ Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Local development server |
+| `npm run build` | Production build into `dist/` |
+| `npm run preview` | Preview the production build |
+| `npm run check` | Type / Astro checks |
+
+## 📜 License
+
+[MIT](LICENSE) — free to use, modify, and share.

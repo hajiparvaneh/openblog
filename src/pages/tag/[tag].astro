@@ -2,9 +2,23 @@
 import BaseLayout from '../../layouts/BaseLayout.astro';
 import FeaturedPostsSlider from '../../components/FeaturedPostsSlider.astro';
 import PostCard from '../../components/PostCard.astro';
-import { getPostsByTagSlug, getTagLabelBySlug, getTagPathBySlug, getTagRecords, slugifyTag } from '../../lib/openblog';
+import {
+  getPostsByTagSlug,
+  getTagLabelBySlug,
+  getTagPathBySlug,
+  getTagRecords,
+  slugifyTag
+} from '../../lib/posts';
+import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
 import { toAbsoluteUrl } from '../../lib/seo';
-import { getSiteUrl } from '../../lib/site';
+import { withBase } from '../../lib/paths';
+
+const markdownModules = import.meta.glob('../../../content/posts/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default'
+}) as Record<string, string>;
+void markdownModules;
 
 export function getStaticPaths() {
   return getTagRecords().map((tag) => ({
@@ -13,6 +27,7 @@ export function getStaticPaths() {
   }));
 }
 
+const config = getOpenBlogConfig();
 const tagParam = Astro.params.tag ?? '';
 const tagSlug = slugifyTag(decodeURIComponent(tagParam));
 const posts = getPostsByTagSlug(tagSlug);
@@ -32,9 +47,9 @@ if (posts.length === 0) {
 }
 
 const canonicalPath = getTagPathBySlug(tagSlug);
-const pageDescription = `Browse ${posts.length} post${posts.length === 1 ? '' : 's'} tagged "${tagLabel}" on OpenBlog.`;
+const pageDescription = `Browse ${posts.length} post${posts.length === 1 ? '' : 's'} tagged "${tagLabel}" on ${config.title}.`;
 const siteUrl = getSiteUrl(Astro.site);
-const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const canonicalUrl = toAbsoluteUrl(withBase(canonicalPath), siteUrl);
 const structuredData = [
   {
     '@context': 'https://schema.org',
@@ -51,7 +66,7 @@ const structuredData = [
         '@type': 'ListItem',
         position: 1,
         name: 'Home',
-        item: toAbsoluteUrl('/', siteUrl)
+        item: toAbsoluteUrl(withBase('/'), siteUrl)
       },
       {
         '@type': 'ListItem',
@@ -64,7 +79,7 @@ const structuredData = [
 ];
 ---
 <BaseLayout
-  title={`${tagLabel} | Tag | OpenBlog`}
+  title={`${tagLabel} | Tag | ${config.title}`}
   description={pageDescription}
   canonicalPath={canonicalPath}
   robots="noindex, follow"

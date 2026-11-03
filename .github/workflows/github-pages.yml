@@ -1,0 +1,61 @@
+# Only deploy path for this template: static GitHub Pages.
+# Cloudflare Workers / Pages and OAuth belong in the openblogcc preview repo, not here.
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - name: Resolve site URL and base path
+        id: site
+        shell: bash
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          DEFAULT_URL="https://${OWNER}.github.io/"
+          DEFAULT_BASE="/${REPO}"
+          SITE_URL="${{ vars.OPENBLOG_BASE_URL }}"
+          BASE_PATH="${{ vars.OPENBLOG_BASE_PATH }}"
+          if [ -z "$SITE_URL" ]; then SITE_URL="$DEFAULT_URL"; fi
+          if [ -z "$BASE_PATH" ]; then BASE_PATH="$DEFAULT_BASE"; fi
+          echo "site_url=$SITE_URL" >> "$GITHUB_OUTPUT"
+          echo "base_path=$BASE_PATH" >> "$GITHUB_OUTPUT"
+      - name: Build
+        env:
+          OPENBLOG_BASE_URL: ${{ steps.site.outputs.site_url }}
+          OPENBLOG_BASE_PATH: ${{ steps.site.outputs.base_path }}
+          ASTRO_TELEMETRY_DISABLED: '1'
+        run: npm run build
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

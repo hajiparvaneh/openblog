@@ -1,6 +1,6 @@
 ---
 import PostCard from './PostCard.astro';
-import { getLatestContributorByPost, getPosts } from '../lib/openblog';
+import { getPosts } from '../lib/posts';
 
 type Props = {
   category: string;
@@ -19,24 +19,9 @@ const {
 } = Astro.props as Props;
 const sectionTitle = title ?? 'Related posts';
 
-const allPosts = getPosts();
-const latestContributorByPost = getLatestContributorByPost();
-const latestInCategory = allPosts
+const latestInCategory = getPosts()
   .filter((categoryPost) => categoryPost.category === category && categoryPost.slug !== currentPostSlug)
-  .map((categoryPost) => {
-    const latestContributionAt = latestContributorByPost.get(categoryPost.slug)?.lastContributionAt;
-    const lastUpdatedAt = latestContributionAt ?? (categoryPost.date ? `${categoryPost.date}T00:00:00Z` : '');
-    return {
-      post: categoryPost,
-      lastUpdatedAt
-    };
-  })
-  .sort(
-    (a, b) =>
-      b.lastUpdatedAt.localeCompare(a.lastUpdatedAt) ||
-      b.post.date.localeCompare(a.post.date) ||
-      a.post.slug.localeCompare(b.post.slug)
-  )
+  .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug))
   .slice(0, limit);
 ---
 
@@ -46,13 +31,8 @@ const latestInCategory = allPosts
     <p class="meta">{emptyMessage}</p>
   ) : (
     <div class="post-grid">
-      {latestInCategory.map((categoryPostRecord) => (
-        <PostCard
-          post={categoryPostRecord.post}
-          showCategory={false}
-          displayDate={categoryPostRecord.lastUpdatedAt}
-          dateSortValue={categoryPostRecord.lastUpdatedAt}
-        />
+      {latestInCategory.map((categoryPost) => (
+        <PostCard post={categoryPost} showCategory={false} />
       ))}
     </div>
   )}

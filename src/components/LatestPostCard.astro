@@ -1,27 +1,32 @@
 ---
-import { formatPostDate, getCategoryPath } from '../lib/openblog';
+import { formatPostDate, getCategoryPath, getPostPath } from '../lib/posts';
+import { withBase } from '../lib/paths';
 import IconBadge from './IconBadge.astro';
-import PostContributorsStack from './PostContributorsStack.astro';
 import TagBadge from './TagBadge.astro';
-import type { Post } from '../lib/openblog';
+import type { Post } from '../lib/posts';
 
 type Props = {
   post: Post;
 };
 
 const { post } = Astro.props as Props;
-const postPath = `/posts/${post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
+const postPath = withBase(getPostPath(post.slug));
+const thumbnailSrc = post.thumbnail
+  ? post.thumbnail.startsWith('http')
+    ? post.thumbnail
+    : withBase(post.thumbnail)
+  : undefined;
 const visibleTags = post.tags.slice(0, 3);
 const hiddenTagCount = Math.max(0, post.tags.length - visibleTags.length);
 const showLanguageBadge = post.lang.toLowerCase() !== 'en';
 ---
 
 <article class="card post-card post-card-standard">
-  {post.thumbnail ? (
+  {thumbnailSrc ? (
     <a class="post-card-inline-thumbnail-link" href={postPath} aria-label={`Read ${post.title}`}>
       <img
         class="post-card-inline-thumbnail"
-        src={post.thumbnail}
+        src={thumbnailSrc}
         alt={post.thumbnailAlt ?? post.title}
         loading="eager"
         decoding="async"
@@ -43,11 +48,10 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
       </div>
     ) : null}
     <p class="meta meta-inline">
-      <PostContributorsStack slug={post.slug} />
       <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
       <span class="meta-item">
         <i class="ti ti-category icon-sm" aria-hidden="true"></i>
-        <a href={getCategoryPath(post.category)}>{post.categoryLabel}</a>
+        <a href={withBase(getCategoryPath(post.category))}>{post.categoryLabel}</a>
       </span>
     </p>
   </div>
