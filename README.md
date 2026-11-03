@@ -3,17 +3,23 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01)](https://astro.build/)
 
-A free Markdown blog template for a **reader-facing** site: **clone → brand → write → publish**.  
-The live UI is aimed at blog readers (posts, categories, tags, about). Publisher setup stays in this README.  
-No scoring. No leaderboard. No secrets required to build.
+A free Markdown blog template: **clone → brand → write → publish**.
 
-Live preview example: [openblog.cc](https://openblog.cc) ([preview repo](https://github.com/hajiparvaneh/openblogcc))
+The live site is **reader-facing** (posts, categories, tags, about).  
+Publisher setup stays in this README.
+
+- No Cloudflare Workers / Pages
+- No OAuth, scoring, or leaderboard
+- No secrets required to build
+- Deploy option: **GitHub Pages only** (static site)
+
+Community / Cloudflare preview lives in a separate repo: [openblogcc](https://github.com/hajiparvaneh/openblogcc) → [openblog.cc](https://openblog.cc)
 
 ## Quickstart
 
 ### 1. Create your repo
 
-Use **Use this template** on GitHub (enable Template repository in Settings if you maintain upstream), or clone this repository.
+Use **Use this template** on GitHub, or clone this repository.
 
 ### 2. Run locally
 
@@ -29,7 +35,7 @@ Requires Node.js 22+.
 ### 3. Brand the site
 
 Edit `openblog.config.ts` and replace logos/icons under `public/` (see paths in the config).  
-Edit About content in `content/about.md`. Sample posts under `content/posts/` already fill categories and tags so the first deploy looks like a real site.
+Edit About content in `content/about.md`. Sample posts under `content/posts/` already fill categories and tags.
 
 ### 4. Write a post
 
@@ -48,7 +54,11 @@ tags: [notes]
 Write in Markdown.
 ```
 
+See `POSTS-README.md` for frontmatter fields.
+
 ### 5. Deploy with GitHub Pages
+
+This template ships **one** deploy path: static GitHub Pages.
 
 1. **Settings → Pages → Build and deployment → GitHub Actions**
 2. Push to `main`
@@ -74,11 +84,12 @@ Branch → edit Markdown → open PR → merge to `main` → Pages redeploys.
 
 ## What this is / isn’t
 
-| This template | Preview site (`openblogcc`) |
+| This template (`openblog`) | Preview (`openblogcc`) |
 | --- | --- |
-| Your personal/project blog | Example deployment at openblog.cc |
-| Static Markdown site | May include extra demo-only features |
-| No Worker / OAuth / points | Separate repository |
+| Personal / project Markdown blog | Live demo at openblog.cc |
+| Static Astro site | May include Workers, OAuth, scoring |
+| GitHub Pages workflow only | Cloudflare + extra deploy tooling |
+| No secrets to build | Separate repository |
 
 ## License
 
