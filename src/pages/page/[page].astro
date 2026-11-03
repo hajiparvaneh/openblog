@@ -41,29 +41,6 @@ const paginatedPosts = remainingPosts.slice(pageStart, pageStart + postsPerPage)
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const getHomePagePath = (page: number): string => withBase(page <= 1 ? '/' : `/page/${page}`);
 
-const faqEntries = [
-  {
-    question: 'How do I publish a new post?',
-    answer:
-      'Create a Markdown file under content/posts/<category>/, fill in frontmatter (title, description, date, tags), then commit and open a pull request. After merge, the site rebuilds automatically.'
-  },
-  {
-    question: 'What kinds of improvements are welcome?',
-    answer:
-      'New tutorials, clearer explanations, fixes to outdated snippets, better structure, and stronger references are all valuable. Small quality upgrades are welcome.'
-  },
-  {
-    question: 'How do I brand this blog as my own?',
-    answer:
-      'Edit openblog.config.ts for title, tagline, colors, and navigation. Replace the logo, favicon, and Open Graph image paths listed there under public/.'
-  },
-  {
-    question: 'Can I contribute without writing a full new post?',
-    answer:
-      'Yes. You can refine structure, add examples, improve language, and update technical details in existing posts through a focused pull request.'
-  }
-] as const;
-
 const canonicalPath = `/page/${currentPage}`;
 const pageDescription = `Browse ${config.title} archive page ${currentPage} with ${remainingPosts.length} published posts.`;
 const siteUrl = getSiteUrl(Astro.site);
@@ -127,25 +104,6 @@ const structuredData = {
     )}
   </section>
 
-  <section id="home-faq" class="card home-faq">
-    <div class="section-head">
-      <div>
-        <p class="kicker icon-label"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Getting started FAQ</p>
-        <h2>Common questions before your first post</h2>
-      </div>
-      <p class="meta">Short answers for cloning, branding, and publishing this template.</p>
-    </div>
-
-    <div class="faq-list">
-      {faqEntries.map((entry, index) => (
-        <details class="faq-item" open={index === 0}>
-          <summary>{entry.question}</summary>
-          <p class="meta">{entry.answer}</p>
-        </details>
-      ))}
-    </div>
-  </section>
-
   <style>
     .section-head {
       display: grid;
@@ -174,43 +132,6 @@ const structuredData = {
 
     .home-posts-section {
       gap: 0.65rem;
-    }
-
-    .home-faq {
-      display: grid;
-      gap: 0.62rem;
-    }
-
-    .faq-list {
-      display: grid;
-      gap: 0.45rem;
-    }
-
-    .faq-item {
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      padding: 0.5rem 0.62rem;
-    }
-
-    .faq-item[open] {
-      border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
-      background: var(--surface);
-    }
-
-    .faq-item summary {
-      cursor: pointer;
-      font-family: var(--font-main);
-      font-size: 0.88rem;
-      font-weight: 700;
-      line-height: 1.35;
-      color: var(--text);
-    }
-
-    .faq-item .meta {
-      margin: 0.42rem 0 0;
-      font-size: 0.8rem;
-      line-height: 1.45;
     }
 
     .leaderboard-pagination {

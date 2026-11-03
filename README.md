@@ -3,7 +3,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01)](https://astro.build/)
 
-A free Markdown blog template: **clone → brand → write → publish**.  
+A free Markdown blog template for a **reader-facing** site: **clone → brand → write → publish**.  
+The live UI is aimed at blog readers (posts, categories, tags, about). Publisher setup stays in this README.  
 No scoring. No leaderboard. No secrets required to build.
 
 Live preview example: [openblog.cc](https://openblog.cc) ([preview repo](https://github.com/hajiparvaneh/openblogcc))

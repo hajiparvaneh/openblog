@@ -71,8 +71,6 @@ const categories = [...posts.reduce((map, post) => {
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
 const showGlobalSidebar = categories.length > 0 && !hideGlobalSidebar;
 const homeHref = withBase('/');
-const repoUrl = config.repositoryUrl;
-const issuesUrl = `${repoUrl.replace(/\/$/, '')}/issues/new`;
 const defaultTheme = config.defaultTheme === 'dark' ? 'dark' : 'light';
 
 const brandParts = (() => {
@@ -195,10 +193,6 @@ const navIconFor = (label: string, href: string): string => {
               </a>
             ))}
           </nav>
-          <a class="header-auth-login" href={repoUrl} target="_blank" rel="noopener noreferrer">
-            <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-            <span class="header-auth-label">GitHub</span>
-          </a>
           <button class="theme-toggle" id="theme-toggle" type="button" aria-label="Toggle theme">
             <span class="icon-label">
               <i class="ti ti-sun theme-icon theme-icon-sun icon-sm" aria-hidden="true"></i>
@@ -217,13 +211,13 @@ const navIconFor = (label: string, href: string): string => {
 
           <aside class="category-sidebar card">
             <section class="sidebar-block">
-              <p class="kicker icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>New Post</p>
-              <p class="meta">Want to contribute? Use GitHub to submit a focused PR with a new or improved Markdown post.</p>
-              <a class="sidebar-link" href={repoUrl} target="_blank" rel="noopener noreferrer">
-                <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-                Open GitHub repo
+              <p class="kicker icon-label"><i class="ti ti-book icon-sm" aria-hidden="true"></i>About this blog</p>
+              <p class="meta">Practical technical notes for readers. Start with a featured post or pick a category that matches what you want to learn.</p>
+              <a class="sidebar-link" href={withBase('/about')}>
+                <i class="ti ti-info-circle icon-sm" aria-hidden="true"></i>
+                Read the About page
               </a>
-              <a class="sidebar-sub-link" href={withBase('/how-to-contribute')}>How to contribute</a>
+              <a class="sidebar-sub-link" href={homeHref}>Back to home</a>
             </section>
 
             <hr class="sidebar-sep" />
@@ -245,16 +239,6 @@ const navIconFor = (label: string, href: string): string => {
                 <slot name="sidebar-extra" />
               </>
             ) : null}
-
-            <hr class="sidebar-sep" />
-            <section class="sidebar-block">
-              <p class="kicker icon-label"><i class="ti ti-alert-circle icon-sm" aria-hidden="true"></i>Seeing an issue?</p>
-              <p class="meta">Found a bug or typo? Open an issue on GitHub.</p>
-              <a class="sidebar-link" href={issuesUrl} target="_blank" rel="noopener noreferrer">
-                <i class="ti ti-bug icon-sm" aria-hidden="true"></i>
-                Open an issue
-              </a>
-            </section>
           </aside>
         </div>
       ) : (

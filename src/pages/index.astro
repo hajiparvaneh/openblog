@@ -64,24 +64,24 @@ const categoryInsights = [...categoryInsightsMap.values()]
 
 const faqEntries = [
   {
-    question: 'How do I publish a new post?',
+    question: 'Where should I start?',
     answer:
-      'Create a Markdown file under content/posts/<category>/, fill in frontmatter (title, description, date, tags), then commit and open a pull request. After merge, the site rebuilds automatically.'
+      'Open a featured post on the home page, or pick a category that matches what you want to learn — networking, security, JavaScript, and more.'
   },
   {
-    question: 'What kinds of improvements are welcome?',
+    question: 'How are posts organized?',
     answer:
-      'New tutorials, clearer explanations, fixes to outdated snippets, better structure, and stronger references are all valuable. Small quality upgrades are welcome.'
+      'Every post belongs to a category (topic) and can have tags. Use category pages for a subject overview, and tag pages when you want a narrower thread across topics.'
   },
   {
-    question: 'How do I brand this blog as my own?',
+    question: 'Do I need to read posts in order?',
     answer:
-      'Edit openblog.config.ts for title, tagline, colors, and navigation. Replace the logo, favicon, and Open Graph image paths listed there under public/.'
+      'No. Most articles stand alone. Related posts at the bottom of an article are optional next steps, not required reading.'
   },
   {
-    question: 'Can I contribute without writing a full new post?',
+    question: 'Can I share an article?',
     answer:
-      'Yes. You can refine structure, add examples, improve language, and update technical details in existing posts through a focused pull request.'
+      'Yes. Each post has a share control. You can also copy the URL from your browser and send it directly.'
   }
 ] as const;
 
@@ -92,7 +92,7 @@ const canonicalPath = '/';
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const aboutHref = withBase('/about');
-const contributeHref = withBase('/how-to-contribute');
+const postsAnchor = '#home-posts';
 
 const structuredData = [
   {
@@ -142,28 +142,28 @@ const structuredData = [
 >
   <section class="card hero">
     <div class="hero-main">
-      <p class="kicker icon-label"><i class="ti ti-news icon-sm" aria-hidden="true"></i>Open source publication</p>
+      <p class="kicker icon-label"><i class="ti ti-news icon-sm" aria-hidden="true"></i>Technical blog</p>
       <h1>{config.heroHeadline}</h1>
       <p class="meta">{config.heroSupporting}</p>
       <div class="hero-actions">
-        <a class="home-cta" href={contributeHref}>
-          <i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>
-          How to contribute
+        <a class="home-cta" href={postsAnchor}>
+          <i class="ti ti-list icon-sm" aria-hidden="true"></i>
+          Browse posts
         </a>
         <a class="home-cta home-cta-soft" href={aboutHref}>
           <i class="ti ti-info-circle icon-sm" aria-hidden="true"></i>
-          About this blog
+          About
         </a>
       </div>
       <ul class="hero-highlights">
-        <li class="hero-highlight"><i class="ti ti-folder icon-sm" aria-hidden="true"></i>Sample categories and tags ready on day one</li>
-        <li class="hero-highlight"><i class="ti ti-markdown icon-sm" aria-hidden="true"></i>Posts live as Markdown in Git</li>
-        <li class="hero-highlight"><i class="ti ti-rocket icon-sm" aria-hidden="true"></i>Publish with GitHub Pages — no secrets required</li>
+        <li class="hero-highlight"><i class="ti ti-book icon-sm" aria-hidden="true"></i>Practical explainers you can finish in one sitting</li>
+        <li class="hero-highlight"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Browse by category or follow tags across topics</li>
+        <li class="hero-highlight"><i class="ti ti-star-filled icon-sm" aria-hidden="true"></i>Featured stories highlight strong starting points</li>
       </ul>
     </div>
 
     <div class="hero-side">
-      <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Publication snapshot</p>
+      <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>At a glance</p>
       <div class="stats">
         <div class="stat">
           <span class="stat-value stat-head"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>{posts.length}</span>
@@ -268,8 +268,8 @@ const structuredData = [
         <h2>{latestPost ? 'More stories are on the way' : 'No posts yet'}</h2>
         <p class="meta">
           {latestPost
-            ? 'Only one post is available right now. Add another Markdown file under content/posts/.'
-            : 'Add a Markdown file under content/posts/<category>/ to publish your first post.'}
+            ? 'Only one post is available right now. Check back soon for more.'
+            : 'New posts will appear here when they are published.'}
         </p>
       </article>
     </section>
@@ -282,7 +282,7 @@ const structuredData = [
           <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Explore by topic</p>
           <h2>Categories</h2>
         </div>
-        <p class="meta">Browse posts grouped by folder under content/posts/.</p>
+        <p class="meta">Pick a topic and open every post in that category.</p>
       </div>
       <div class="category-insights-grid">
         {categoryInsights.map((category) => (
@@ -310,10 +310,10 @@ const structuredData = [
   <section id="home-faq" class="card home-faq">
     <div class="section-head">
       <div>
-        <p class="kicker icon-label"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Getting started FAQ</p>
-        <h2>Common questions before your first post</h2>
+        <p class="kicker icon-label"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Reader FAQ</p>
+        <h2>Common questions while browsing</h2>
       </div>
-      <p class="meta">Short answers for cloning, branding, and publishing this template.</p>
+      <p class="meta">Quick answers if you are new to this archive.</p>
     </div>
 
     <div class="faq-list">

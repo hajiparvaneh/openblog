@@ -1,36 +1,24 @@
 ---
-title: Welcome to OpenBlog
-description: Start here — how this Markdown blog is organized, how to brand it, and how to publish your first update.
+title: Welcome
+description: A short orientation for readers — how this blog is organized and where to start.
 date: 2026-03-15
 featured: true
 lang: en
 thumbnail: /og-default.png
 thumbnailAlt: OpenBlog default social image
-tags: [getting-started, openblog, blogging]
+tags: [getting-started, reading]
 ---
 
-OpenBlog turns Markdown files in Git into a public blog. This repository is ready to run as your first website: sample posts, categories, tags, and pages are already in place.
+Thanks for visiting. This blog publishes practical technical notes — the kind of posts you can finish in one sitting and use the same day.
 
-## Site layout
+## Where to start
 
-| Path | Purpose |
-| --- | --- |
-| `content/posts/<category>/<post>.md` | Blog posts |
-| `content/about.md` | About page |
-| `openblog.config.ts` | Title, tagline, nav, colors, logos |
-| `public/` | Favicon, logos, Open Graph image |
+- **Featured posts** on the home page highlight strong entry points
+- **Categories** group writing by topic (networking, security, JavaScript, and more)
+- **Tags** help you follow a narrower thread across categories
 
-## Categories and tags
+## What to expect
 
-Categories come from the folder name under `content/posts/`. Tags come from each post’s frontmatter and power `/tag/...` pages.
+Posts aim to be clear and concrete: a short setup, the idea that matters, and examples when they help. You do not need to read in order.
 
-This starter site already includes categories such as **Getting Started**, **Networking**, **Security**, **JavaScript**, **Database**, **DevOps**, **C#**, and **Blog**.
-
-## Next steps
-
-1. Run `npm install` and `npm run dev`
-2. Edit `openblog.config.ts` with your brand
-3. Replace this post or add a new file under `content/posts/`
-4. Deploy with the included GitHub Pages workflow
-
-When you are ready, open a pull request and merge to publish.
+If you already know what you want, jump straight to a category or search the archive for a tag that matches your question.

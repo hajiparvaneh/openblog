@@ -27,8 +27,6 @@ if (!post) throw new Error('Post not found');
 const config = getOpenBlogConfig();
 const html = marked.parse(post.body);
 const categoryPath = withBase(getCategoryPath(post.category));
-const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
-const postSourceUrl = `${config.repositoryUrl.replace(/\/$/, '')}/blob/main/content/posts/${postSourcePath}.md`;
 const canonicalPath = getPostPath(post.slug);
 const pageDescription = post.description || `Read ${post.title} on ${config.title}.`;
 const siteUrl = getSiteUrl(Astro.site);
@@ -42,7 +40,6 @@ const ogImagePath = post.thumbnail ?? config.ogImage;
 const publishedTime = post.date ? `${post.date}T00:00:00Z` : undefined;
 const showLanguageBadge = post.lang.toLowerCase() !== 'en';
 const homeHref = withBase('/');
-const contributeHref = withBase('/how-to-contribute');
 
 const blogPostingSchema: Record<string, unknown> = {
   '@context': 'https://schema.org',
@@ -194,17 +191,6 @@ const structuredData = [
       </div>
     ) : null}
     <div class="article-content" set:html={html} />
-    <section class="post-contribute meta">
-      <span class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>Want to improve this post?</span>
-      <a class="post-contribute-link" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
-        Edit on GitHub
-      </a>
-      or read the
-      <a class="post-contribute-link" href={contributeHref}>
-        contribution guide
-      </a>
-      and open a PR.
-    </section>
   </article>
 
   <LatestInCategory category={post.category} currentPostSlug={post.slug} />

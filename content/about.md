@@ -1,23 +1,15 @@
 # About
 
-This is an OpenBlog site — a static technical blog published from Markdown in Git.
+Welcome — this is a technical blog for readers who want practical explanations without the noise.
 
-## What you will find here
+## What you will find
 
-- Practical posts across categories like networking, security, JavaScript, databases, and DevOps
-- Clear explanations with examples you can reuse in real projects
-- Content that lives in the repository, reviewed through pull requests
+- Short, focused posts on networking, security, JavaScript, databases, DevOps, and related topics
+- Examples you can apply in real projects
+- An archive you can browse by category or tag
 
-## How publishing works
+## How to read
 
-1. Write or improve a post under `content/posts/<category>/`
-2. Open a pull request
-3. After merge, the site rebuilds and goes live
+Start with a featured post on the home page, pick a category that matches what you are learning, or follow a tag such as `dns`, `security`, or `javascript`.
 
-## Make it yours
-
-- Brand the site in `openblog.config.ts` and `public/`
-- Replace or extend the sample posts
-- Point GitHub Pages at this repository
-
-OpenBlog is free and open source. Clone it, brand it, and start writing.
+New posts appear in the archive as they are published. If something is unclear, the tags and related posts under each article help you keep going.
