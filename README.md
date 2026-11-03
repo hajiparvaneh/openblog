@@ -6,198 +6,168 @@
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-0a7f5a)](https://github.com/hajiparvaneh/openblog/pulls)
 [![Built with Astro](https://img.shields.io/badge/Built%20with-Astro-ff5d01)](https://astro.build/)
 [![Node](https://img.shields.io/badge/Node-%3E%3D22.12-43853d)](https://nodejs.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Main website: [https://openblog.cc](https://openblog.cc)
+Live community site: [https://openblog.cc](https://openblog.cc)
 
-OpenBlog is a collaborative technical blog where contributors improve content through pull requests.  
-When a PR is merged and labeled, points are added to the public leaderboard.
-It is built for developers who want to show teamwork, improve public reputation, and make their GitHub activity more visible for hiring.
+OpenBlog is two things in one repository:
 
-## Standalone starter (default)
+1. **Starter (default)** — a Material-for-MkDocs-style Markdown blog you can brand and host on GitHub Pages with no secrets.
+2. **Community app (opt-in)** — the collaborative publication at openblog.cc with PR scoring and a public leaderboard.
 
-`npm ci && npm run build` produces a static blog in `dist/`. No secrets, GitHub
-OAuth app, Worker, scoring events, or generated leaderboard data are required.
-Use Node.js 22.12 or newer. Preview with `npm run preview`.
+## Quickstart (start your own blog)
 
-The default build publishes Markdown from `content/posts/<category>/<post>.md`,
-with home, post, category and tag pages, a sitemap, and robots.txt. Draft posts
-(`draft: true`) are excluded. It reuses the same content loader and post cards as
-the community app, without sign-in, profiles, contribution forms, scoring UI,
-leaderboards, or the OpenBlog.cc analytics account.
+Target: template → branded preview → first Markdown PR → live URL in under 10 minutes.
 
-Set `OPENBLOG_BASE_URL=https://your-blog.example/` (or `SITE_URL`) when building
-to generate canonical URLs and the sitemap for your own domain. The current
-fallback is `https://openblog.cc/`. Upload the generated `dist/` directory to a
-static host. Branding configuration and GitHub Pages subpath deployment are
-tracked separately in OPB-2 and OPB-4.
+### 1. Create a repo from this template
 
-### Optional community app
+On GitHub: **Use this template** (enable Template repository in Settings if you maintain the upstream).  
+Or clone this repo and push it to a new empty repository.
 
-To build the original OpenBlog.cc community publication:
-
-```bash
-OPENBLOG_COMMUNITY=true npm run build
-# or, for local development:
-OPENBLOG_COMMUNITY=true npm run dev
-```
-
-This enables the existing community routes, scoring displays and leaderboard.
-Browser sign-in and the contribution workspace additionally require a deployed
-Worker and `PUBLIC_GITHUB_AUTH_WORKER_URL` pointing to it. Worker secrets belong
-in the Worker deployment, never in the static blog. Worker configuration lives in `worker/wrangler.toml`; its OAuth environment
-requires `GITHUB_CLIENT_ID`, `GITHUB_CLIENT_SECRET`, and the appropriate
-`AUTH_ALLOWED_ORIGIN`. Neither the Worker nor its dependencies are installed or deployed
-by the root build.
-
-Merged-PR scoring automation is also opt-in: set the GitHub Actions repository
-variable `OPENBLOG_COMMUNITY` to `true` to enable the scoring workflow. That
-repository variable is separate from the build environment variable above.
-Leave both unset for a standalone blog.
-
-Run `npm run test:standalone` to build an isolated two-post fixture with no
-community data, Worker, or credentials and check its rendered output.
-
-## 🎯 Why OpenBlog
-
-- Practice real collaboration in public through focused pull requests
-- Build a visible proof-of-work portfolio on GitHub
-- Improve technical writing and consistency over time
-- Strengthen your profile for job applications and referrals
-
-## 🚀 First Contribution In 5 Steps
-
-1. Fork this repository and clone your fork.
-2. Create a branch: `git checkout -b my-post-update`.
-3. Add or edit a post in `content/posts/<category>/<post>.md`.
-4. Run locally and verify your changes.
-5. Open a PR and mention the changed slug (example: `networking/how-dns-works`).
-
-## 🧰 Local Development
-
-### Requirements
-
-- Node.js 22.12+ (recommended supported LTS)
-- npm
-
-### Run locally
+### 2. Preview locally
 
 ```bash
 npm install
 npm run dev
 ```
 
-Open the local URL shown in your terminal.
+Requirements: Node.js 22.12+.
 
-### Production preview
+### 3. Brand the site
+
+Edit `openblog.config.ts`:
+
+- `title`, `description`
+- `nav`, `footerText`, `accentColor`, `defaultTheme`
+- logo / favicon / OG paths (defaults point at `public/branding/`)
+
+Replace files under `public/branding/` (see that folder’s README).  
+Edit the About page at `content/about.md`.
+
+You should not need to edit Astro layouts for a normal personal blog.
+
+### 4. Write a post
+
+Add or edit:
+
+`content/posts/<category>/<post>.md`
+
+Two starter samples live under `content/posts/getting-started/`. Keep or delete them.
+
+```md
+---
+title: My post
+description: One-line summary.
+date: 2026-11-03
+tags: [notes]
+---
+
+Write in Markdown.
+```
+
+### 5. Enable GitHub Pages
+
+1. Repo **Settings → Pages → Build and deployment → GitHub Actions**.
+2. Push to `main` (the `Deploy GitHub Pages` workflow builds the starter when `OPENBLOG_COMMUNITY` is not `true`).
+3. Default publish URL: `https://<user>.github.io/<repo>/`.
+
+**Project site (default in CI):** `OPENBLOG_BASE_URL=https://<user>.github.io/` + `OPENBLOG_BASE_PATH=/<repo>`.  
+**Custom domain or root site:** set repository variables:
+
+| Variable | Example |
+| --- | --- |
+| `OPENBLOG_BASE_URL` | `https://blog.example.com/` (origin only) |
+| `OPENBLOG_BASE_PATH` | `/` |
+
+Do not put the repo path in both variables.
+
+Local / manual build with the same values:
 
 ```bash
+OPENBLOG_BASE_URL=https://you.github.io/ OPENBLOG_BASE_PATH=/your-repo npm run build
+npm run preview
+```
+
+### 6. Publish by merging a PR
+
+1. Branch → edit Markdown → open PR → merge to `main`.
+2. Pages redeploys automatically.
+3. Share the live post URL.
+
+### Adopting upstream template updates
+
+This repo is MIT-licensed. When the upstream starter improves, merge or cherry-pick changes carefully around your `openblog.config.ts`, `public/branding/`, and `content/posts/`. Prefer small, reviewable sync PRs.
+
+## Standalone build (no credentials)
+
+```bash
+npm ci
 npm run build
 npm run preview
 ```
 
-## ✍️ Add A New Blog Post
+No Worker, OAuth app, scoring events, or leaderboard data required.  
+`npm run test:standalone` builds an isolated two-post fixture (including base-path branding checks) with no secrets.
 
-Create a file at:
+Set `OPENBLOG_BASE_URL` (or `SITE_URL`) and optionally `OPENBLOG_BASE_PATH` when building for your own host.
 
-`content/posts/<category>/<post>.md`
+## Optional community app (openblog.cc)
 
-Important:
-
-- A new folder under `content/posts/` means a new category.
-- Be careful when creating categories and reuse existing ones whenever possible.
-- Create a new category only when the topic clearly does not fit any current category.
-
-Example:
-
-`content/posts/networking/how-http-works.md`
-
-Use this template:
-
-```md
----
-title: How HTTP Works
-description: A beginner-friendly explanation of the HTTP request/response model.
-date: 2026-03-12
----
-
-Start with a short intro.
-
-## Main section
-
-Add clear examples, references, and practical notes.
+```bash
+OPENBLOG_COMMUNITY=true npm run build
+OPENBLOG_COMMUNITY=true npm run dev
 ```
 
-Content guidelines:
+Enables community routes, scoring UI, and leaderboard. Browser sign-in needs a deployed Worker and `PUBLIC_GITHUB_AUTH_WORKER_URL`. Worker secrets stay in the Worker (`worker/wrangler.toml`), never in the static blog.
 
-- Keep category and filename lowercase and hyphenated.
-- Use clear, consistent category names (for example: `networking`, `security`, `javascript`).
-- Prefer clear, factual writing with practical examples.
-- Keep PR scope focused on one post/topic where possible.
+Scoring automation: set repository variable `OPENBLOG_COMMUNITY=true` to enable `.github/workflows/score-pr.yml`. Leave unset for a personal starter blog.
 
-Detailed post-writing guide (including all metadata fields):
+## Why OpenBlog (community)
 
-- [POSTS-README.md](POSTS-README.md)
+- Practice real collaboration in public through focused pull requests
+- Build a visible proof-of-work portfolio on GitHub
+- Improve technical writing and consistency over time
+- Strengthen your profile for job applications and referrals
 
-## 🛠️ Improve Existing Posts
+## First contribution to openblog.cc
 
-Common contribution types:
+1. Fork and clone.
+2. `git checkout -b my-post-update`
+3. Add or edit `content/posts/<category>/<post>.md`
+4. Run locally and verify.
+5. Open a PR and mention the changed slug (example: `networking/how-dns-works`).
 
-- Fix typos and wording
-- Add trusted sources
-- Fact-check outdated statements
-- Add examples and clearer explanations
-- Add translations
+## Project structure
 
-## ✅ PR Checklist
+- `openblog.config.ts` — branding and navigation
+- `public/branding/` — logos, favicon, default OG image
+- `content/about.md` — About page
+- `content/posts/<category>/*.md` — blog content
+- `src/starter/` — default static blog app
+- `src/` — community app (when `OPENBLOG_COMMUNITY=true`)
+- `openblog/events/*.json` — community score events (community only)
+- `openblog/generated/*` — generated community stats (community only)
+- `worker/` — GitHub OAuth Worker (community only)
+- `.github/workflows/github-pages.yml` — starter Pages deploy
+- `.github/workflows/score-pr.yml` — community scoring (opt-in)
 
-- Changes are in `content/posts/<category>/<post>.md`
-- PR description explains what improved and why
-- Changed slug(s) are mentioned in the PR
-- `openblog/generated/*` is not manually edited
-
-## 🏷️ Scoring Labels
-
-Points are determined by labels in `openblog/enums/scoring-labels.json`:
-
-- `typo`: +5
-- `source-added`: +10
-- `fix-metadata`: +10
-- `fact-check`: +15
-- `new-example`: +20
-- `translation`: +30
-- `new-post`: +50
-
-Rules:
-
-- Only merged PRs are eligible.
-- At least one scoring label is required unless the PR adds a new post file.
-- New files under `content/posts/<category>/<post>.md` automatically receive `new-post` scoring in automation (even if the label was not applied manually).
-- Frontmatter metadata edits (`title`, `description`, `date`, `thumbnail`, `thumbnailAlt`, `tags`, `draft`, `featured`, `lang`, `translateOf`) automatically receive `fix-metadata` scoring (+10) when no `new-post` label applies.
-- If multiple scoring labels are applied, points are summed.
-
-Event schema:
-
-- Legacy single-post event: `postSlug`, `labels`, `points`
-- Multi-post event (recommended): `contributions` array with `postSlug`, `labels`, and `points`
-
-This allows one merged PR (same `prNumber`) to contribute to multiple posts.
-
-## 📁 Project Structure
-
-- `content/posts/<category>/*.md`: blog content
-- `openblog/events/*.json`: immutable merged-PR score events
-- `openblog/enums/scoring-labels.json`: score labels metadata (points, icon, color)
-- `openblog/generated/users/*.json`: generated user stats
-- `openblog/generated/leaderboard.json`: generated leaderboard
-- `openblog/generated/categories/*.json`: generated per-category leaderboards
-- `scripts/add-event-from-pr.mjs`: create event from merged PR metadata
-- `scripts/generate-openblog-state.mjs`: regenerate users, overall leaderboard, and category leaderboards
-
-## 🔧 Maintainer Notes
-
-These commands are primarily for maintainers/automation:
+## Maintainer notes
 
 ```bash
 npm run openblog:add-event
 npm run openblog:generate
+npm run test:standalone
 ```
+
+Recommended guardrails:
+
+- Protect `main`
+- Keep `openblog/generated/*` maintainer/bot-managed on the community deployment
+- Mark this repository as a **Template repository** on GitHub so others can use “Use this template”
+- Enforce scoring-label policy only when `OPENBLOG_COMMUNITY=true`
+
+Detailed post metadata guide: [POSTS-README.md](POSTS-README.md)
+
+## License
+
+[MIT](LICENSE)

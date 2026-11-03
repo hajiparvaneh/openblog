@@ -4,21 +4,43 @@ import BlogLayout from '../../layouts/BlogLayout.astro';
 import { formatPostDate, getCategoryPath, getPosts } from '../../../lib/openblog';
 import type { Post } from '../../../lib/openblog';
 import TagBadge from '../../../components/TagBadge.astro';
+import { getOpenBlogConfig } from '../../../lib/site';
+import { withBase } from '../../../lib/paths';
+
 export function getStaticPaths() {
-  return getPosts().map(post => ({ params: { slug: post.slug }, props: { post } }));
+  return getPosts().map((post) => ({ params: { slug: post.slug }, props: { post } }));
 }
-interface Props { post: Post; }
+
+interface Props {
+  post: Post;
+}
+
 const { post } = Astro.props;
+const config = getOpenBlogConfig();
 const html = marked.parse(post.body);
+const thumbnailSrc = post.thumbnail
+  ? post.thumbnail.startsWith('http')
+    ? post.thumbnail
+    : withBase(post.thumbnail)
+  : undefined;
 ---
-<BlogLayout title={`${post.title} | OpenBlog`} description={post.description} lang={post.lang}>
+<BlogLayout
+  title={`${post.title} | ${config.title}`}
+  description={post.description}
+  lang={post.lang}
+  ogImagePath={post.thumbnail ?? config.ogImage}
+>
   <article class="card">
     <header>
       <h1>{post.title}</h1>
-      <p class="meta"><time datetime={post.date}>{formatPostDate(post.date)}</time> · <a href={getCategoryPath(post.category)}>{post.categoryLabel}</a></p>
+      <p class="meta">
+        <time datetime={post.date}>{formatPostDate(post.date)}</time>
+        ·
+        <a href={withBase(getCategoryPath(post.category))}>{post.categoryLabel}</a>
+      </p>
       <p>{post.description}</p>
-      {post.thumbnail && <img src={post.thumbnail} alt={post.thumbnailAlt ?? post.title} />}
-      <div class="label-row">{post.tags.map(tag => <TagBadge tag={tag} />)}</div>
+      {thumbnailSrc ? <img src={thumbnailSrc} alt={post.thumbnailAlt ?? post.title} /> : null}
+      <div class="label-row">{post.tags.map((tag) => <TagBadge tag={tag} />)}</div>
     </header>
     <div class="article-content" set:html={html} />
   </article>

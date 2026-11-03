@@ -1,0 +1,78 @@
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: github-pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    if: vars.OPENBLOG_COMMUNITY != 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Install
+        run: npm ci
+
+      - name: Resolve site URL and base path
+        id: site
+        shell: bash
+        run: |
+          OWNER="${{ github.repository_owner }}"
+          REPO="${{ github.event.repository.name }}"
+          # Origin only — put the repo segment in OPENBLOG_BASE_PATH, not here.
+          DEFAULT_URL="https://${OWNER}.github.io/"
+          DEFAULT_BASE="/${REPO}"
+
+          # Custom domain / root site: set repository variables
+          # OPENBLOG_BASE_URL=https://example.com/ and OPENBLOG_BASE_PATH=/
+          SITE_URL="${{ vars.OPENBLOG_BASE_URL }}"
+          BASE_PATH="${{ vars.OPENBLOG_BASE_PATH }}"
+
+          if [ -z "$SITE_URL" ]; then SITE_URL="$DEFAULT_URL"; fi
+          if [ -z "$BASE_PATH" ]; then BASE_PATH="$DEFAULT_BASE"; fi
+
+          echo "site_url=$SITE_URL" >> "$GITHUB_OUTPUT"
+          echo "base_path=$BASE_PATH" >> "$GITHUB_OUTPUT"
+          echo "Building with OPENBLOG_BASE_URL=$SITE_URL OPENBLOG_BASE_PATH=$BASE_PATH"
+
+      - name: Build static blog
+        env:
+          OPENBLOG_BASE_URL: ${{ steps.site.outputs.site_url }}
+          OPENBLOG_BASE_PATH: ${{ steps.site.outputs.base_path }}
+          ASTRO_TELEMETRY_DISABLED: '1'
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    if: vars.OPENBLOG_COMMUNITY != 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

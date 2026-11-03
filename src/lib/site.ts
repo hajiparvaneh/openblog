@@ -1,4 +1,6 @@
-const DEFAULT_SITE_URL = 'https://openblog.cc/';
+import openblogConfig from '../../openblog.config';
+
+const DEFAULT_SITE_URL = openblogConfig.siteUrl;
 
 function ensureTrailingSlash(url: string): string {
   return url.endsWith('/') ? url : `${url}/`;
@@ -19,4 +21,8 @@ export function getSiteUrl(site?: URL | string | null): URL {
   } catch {
     return new URL(DEFAULT_SITE_URL);
   }
+}
+
+export function getOpenBlogConfig() {
+  return openblogConfig;
 }

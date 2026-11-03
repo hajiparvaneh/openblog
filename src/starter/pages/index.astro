@@ -2,14 +2,18 @@
 import BlogLayout from '../layouts/BlogLayout.astro';
 import PostCard from '../../components/PostCard.astro';
 import { getPosts } from '../../lib/openblog';
+import { getOpenBlogConfig } from '../../lib/site';
+
 const posts = getPosts();
+const config = getOpenBlogConfig();
 ---
 <BlogLayout>
   <section aria-labelledby="posts-heading">
-    <h1 id="posts-heading">Latest posts</h1>
+    <h1 id="posts-heading">{config.title}</h1>
+    <p class="meta">{config.description}</p>
     <div class="grid">
-      {posts.map(post => <PostCard post={post} showContributors={false} />)}
+      {posts.map((post) => <PostCard post={post} showContributors={false} />)}
     </div>
-    {posts.length === 0 && <p>No posts published yet.</p>}
+    {posts.length === 0 && <p>No posts published yet. Add a Markdown file under <code>content/posts/</code>.</p>}
   </section>
 </BlogLayout>

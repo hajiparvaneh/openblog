@@ -473,6 +473,7 @@ export function formatCategoryLabel(category: string): string {
 }
 
 export function getCategoryPath(category: string): string {
+  // Callers that render HTML should pass this through withBase() when Astro base ≠ `/`.
   return `/categories/${encodeURIComponent(normalizeCategoryKey(category))}`;
 }
 

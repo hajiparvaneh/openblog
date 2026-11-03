@@ -2,12 +2,21 @@
 import BlogLayout from '../../layouts/BlogLayout.astro';
 import PostCard from '../../../components/PostCard.astro';
 import { getPostsByTagSlug, getTagRecords } from '../../../lib/openblog';
+import { getOpenBlogConfig } from '../../../lib/site';
+
 export function getStaticPaths() {
-  return getTagRecords().map(tag => ({ params: { tag: tag.slug }, props: { label: tag.label, posts: getPostsByTagSlug(tag.slug) } }));
+  return getTagRecords().map((tag) => ({
+    params: { tag: tag.slug },
+    props: { label: tag.label, posts: getPostsByTagSlug(tag.slug) }
+  }));
 }
+
 const { label, posts } = Astro.props;
+const config = getOpenBlogConfig();
 ---
-<BlogLayout title={`${label} | OpenBlog`}>
+<BlogLayout title={`${label} | ${config.title}`}>
   <h1>Posts tagged {label}</h1>
-  <div class="grid">{posts.map(post => <PostCard post={post} showContributors={false} />)}</div>
+  <div class="grid">
+    {posts.map((post) => <PostCard post={post} showContributors={false} />)}
+  </div>
 </BlogLayout>
