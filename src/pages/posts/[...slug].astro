@@ -15,10 +15,15 @@ import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { withBase } from '../../lib/paths';
 
-// Keep Markdown in this module's dependency graph so new posts refresh routes in `astro dev`.
-import.meta.glob('../../../content/posts/**/*.md');
+// Eager glob keeps Markdown in this page's Vite graph so `astro dev` refreshes routes on content changes.
+const markdownModules = import.meta.glob('../../../content/posts/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default'
+}) as Record<string, string>;
 
 export function getStaticPaths() {
+  void Object.keys(markdownModules);
   return getPosts().map((post) => ({ params: { slug: post.slug } }));
 }
 

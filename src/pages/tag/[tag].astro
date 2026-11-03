@@ -13,7 +13,14 @@ import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { withBase } from '../../lib/paths';
 
+const markdownModules = import.meta.glob('../../../content/posts/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default'
+}) as Record<string, string>;
+
 export function getStaticPaths() {
+  void Object.keys(markdownModules);
   return getTagRecords().map((tag) => ({
     params: { tag: tag.slug },
     props: { tagLabel: tag.label }
