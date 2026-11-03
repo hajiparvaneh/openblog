@@ -70,7 +70,7 @@ const structuredData = {
     </div>
 
     {postsTotalPages > 1 && (
-      <nav class="leaderboard-pagination" aria-label="Homepage posts pages">
+      <nav class="posts-pagination" aria-label="Homepage posts pages">
         <a
           id="home-posts-prev"
           class:list={['page-control', currentPage <= 1 && 'is-disabled']}
@@ -134,7 +134,7 @@ const structuredData = {
       gap: 0.65rem;
     }
 
-    .leaderboard-pagination {
+    .posts-pagination {
       margin-top: 0.45rem;
       display: flex;
       flex-wrap: wrap;
@@ -184,7 +184,7 @@ const structuredData = {
     }
 
     @media (max-width: 860px) {
-      .leaderboard-pagination {
+      .posts-pagination {
         justify-content: center;
       }
 

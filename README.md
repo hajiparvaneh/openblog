@@ -15,7 +15,8 @@
 </p>
 
 <p align="center">
-  🌐 Demo: <a href="https://openblog.cc">openblog.cc</a>
+  🌐 Community preview: <a href="https://openblog.cc">openblog.cc</a>
+  (<a href="https://github.com/hajiparvaneh/openblogcc">openblogcc</a> — demo with scoring; this repo is the clean template)
 </p>
 
 ---
@@ -27,8 +28,11 @@
 - 🏠 Home page with featured posts, archive, and About
 - 🌓 Light / dark theme
 - 🎨 Branding from `openblog.config.ts` + `public/`
-- 📦 Static build — no accounts or API secrets required
+- 📦 Static build — no accounts, database, or API secrets required
 - 📄 **MIT** license
+
+> **Template vs preview:** Use **this repository** to start your own blog (GitHub → **Use this template**).  
+> [openblog.cc](https://openblog.cc) is a separate community preview ([openblogcc](https://github.com/hajiparvaneh/openblogcc)) with sign-in and a leaderboard — not what you get when you clone the template.
 
 ## 📋 Requirements
 
@@ -36,6 +40,17 @@
 - [git](https://git-scm.com/)
 
 ## 🚀 Quick start
+
+On GitHub, click **Use this template** → **Create a new repository**, then:
+
+```bash
+git clone https://github.com/<you>/<your-blog>.git my-blog
+cd my-blog
+npm install
+npm run dev
+```
+
+Or clone this repo directly:
 
 ```bash
 git clone https://github.com/hajiparvaneh/openblog.git my-blog
@@ -45,8 +60,6 @@ npm run dev
 ```
 
 Open the local URL shown in the terminal (usually `http://localhost:4321`).
-
-You can also fork the repo or use it as a git template and clone your own copy.
 
 ## 🎨 Brand your blog
 

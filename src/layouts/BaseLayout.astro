@@ -85,7 +85,6 @@ const brandParts = (() => {
 const navIconFor = (label: string, href: string): string => {
   const key = `${label} ${href}`.toLowerCase();
   if (key.includes('home') || href === '/' || href === '') return 'ti-home';
-  if (key.includes('contribute') || key.includes('how-to')) return 'ti-pencil';
   if (key.includes('about')) return 'ti-info-circle';
   if (key.includes('blog') || key.includes('post')) return 'ti-news';
   return 'ti-link';
@@ -249,9 +248,18 @@ const navIconFor = (label: string, href: string): string => {
 
       <footer class="site-footer meta">
         <span class="icon-label">
-          <i class="ti ti-edit icon-sm" aria-hidden="true"></i>
+          <i class="ti ti-book icon-sm" aria-hidden="true"></i>
           {config.footerText}
         </span>
+        {config.repositoryUrl ? (
+          <>
+            {' · '}
+            <a class="icon-label" href={config.repositoryUrl} target="_blank" rel="noopener noreferrer">
+              <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+              Source
+            </a>
+          </>
+        ) : null}
       </footer>
     </div>
 

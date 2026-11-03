@@ -22,6 +22,7 @@ export type OpenBlogConfig = {
   nav: OpenBlogNavItem[];
   aboutMarkdownPath: string;
   footerText: string;
+  /** Shown as a “Source” link in the footer; set empty to hide */
   repositoryUrl: string;
 };
 

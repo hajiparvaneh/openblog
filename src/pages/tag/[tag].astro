@@ -112,7 +112,7 @@ const structuredData = [
     </div>
 
     {postsTotalPages > 1 && (
-      <nav class="leaderboard-pagination" aria-label={`${tagLabel} posts pages`}>
+      <nav class="posts-pagination" aria-label={`${tagLabel} posts pages`}>
         <a id="tag-posts-prev" class="page-control" href="?page=1">Previous</a>
         <ul class="page-links" aria-label="Page numbers">
           {postPageNumbers.map((page) => (
@@ -256,7 +256,7 @@ const structuredData = [
   </script>
 
   <style>
-    .leaderboard-pagination {
+    .posts-pagination {
       margin-top: 0.45rem;
       display: flex;
       flex-wrap: wrap;
@@ -306,7 +306,7 @@ const structuredData = [
     }
 
     @media (max-width: 860px) {
-      .leaderboard-pagination {
+      .posts-pagination {
         justify-content: center;
       }
     }
