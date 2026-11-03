@@ -1,14 +1,16 @@
 ---
-import { formatPostDate, getCategoryPath, getPostPath, type Post } from '../lib/posts';
+import { formatPostDate, getCategoryPath, getPostPath } from '../lib/posts';
+import { withBase } from '../lib/paths';
 import IconBadge from './IconBadge.astro';
 import TagBadge from './TagBadge.astro';
-import { withBase } from '../lib/paths';
+import type { Post } from '../lib/posts';
 
-type Props = { post: Post };
+type Props = {
+  post: Post;
+};
 
 const { post } = Astro.props as Props;
 const postPath = withBase(getPostPath(post.slug));
-const categoryPath = withBase(getCategoryPath(post.category));
 const thumbnailSrc = post.thumbnail
   ? post.thumbnail.startsWith('http')
     ? post.thumbnail
@@ -49,7 +51,7 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
       <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
       <span class="meta-item">
         <i class="ti ti-category icon-sm" aria-hidden="true"></i>
-        <a href={categoryPath}>{post.categoryLabel}</a>
+        <a href={withBase(getCategoryPath(post.category))}>{post.categoryLabel}</a>
       </span>
     </p>
   </div>

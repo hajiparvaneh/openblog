@@ -1,51 +1,208 @@
 ---
-import BlogLayout from '../../layouts/BlogLayout.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
 import FeaturedPostsSlider from '../../components/FeaturedPostsSlider.astro';
 import PostCard from '../../components/PostCard.astro';
-import { getPosts, normalizeCategoryKey } from '../../lib/posts';
-import { getOpenBlogConfig } from '../../lib/site';
+import { getCategoryPath, getPosts, normalizeCategoryKey } from '../../lib/posts';
+import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
+import { toAbsoluteUrl } from '../../lib/seo';
+import { withBase } from '../../lib/paths';
 
 export function getStaticPaths() {
-  const posts = getPosts();
-  return [...new Set(posts.map((post) => post.category))].map((category) => ({
-    params: { category },
-    props: {
-      category,
-      posts: posts.filter((post) => post.category === category)
+  const categoryMap = new Map<string, string>();
+  for (const post of getPosts()) {
+    if (!categoryMap.has(post.category)) {
+      categoryMap.set(post.category, post.categoryLabel);
     }
+  }
+
+  return [...categoryMap.entries()].map(([category, categoryLabel]) => ({
+    params: { category: encodeURIComponent(category) },
+    props: { categoryLabel }
   }));
 }
 
-interface Props {
-  category: string;
-  posts: ReturnType<typeof getPosts>;
-}
-
-const { category, posts } = Astro.props;
-const label = posts[0]?.categoryLabel ?? category;
 const config = getOpenBlogConfig();
-const featuredInCategory = posts.filter((post) => post.featured);
+const categoryParam = Astro.params.category ?? '';
+const category = normalizeCategoryKey(decodeURIComponent(categoryParam));
+const posts = getPosts().filter((post) => post.category === category);
+const postsPerPage = 6;
+const postsTotalPages = Math.max(1, Math.ceil(posts.length / postsPerPage));
+const currentPage = 1;
+const pageStart = (currentPage - 1) * postsPerPage;
+const paginatedPosts = posts.slice(pageStart, pageStart + postsPerPage);
+const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
+const categoryLabel = posts[0]?.categoryLabel ?? Astro.props.categoryLabel ?? category;
+const categoryBasePath = getCategoryPath(category);
+const getCategoryPagePath = (page: number): string =>
+  withBase(page <= 1 ? categoryBasePath : `${categoryBasePath}/page/${page}`);
+const canonicalPath = categoryBasePath;
+const pageDescription = `Browse ${posts.length} ${categoryLabel} post${posts.length === 1 ? '' : 's'} on ${config.title}.`;
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(withBase(canonicalPath), siteUrl);
+const structuredData = [
+  {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: `${categoryLabel} posts`,
+    description: pageDescription,
+    url: canonicalUrl
+  },
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: toAbsoluteUrl(withBase('/'), siteUrl)
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: categoryLabel,
+        item: canonicalUrl
+      }
+    ]
+  }
+];
+
+if (posts.length === 0) {
+  throw new Error(`Category not found: ${category}`);
+}
 ---
-<BlogLayout title={`${label} | ${config.title}`} description={`Posts in ${label} on ${config.title}.`}>
+<BaseLayout
+  title={`${categoryLabel} | Categories | ${config.title}`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  structuredData={structuredData}
+>
   <section class="card">
     <p class="kicker icon-label"><i class="ti ti-category icon-sm" aria-hidden="true"></i>Category</p>
-    <h1>{label}</h1>
-    <p class="meta">{posts.length} post{posts.length === 1 ? '' : 's'} · folder <code>{normalizeCategoryKey(category)}</code></p>
+    <h1>{categoryLabel}</h1>
+    <p class="meta icon-label">
+      <i class="ti ti-notes icon-sm" aria-hidden="true"></i>
+      {posts.length} post{posts.length > 1 ? 's' : ''} available in this topic.
+    </p>
   </section>
 
-  {featuredInCategory.length > 0 ? (
-    <FeaturedPostsSlider posts={posts} category={category} limit={5} class="card" title={`Featured in ${label}`} />
-  ) : null}
+  <FeaturedPostsSlider
+    posts={posts}
+    category={category}
+    title={`${categoryLabel} featured posts`}
+    class="card"
+  />
 
-  <section class="card list home-posts-section">
-    <div class="section-head">
-      <div>
-        <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>All posts</p>
-        <h2>{label} archive</h2>
-      </div>
-    </div>
+  <section class="list paginated-list">
+    <p id="category-posts-page-info" class="meta pagination-info">Page {currentPage} of {postsTotalPages} ({posts.length} posts)</p>
     <div class="post-grid">
-      {posts.map((post) => <PostCard post={post} showCategory={false} />)}
+      {paginatedPosts.map((post) => (
+        <PostCard post={post} showCategory={false} />
+      ))}
     </div>
+
+    {postsTotalPages > 1 && (
+      <nav class="leaderboard-pagination" aria-label={`${categoryLabel} posts pages`}>
+        <a
+          id="category-posts-prev"
+          class:list={['page-control', currentPage <= 1 && 'is-disabled']}
+          href={getCategoryPagePath(Math.max(1, currentPage - 1))}
+          aria-disabled={currentPage <= 1 ? 'true' : undefined}
+        >
+          Previous
+        </a>
+        <ul class="page-links" aria-label="Page numbers">
+          {postPageNumbers.map((page) => (
+            <li>
+              <a class:list={['page-link', page === currentPage && 'is-active']} href={getCategoryPagePath(page)} aria-current={page === currentPage ? 'page' : undefined}>{page}</a>
+            </li>
+          ))}
+        </ul>
+        <a
+          id="category-posts-next"
+          class:list={['page-control', currentPage >= postsTotalPages && 'is-disabled']}
+          href={getCategoryPagePath(Math.min(postsTotalPages, currentPage + 1))}
+          aria-disabled={currentPage >= postsTotalPages ? 'true' : undefined}
+        >
+          Next
+        </a>
+      </nav>
+    )}
   </section>
-</BlogLayout>
+
+  <script is:inline>
+    (function () {
+      var basePath = window.location.pathname.replace(/\/+$/, '');
+      if (!basePath || basePath.indexOf('/categories/') === -1) return;
+      var params = new URLSearchParams(window.location.search);
+      if (!params.has('page')) return;
+      var requestedPage = Number(params.get('page') || '1');
+      if (!Number.isFinite(requestedPage) || requestedPage < 1) return;
+      var maxPage = Math.max(1, document.querySelectorAll('.page-link').length);
+      var normalizedPage = Math.floor(requestedPage);
+      if (normalizedPage > maxPage) normalizedPage = maxPage;
+      if (normalizedPage <= 1) {
+        window.location.replace(basePath + window.location.hash);
+        return;
+      }
+      window.location.replace(basePath + '/page/' + normalizedPage + window.location.hash);
+    })();
+  </script>
+
+  <style>
+    .leaderboard-pagination {
+      margin-top: 0.45rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .page-links {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .page-control,
+    .page-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      min-height: 2rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.35rem 0.55rem;
+      text-decoration: none;
+    }
+
+    .page-link.is-active {
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .page-control.is-disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
+    @media (max-width: 860px) {
+      .leaderboard-pagination {
+        justify-content: center;
+      }
+    }
+  </style>
+</BaseLayout>

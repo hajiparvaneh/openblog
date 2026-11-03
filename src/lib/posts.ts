@@ -110,6 +110,11 @@ export function getPosts(): Post[] {
   return posts;
 }
 
+export function getPostBySlug(slug: string): Post | undefined {
+  const normalized = slug.replace(/^\/+|\/+$/g, '');
+  return getPosts().find((post) => post.slug === normalized);
+}
+
 export function normalizeCategoryKey(category: string): string {
   return category.trim().toLowerCase().replace(/\s+/g, '-');
 }

@@ -1,5 +1,5 @@
 ---
-import BlogLayout from '../layouts/BlogLayout.astro';
+import BaseLayout from '../layouts/BaseLayout.astro';
 import FeaturedPostsSlider from '../components/FeaturedPostsSlider.astro';
 import LatestPostCard from '../components/LatestPostCard.astro';
 import PostCard from '../components/PostCard.astro';
@@ -19,7 +19,12 @@ const CATEGORY_INSIGHTS_LIMIT = 8;
 const remainingPosts = posts
   .slice(1)
   .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
-const archivePosts = remainingPosts;
+const postsPerPage = 6;
+const postsTotalPages = Math.max(1, Math.ceil(remainingPosts.length / postsPerPage));
+const currentPage = 1;
+const pageStart = (currentPage - 1) * postsPerPage;
+const paginatedPosts = remainingPosts.slice(pageStart, pageStart + postsPerPage);
+const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
 const featuredPostCount = posts.filter((post) => post.featured).length;
 const tagRecords = getTagRecords();
@@ -60,28 +65,30 @@ const faqEntries = [
       'Create a Markdown file under content/posts/<category>/, fill in frontmatter (title, description, date, tags), then commit and open a pull request. After merge, the site rebuilds automatically.'
   },
   {
+    question: 'What kinds of improvements are welcome?',
+    answer:
+      'New tutorials, clearer explanations, fixes to outdated snippets, better structure, and stronger references are all valuable. Small quality upgrades are welcome.'
+  },
+  {
     question: 'How do I brand this blog as my own?',
     answer:
       'Edit openblog.config.ts for title, tagline, colors, and navigation. Replace files under public/branding/ with your logo, favicon, and Open Graph image.'
   },
   {
-    question: 'Where should I host it?',
+    question: 'Can I contribute without writing a full new post?',
     answer:
-      'GitHub Pages works out of the box with the included workflow. Set SITE_URL to your origin and OPENBLOG_BASE_PATH if you publish under a project path.'
-  },
-  {
-    question: 'Can I keep this free of accounts and scoring?',
-    answer:
-      'Yes. This template is a static Markdown blog only. Community features like OAuth, leaderboards, and contribution scoring live in the separate openblog.cc preview repo.'
+      'Yes. You can refine structure, add examples, improve language, and update technical details in existing posts through a focused pull request.'
   }
 ] as const;
+
+const getHomePagePath = (page: number): string => withBase(page <= 1 ? '/' : `/page/${page}`);
 
 const pageDescription = config.description;
 const canonicalPath = '/';
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
 const aboutHref = withBase('/about');
-const repoUrl = config.repositoryUrl;
+const contributeHref = withBase('/how-to-contribute');
 
 const structuredData = [
   {
@@ -100,6 +107,17 @@ const structuredData = [
   },
   {
     '@context': 'https://schema.org',
+    '@type': 'ItemList',
+    name: `${config.title} Top Categories`,
+    itemListElement: categoryInsights.slice(0, 6).map((category, index) => ({
+      '@type': 'ListItem',
+      position: index + 1,
+      url: toAbsoluteUrl(withBase(getCategoryPath(category.key)), siteUrl),
+      name: category.label
+    }))
+  },
+  {
+    '@context': 'https://schema.org',
     '@type': 'FAQPage',
     mainEntity: faqEntries.map((entry) => ({
       '@type': 'Question',
@@ -112,7 +130,7 @@ const structuredData = [
   }
 ];
 ---
-<BlogLayout
+<BaseLayout
   title={`${config.title} | ${config.tagline}`}
   description={pageDescription}
   canonicalPath={canonicalPath}
@@ -124,9 +142,9 @@ const structuredData = [
       <h1>{config.heroHeadline}</h1>
       <p class="meta">{config.heroSupporting}</p>
       <div class="hero-actions">
-        <a class="home-cta" href={repoUrl} target="_blank" rel="noopener noreferrer">
-          <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-          Clone the template
+        <a class="home-cta" href={contributeHref}>
+          <i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>
+          How to contribute
         </a>
         <a class="home-cta home-cta-soft" href={aboutHref}>
           <i class="ti ti-info-circle icon-sm" aria-hidden="true"></i>
@@ -173,21 +191,49 @@ const structuredData = [
 
   {latestPost ? <LatestPostCard post={latestPost} /> : null}
 
-  {archivePosts.length > 0 ? (
-    <section id="home-posts" class="card list home-posts-section">
+  {remainingPosts.length > 0 ? (
+    <section id="home-posts" class="card list paginated-list home-posts-section">
       <div class="section-head section-head-inline">
         <div>
           <p class="kicker icon-label"><i class="ti ti-list icon-sm" aria-hidden="true"></i>Browse all stories</p>
           <h2>Complete post archive</h2>
         </div>
-        <p class="meta pagination-info">{archivePosts.length} posts</p>
+        <p id="home-posts-page-info" class="meta pagination-info">Page {currentPage} of {postsTotalPages} ({remainingPosts.length} posts)</p>
       </div>
 
       <div class="post-grid">
-        {archivePosts.map((post) => (
+        {paginatedPosts.map((post) => (
           <PostCard post={post} />
         ))}
       </div>
+
+      {postsTotalPages > 1 && (
+        <nav class="leaderboard-pagination" aria-label="Homepage posts pages">
+          <a
+            id="home-posts-prev"
+            class:list={['page-control', currentPage <= 1 && 'is-disabled']}
+            href={getHomePagePath(Math.max(1, currentPage - 1))}
+            aria-disabled={currentPage <= 1 ? 'true' : undefined}
+          >
+            Previous
+          </a>
+          <ul class="page-links" aria-label="Page numbers">
+            {postPageNumbers.map((page) => (
+              <li>
+                <a class:list={['page-link', page === currentPage && 'is-active']} href={getHomePagePath(page)} aria-current={page === currentPage ? 'page' : undefined}>{page}</a>
+              </li>
+            ))}
+          </ul>
+          <a
+            id="home-posts-next"
+            class:list={['page-control', currentPage >= postsTotalPages && 'is-disabled']}
+            href={getHomePagePath(Math.min(postsTotalPages, currentPage + 1))}
+            aria-disabled={currentPage >= postsTotalPages ? 'true' : undefined}
+          >
+            Next
+          </a>
+        </nav>
+      )}
     </section>
   ) : (
     <section id="home-posts" class="card list home-posts-section">
@@ -253,6 +299,20 @@ const structuredData = [
       ))}
     </div>
   </section>
+
+  <script is:inline define:vars={{ homeBase: withBase('/') }}>
+    (function () {
+      var path = window.location.pathname.replace(/\/+$/, '') || '/';
+      var base = (typeof homeBase === 'string' ? homeBase : '/').replace(/\/+$/, '') || '/';
+      if (path !== base && path !== '/') return;
+      var params = new URLSearchParams(window.location.search);
+      var requestedPage = Number(params.get('page') || '1');
+      if (!Number.isFinite(requestedPage) || requestedPage <= 1) return;
+      var normalizedPage = Math.floor(requestedPage);
+      var prefix = base === '/' ? '' : base;
+      window.location.replace(prefix + '/page/' + normalizedPage + window.location.hash);
+    })();
+  </script>
 
   <style>
     .hero {
@@ -422,12 +482,6 @@ const structuredData = [
       gap: 0.65rem;
     }
 
-    .list-limit-note {
-      margin: 0.05rem 0 0;
-      font-size: 0.76rem;
-      line-height: 1.25;
-    }
-
     .category-insights-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
@@ -479,40 +533,6 @@ const structuredData = [
       line-height: 1.2;
     }
 
-    .tag-cloud {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.38rem;
-    }
-
-    .tag-cloud-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.38rem;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      color: var(--text);
-      font-family: var(--font-main);
-      font-size: 0.82rem;
-      font-weight: 600;
-      line-height: 1;
-      padding: 0.3rem 0.42rem;
-      text-decoration: none;
-    }
-
-    .tag-cloud-item .badge {
-      font-size: 0.68rem;
-      padding: 0.12rem 0.35rem;
-      background: var(--surface);
-    }
-
-    .tag-cloud-item:hover {
-      border-color: var(--primary);
-      background: var(--surface-soft);
-      color: var(--text);
-    }
-
     .faq-list {
       display: grid;
       gap: 0.45rem;
@@ -560,6 +580,55 @@ const structuredData = [
       margin: 0;
     }
 
+    .leaderboard-pagination {
+      margin-top: 0.45rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+
+    .page-links {
+      margin: 0;
+      padding: 0;
+      list-style: none;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+    }
+
+    .page-control,
+    .page-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 2rem;
+      min-height: 2rem;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-main);
+      font-size: 0.82rem;
+      font-weight: 600;
+      line-height: 1;
+      padding: 0.35rem 0.55rem;
+      text-decoration: none;
+    }
+
+    .page-link.is-active {
+      border-color: var(--primary);
+      background: var(--surface-soft);
+      color: var(--primary);
+      text-decoration: none;
+    }
+
+    .page-control.is-disabled {
+      opacity: 0.55;
+      pointer-events: none;
+    }
+
     @media (max-width: 1080px) {
       .hero {
         grid-template-columns: 1fr;
@@ -567,6 +636,10 @@ const structuredData = [
     }
 
     @media (max-width: 860px) {
+      .leaderboard-pagination {
+        justify-content: center;
+      }
+
       .home-jump-links {
         grid-template-columns: repeat(2, minmax(0, 1fr));
       }
@@ -590,4 +663,4 @@ const structuredData = [
       }
     }
   </style>
-</BlogLayout>
+</BaseLayout>

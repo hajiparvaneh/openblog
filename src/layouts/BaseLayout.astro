@@ -11,6 +11,7 @@ interface Props {
   title?: string;
   description?: string;
   lang?: string;
+  pageLang?: string;
   canonicalPath?: string;
   ogType?: 'website' | 'article';
   ogImagePath?: string;
@@ -26,7 +27,8 @@ const config = getOpenBlogConfig();
 const {
   title = config.title,
   description = config.description,
-  lang = 'en',
+  lang,
+  pageLang,
   canonicalPath = Astro.url.pathname,
   ogType = 'website',
   ogImagePath = config.ogImage,
@@ -37,6 +39,7 @@ const {
   structuredData,
   hideGlobalSidebar = false
 } = Astro.props;
+const documentLang = pageLang || lang || 'en';
 
 const siteUrl = getSiteUrl(Astro.site);
 const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
@@ -82,12 +85,13 @@ const brandParts = (() => {
 const navIconFor = (label: string, href: string): string => {
   const key = `${label} ${href}`.toLowerCase();
   if (key.includes('home') || href === '/' || href === '') return 'ti-home';
+  if (key.includes('contribute') || key.includes('how-to')) return 'ti-pencil';
   if (key.includes('about')) return 'ti-info-circle';
   if (key.includes('blog') || key.includes('post')) return 'ti-news';
   return 'ti-link';
 };
 ---
-<html lang={lang}>
+<html lang={documentLang}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -214,7 +218,7 @@ const navIconFor = (label: string, href: string): string => {
                 <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
                 Open GitHub repo
               </a>
-              <a class="sidebar-sub-link" href={withBase('/about')}>About this blog</a>
+              <a class="sidebar-sub-link" href={withBase('/how-to-contribute')}>How to contribute</a>
             </section>
 
             <hr class="sidebar-sep" />

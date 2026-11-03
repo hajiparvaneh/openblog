@@ -1,119 +1,357 @@
 ---
 import { marked } from 'marked';
-import BlogLayout from '../../layouts/BlogLayout.astro';
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import LatestInCategory from '../../components/LatestInCategory.astro';
 import IconBadge from '../../components/IconBadge.astro';
 import TagBadge from '../../components/TagBadge.astro';
-import { formatPostDate, getCategoryPath, getPosts, type Post } from '../../lib/posts';
+import {
+  formatPostDate,
+  getCategoryPath,
+  getPostBySlug,
+  getPostPath,
+  getPosts
+} from '../../lib/posts';
 import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { withBase } from '../../lib/paths';
 
 export function getStaticPaths() {
-  return getPosts().map((post) => ({ params: { slug: post.slug }, props: { post } }));
+  return getPosts().map((post) => ({ params: { slug: post.slug } }));
 }
 
-interface Props { post: Post }
-const { post } = Astro.props;
+const slugParam = Astro.params.slug;
+const slug = Array.isArray(slugParam) ? slugParam.join('/') : slugParam ?? '';
+const post = getPostBySlug(slug);
+if (!post) throw new Error('Post not found');
+
 const config = getOpenBlogConfig();
 const html = marked.parse(post.body);
+const categoryPath = withBase(getCategoryPath(post.category));
+const postSourcePath = post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/');
+const postSourceUrl = `${config.repositoryUrl.replace(/\/$/, '')}/blob/main/content/posts/${postSourcePath}.md`;
+const canonicalPath = getPostPath(post.slug);
+const pageDescription = post.description || `Read ${post.title} on ${config.title}.`;
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(withBase(canonicalPath), siteUrl);
 const thumbnailSrc = post.thumbnail
   ? post.thumbnail.startsWith('http')
     ? post.thumbnail
     : withBase(post.thumbnail)
   : undefined;
+const ogImagePath = post.thumbnail ?? config.ogImage;
+const publishedTime = post.date ? `${post.date}T00:00:00Z` : undefined;
 const showLanguageBadge = post.lang.toLowerCase() !== 'en';
-const siteUrl = getSiteUrl(Astro.site);
-const canonicalPath = withBase(`/posts/${post.slug}`);
-const pageDescription = post.description || config.description;
-const structuredData = {
+const homeHref = withBase('/');
+const contributeHref = withBase('/how-to-contribute');
+
+const blogPostingSchema: Record<string, unknown> = {
   '@context': 'https://schema.org',
   '@type': 'BlogPosting',
   headline: post.title,
   description: pageDescription,
-  datePublished: post.date,
+  url: canonicalUrl,
+  mainEntityOfPage: canonicalUrl,
+  articleSection: post.categoryLabel,
   inLanguage: post.lang,
-  url: toAbsoluteUrl(canonicalPath, siteUrl),
-  image: thumbnailSrc
-    ? thumbnailSrc.startsWith('http')
-      ? thumbnailSrc
-      : toAbsoluteUrl(thumbnailSrc, siteUrl)
-    : undefined
+  publisher: {
+    '@type': 'Organization',
+    name: config.title,
+    url: toAbsoluteUrl(withBase('/'), siteUrl)
+  }
 };
+if (post.date) blogPostingSchema.datePublished = post.date;
+if (post.tags.length > 0) blogPostingSchema.keywords = post.tags;
+if (thumbnailSrc) {
+  blogPostingSchema.image = [thumbnailSrc.startsWith('http') ? thumbnailSrc : toAbsoluteUrl(thumbnailSrc, siteUrl)];
+}
+
+const structuredData = [
+  blogPostingSchema,
+  {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: [
+      {
+        '@type': 'ListItem',
+        position: 1,
+        name: 'Home',
+        item: toAbsoluteUrl(withBase('/'), siteUrl)
+      },
+      {
+        '@type': 'ListItem',
+        position: 2,
+        name: post.categoryLabel,
+        item: toAbsoluteUrl(categoryPath, siteUrl)
+      },
+      {
+        '@type': 'ListItem',
+        position: 3,
+        name: post.title,
+        item: canonicalUrl
+      }
+    ]
+  }
+];
 ---
-<BlogLayout
+<BaseLayout
   title={`${post.title} | ${config.title}`}
   description={pageDescription}
-  lang={post.lang}
+  pageLang={post.lang}
   canonicalPath={canonicalPath}
   ogType="article"
-  ogImagePath={post.thumbnail ?? config.ogImage}
+  ogImagePath={ogImagePath}
   ogImageAlt={post.thumbnailAlt ?? post.title}
-  publishedTime={post.date}
+  publishedTime={publishedTime}
   structuredData={structuredData}
 >
-  <article class="card post-article">
-    <header class="post-header">
-      <p class="kicker icon-label">
-        <i class="ti ti-category icon-sm" aria-hidden="true"></i>
-        <a href={withBase(getCategoryPath(post.category))}>{post.categoryLabel}</a>
-      </p>
-      <h1>{post.title}</h1>
-      <p class="meta meta-inline">
-        <span class="meta-item">
-          <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
-          <time datetime={post.date}>{formatPostDate(post.date)}</time>
-        </span>
-      </p>
-      {post.description ? <p class="lead">{post.description}</p> : null}
-      {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
-        <div class="post-card-taxonomy">
-          {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-card-flag" /> : null}
-          {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
-          {post.tags.map((tag) => <TagBadge tag={tag} class="post-card-tag" />)}
+  <article class="card">
+    <p class="kicker icon-label">
+      <i class="ti ti-home icon-sm" aria-hidden="true"></i>
+      <a href={homeHref}>Home</a> / <a href={categoryPath}>{post.categoryLabel}</a>
+    </p>
+    <h1>{post.title}</h1>
+    <p class="meta meta-inline">
+      <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
+      <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.categoryLabel}</a></span>
+      <span class="meta-item share-article-meta">
+        <button
+          id="share-article-button"
+          class="share-article-button"
+          type="button"
+          data-share-title={post.title}
+          data-share-text={pageDescription}
+          data-share-url={canonicalUrl}
+          aria-label="Share this article"
+        >
+          <i class="ti ti-share icon-sm" aria-hidden="true"></i>
+          Share this article
+        </button>
+        <span id="share-article-status" class="share-article-status" role="status" aria-live="polite" hidden></span>
+      </span>
+    </p>
+    {thumbnailSrc ? (
+      <>
+        <figure class="post-thumbnail-wrap">
+          <img
+            class="post-thumbnail"
+            src={thumbnailSrc}
+            alt={post.thumbnailAlt ?? post.title}
+            loading="eager"
+            decoding="async"
+          />
+          <button
+            type="button"
+            class="post-thumbnail-open"
+            data-thumbnail-open
+            aria-controls="post-thumbnail-lightbox"
+            aria-label="Open image in full view"
+          >
+            <i class="ti ti-arrows-maximize icon-sm" aria-hidden="true"></i>
+          </button>
+        </figure>
+        <div
+          id="post-thumbnail-lightbox"
+          class="post-thumbnail-lightbox"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Expanded post image"
+          hidden
+        >
+          <button
+            type="button"
+            class="post-thumbnail-lightbox-backdrop"
+            data-thumbnail-close
+            aria-label="Close image preview"
+          />
+          <div class="post-thumbnail-lightbox-panel" role="document">
+            <button
+              type="button"
+              class="post-thumbnail-lightbox-close"
+              data-thumbnail-close
+              aria-label="Close image preview"
+            >
+              <i class="ti ti-x icon-sm" aria-hidden="true"></i>
+              <span>Close</span>
+            </button>
+            <img
+              class="post-thumbnail-lightbox-image"
+              src={thumbnailSrc}
+              alt={post.thumbnailAlt ?? post.title}
+              loading="eager"
+              decoding="async"
+            />
+          </div>
         </div>
-      ) : null}
-      {thumbnailSrc ? (
-        <img
-          class="post-hero"
-          src={thumbnailSrc}
-          alt={post.thumbnailAlt ?? post.title}
-          loading="eager"
-          decoding="async"
-        />
-      ) : null}
-    </header>
+      </>
+    ) : null}
+    {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
+      <div class="post-meta-chips">
+        {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-meta-chip" /> : null}
+        {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-meta-chip" /> : null}
+        {post.tags.map((tag) => (
+          <TagBadge tag={tag} class="post-meta-chip" />
+        ))}
+      </div>
+    ) : null}
     <div class="article-content" set:html={html} />
+    <section class="post-contribute meta">
+      <span class="icon-label"><i class="ti ti-pencil-plus icon-sm" aria-hidden="true"></i>Want to improve this post?</span>
+      <a class="post-contribute-link" href={postSourceUrl} target="_blank" rel="noopener noreferrer">
+        Edit on GitHub
+      </a>
+      or read the
+      <a class="post-contribute-link" href={contributeHref}>
+        contribution guide
+      </a>
+      and open a PR.
+    </section>
   </article>
 
-  <style>
-    .post-article {
-      display: grid;
-      gap: 1rem;
-    }
+  <LatestInCategory category={post.category} currentPostSlug={post.slug} />
 
-    .post-header {
-      display: grid;
-      gap: 0.55rem;
-    }
+  <script is:inline>
+    (function () {
+      var button = document.getElementById('share-article-button');
+      var status = document.getElementById('share-article-status');
+      if (!button) return;
 
-    .post-header h1 {
-      margin: 0;
-    }
+      var title = button.getAttribute('data-share-title') || document.title;
+      var text = button.getAttribute('data-share-text') || '';
+      var url = button.getAttribute('data-share-url') || window.location.href;
+      var statusTimer = null;
 
-    .post-header .lead {
-      margin: 0;
-      color: var(--muted);
-      font-size: 1.02rem;
-      line-height: 1.5;
-    }
+      var setStatus = function (message) {
+        if (!status) return;
+        status.textContent = message;
+        status.hidden = !message;
+        if (statusTimer) {
+          window.clearTimeout(statusTimer);
+        }
+        if (message) {
+          statusTimer = window.setTimeout(function () {
+            status.hidden = true;
+            status.textContent = '';
+          }, 3500);
+        }
+      };
 
-    .post-hero {
-      width: 100%;
-      max-height: 22rem;
-      object-fit: cover;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface-soft);
-    }
-  </style>
-</BlogLayout>
+      var copyToClipboard = async function (value) {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(value);
+          return true;
+        }
+
+        var textarea = document.createElement('textarea');
+        textarea.value = value;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'fixed';
+        textarea.style.opacity = '0';
+        textarea.style.pointerEvents = 'none';
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        var copied = false;
+        try {
+          copied = document.execCommand('copy');
+        } catch (_) {
+          copied = false;
+        }
+        document.body.removeChild(textarea);
+        return copied;
+      };
+
+      var openMailFallback = function () {
+        var body = text ? text + '\n\n' + url : url;
+        var href = 'mailto:?subject=' + encodeURIComponent(title) + '&body=' + encodeURIComponent(body);
+        window.location.href = href;
+      };
+
+      button.addEventListener('click', async function () {
+        if (button.disabled) return;
+        button.disabled = true;
+        button.setAttribute('aria-busy', 'true');
+
+        try {
+          if (navigator.share) {
+            try {
+              await navigator.share({ title: title, text: text, url: url });
+              setStatus('Shared successfully.');
+              return;
+            } catch (error) {
+              if (error && typeof error === 'object' && 'name' in error && error.name === 'AbortError') {
+                setStatus('');
+                return;
+              }
+            }
+          }
+
+          try {
+            var copied = await copyToClipboard(url);
+            if (copied) {
+              setStatus('Link copied. Paste to share.');
+              return;
+            }
+          } catch (_) {}
+
+          try {
+            openMailFallback();
+            setStatus('Opened email app for sharing.');
+            return;
+          } catch (_) {}
+
+          window.prompt('Copy and share this link:', url);
+          setStatus('Link ready to copy.');
+        } finally {
+          button.disabled = false;
+          button.removeAttribute('aria-busy');
+        }
+      });
+    })();
+  </script>
+  <script is:inline>
+    (function () {
+      var openButton = document.querySelector('[data-thumbnail-open]');
+      var lightbox = document.getElementById('post-thumbnail-lightbox');
+      if (!openButton || !lightbox) return;
+
+      var closeButtons = Array.from(lightbox.querySelectorAll('[data-thumbnail-close]'));
+      var closePrimary = lightbox.querySelector('.post-thumbnail-lightbox-close');
+      var previousOverflow = '';
+      var previousFocused = null;
+
+      var openLightbox = function () {
+        previousFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+        previousOverflow = document.body.style.overflow;
+        document.body.style.overflow = 'hidden';
+        lightbox.hidden = false;
+        lightbox.classList.add('is-open');
+        if (closePrimary instanceof HTMLElement) {
+          closePrimary.focus();
+        }
+      };
+
+      var closeLightbox = function () {
+        lightbox.classList.remove('is-open');
+        lightbox.hidden = true;
+        document.body.style.overflow = previousOverflow;
+        if (previousFocused instanceof HTMLElement) {
+          previousFocused.focus();
+        } else if (openButton instanceof HTMLElement) {
+          openButton.focus();
+        }
+      };
+
+      openButton.addEventListener('click', openLightbox);
+
+      closeButtons.forEach(function (control) {
+        control.addEventListener('click', closeLightbox);
+      });
+
+      document.addEventListener('keydown', function (event) {
+        if (event.key === 'Escape' && !lightbox.hidden) {
+          closeLightbox();
+        }
+      });
+    })();
+  </script>
+</BaseLayout>

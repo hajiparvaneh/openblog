@@ -62,6 +62,7 @@ const config: OpenBlogConfig = {
   defaultTheme: 'light',
   nav: [
     { label: 'Home', href: '/' },
+    { label: 'How to contribute', href: '/how-to-contribute' },
     { label: 'About', href: '/about' }
   ],
   aboutMarkdownPath: 'content/about.md',

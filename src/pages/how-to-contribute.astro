@@ -1,0 +1,119 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { toAbsoluteUrl } from '../lib/seo';
+import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
+import { withBase } from '../lib/paths';
+
+const config = getOpenBlogConfig();
+const repoUrl = config.repositoryUrl;
+const pageDescription =
+  'Learn how to contribute to this OpenBlog template with a focused pull request — add or improve Markdown posts under content/posts/.';
+const canonicalPath = '/how-to-contribute';
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const homeHref = withBase('/');
+const structureHref = withBase('/post-md-file-structure');
+const standardsHref = withBase('/markdown-file-standards');
+const structuredData = {
+  '@context': 'https://schema.org',
+  '@type': 'HowTo',
+  name: `How to contribute to ${config.title}`,
+  description: pageDescription,
+  url: canonicalUrl,
+  step: [
+    { '@type': 'HowToStep', name: 'Pick one post slug to improve' },
+    { '@type': 'HowToStep', name: 'Edit or create a markdown file in content/posts' },
+    { '@type': 'HowToStep', name: 'Run the site locally and verify changes' },
+    { '@type': 'HowToStep', name: 'Open a pull request with a concise summary' },
+    { '@type': 'HowToStep', name: 'After merge, the static site rebuilds' }
+  ]
+};
+---
+<BaseLayout
+  title={`How to contribute | ${config.title}`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  structuredData={structuredData}
+>
+  <div class="contribute-page">
+    <section class="card contribute-hero">
+      <p class="kicker icon-label"><i class="ti ti-book icon-sm" aria-hidden="true"></i>Contributor guide</p>
+      <h1>Contribute in one focused PR</h1>
+      <p>This blog grows through merged pull requests. Pick a post, improve one clear thing, and submit your update in public.</p>
+      <p class="meta">Small improvements count: fixes, metadata updates, sources, examples, translations, and new posts.</p>
+      <div class="contribute-actions">
+        <a class="contribute-action" href={repoUrl} target="_blank" rel="noopener noreferrer">
+          <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
+          Open repository
+        </a>
+        <a class="contribute-action" href={homeHref}>
+          <i class="ti ti-article icon-sm" aria-hidden="true"></i>
+          Browse posts
+        </a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-bolt icon-sm" aria-hidden="true"></i>Choose your contribution path</h2>
+      <p class="meta">Use one of these two routes based on what you want to change.</p>
+      <div class="quick-route-grid">
+        <a class="quick-route-card" href={repoUrl} target="_blank" rel="noopener noreferrer">
+          <span class="kicker icon-label"><i class="ti ti-file-plus icon-sm" aria-hidden="true"></i>Path A</span>
+          <strong>Create a new post</strong>
+          <span class="meta">Add a Markdown file under <code>content/posts/&lt;category&gt;/</code> and open a PR.</span>
+        </a>
+        <a class="quick-route-card" href={homeHref}>
+          <span class="kicker icon-label"><i class="ti ti-edit-circle icon-sm" aria-hidden="true"></i>Path B</span>
+          <strong>Edit an existing post</strong>
+          <span class="meta">Browse posts, open the post page, then use <em>Edit on GitHub</em> to start a PR.</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-rocket icon-sm" aria-hidden="true"></i>First PR in 5 steps</h2>
+      <ol class="contribute-flow">
+        <li>Pick one post slug to improve (for example <code>networking/how-dns-works</code>).</li>
+        <li>Edit or create <code>/content/posts/&lt;category&gt;/&lt;post&gt;.md</code>.</li>
+        <li>Run the site locally and verify your changes render correctly.</li>
+        <li>Open a PR with a short summary of what changed and why it is better.</li>
+        <li>Maintainers review and merge; the static site rebuilds from main.</li>
+      </ol>
+    </section>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-book-2 icon-sm" aria-hidden="true"></i>Post writing docs</h2>
+      <p class="meta">Use these two guides before opening your PR.</p>
+      <div class="contribute-actions">
+        <a class="contribute-action" href={structureHref}>
+          <i class="ti ti-file-description icon-sm" aria-hidden="true"></i>
+          Post .md structure and metadata guide
+        </a>
+        <a class="contribute-action" href={standardsHref}>
+          <i class="ti ti-markdown icon-sm" aria-hidden="true"></i>
+          General markdown standards
+        </a>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="icon-label"><i class="ti ti-bulb icon-sm" aria-hidden="true"></i>Good contribution ideas</h2>
+      <ul class="contribute-ideas">
+        <li><strong>Improve correctness:</strong> fact-check claims and remove outdated or incorrect details.</li>
+        <li><strong>Improve metadata:</strong> strengthen title, description, tags, or language info for better discoverability.</li>
+        <li><strong>Add references:</strong> back key statements with trustworthy sources.</li>
+        <li><strong>Make it clearer:</strong> rewrite confusing paragraphs and tighten explanations.</li>
+        <li><strong>Add practical examples:</strong> include commands, diagrams, or concrete use cases.</li>
+        <li><strong>Create new content:</strong> add a complete new post when the topic is missing.</li>
+      </ul>
+
+      <h3 class="icon-label"><i class="ti ti-checklist icon-sm" aria-hidden="true"></i>PR checklist</h3>
+      <ul class="contribute-checklist">
+        <li>Your change is in <code>content/posts/&lt;category&gt;/&lt;post&gt;.md</code>.</li>
+        <li>The PR description explains what improved and why.</li>
+        <li>You mention the changed slug(s) in the PR body.</li>
+        <li>Frontmatter fields are valid and the post is not left as <code>draft: true</code> unless intentional.</li>
+      </ul>
+    </section>
+  </div>
+</BaseLayout>

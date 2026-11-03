@@ -2,11 +2,11 @@
 title: How DNS Works
 description: Understand DNS resolution end to end, including recursive lookup, caching, record types, and a practical OpenBlog example you can test with dig or nslookup.
 date: 2026-03-12
-featured: true
 thumbnail: https://cdn.pixabay.com/photo/2016/08/12/05/06/technology-1587673_1280.jpg
 thumbnailAlt: Network infrastructure visualization with glowing technology lines
 tags: dns, networking, internet, web, infrastructure
 draft: false
+featured: true
 lang: en
 ---
 
