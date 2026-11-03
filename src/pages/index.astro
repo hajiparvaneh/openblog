@@ -6,6 +6,7 @@ import PostCard from '../components/PostCard.astro';
 import {
   getCategoryPath,
   getPosts,
+  getTagPath,
   getTagRecords
 } from '../lib/posts';
 import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
@@ -27,8 +28,11 @@ const paginatedPosts = remainingPosts.slice(pageStart, pageStart + postsPerPage)
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
 const featuredPostCount = posts.filter((post) => post.featured).length;
+const TAGS_LIMIT = 20;
 const tagRecords = getTagRecords();
+const topTags = tagRecords.slice(0, TAGS_LIMIT);
 const tagCount = tagRecords.length;
+const hiddenTagCount = Math.max(0, tagRecords.length - topTags.length);
 
 const categoryInsightsMap = new Map<string, {
   key: string;
@@ -152,14 +156,14 @@ const structuredData = [
         </a>
       </div>
       <ul class="hero-highlights">
-        <li class="hero-highlight"><i class="ti ti-markdown icon-sm" aria-hidden="true"></i>Posts live as Markdown in Git</li>
-        <li class="hero-highlight"><i class="ti ti-palette icon-sm" aria-hidden="true"></i>Brand from one config file</li>
-        <li class="hero-highlight"><i class="ti ti-rocket icon-sm" aria-hidden="true"></i>Publish with GitHub Pages — no secrets required</li>
+        <li class="hero-highlight"><i class="ti ti-badge-check icon-sm" aria-hidden="true"></i>Editorial reviews through pull requests</li>
+        <li class="hero-highlight"><i class="ti ti-certificate icon-sm" aria-hidden="true"></i>Public writing tied to your GitHub history</li>
+        <li class="hero-highlight"><i class="ti ti-users-group icon-sm" aria-hidden="true"></i>Cross-category collaboration on technical posts</li>
       </ul>
     </div>
 
     <div class="hero-side">
-      <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Blog snapshot</p>
+      <p class="kicker icon-label"><i class="ti ti-chart-bar icon-sm" aria-hidden="true"></i>Publication snapshot</p>
       <div class="stats">
         <div class="stat">
           <span class="stat-value stat-head"><i class="ti ti-notes icon-sm" aria-hidden="true"></i>{posts.length}</span>
@@ -190,6 +194,28 @@ const structuredData = [
   <FeaturedPostsSlider posts={posts} limit={5} class="card" />
 
   {latestPost ? <LatestPostCard post={latestPost} /> : null}
+
+  {topTags.length > 0 ? (
+    <Fragment slot="sidebar-extra">
+      <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
+      <nav aria-label="Popular tags">
+        <div class="tag-cloud" role="list">
+          {topTags.map((tag) => (
+            <a role="listitem" class="tag-cloud-item" href={withBase(getTagPath(tag.label))}>
+              <span>{tag.label}</span>
+              <span class="badge">{tag.postCount}</span>
+            </a>
+          ))}
+        </div>
+      </nav>
+      {hiddenTagCount > 0 ? (
+        <p class="meta list-limit-note icon-label">
+          <i class="ti ti-tags icon-sm" aria-hidden="true"></i>
+          +{hiddenTagCount} more tags
+        </p>
+      ) : null}
+    </Fragment>
+  ) : null}
 
   {remainingPosts.length > 0 ? (
     <section id="home-posts" class="card list paginated-list home-posts-section">

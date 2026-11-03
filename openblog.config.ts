@@ -43,21 +43,21 @@ function normalizeSiteUrl(value: string): string {
 
 const config: OpenBlogConfig = {
   title: 'OpenBlog',
-  tagline: 'Markdown blogging for developers',
+  tagline: 'Collaborative writing for portfolio growth',
   description:
-    'A free Git-based Markdown blog. Write posts as pull requests, brand your site from config, and publish with no secrets.',
-  heroHeadline: 'Write in public and grow with every pull request.',
+    'OpenBlog is a free Git-based technical blog. Publish with pull requests, brand your site from config, and ship a static site with no secrets.',
+  heroHeadline: 'Write together and grow with every pull request.',
   heroSupporting:
-    'Publish technical posts from Markdown in Git. Improve writing through reviews, keep a clean archive, and share a site that looks ready for readers.',
+    'Every accepted pull request improves content and creates visible proof of teamwork, consistency, and technical communication.',
   siteUrl: normalizeSiteUrl(env('OPENBLOG_BASE_URL') ?? env('SITE_URL') ?? 'https://example.com/'),
   basePath: normalizeBasePath(env('OPENBLOG_BASE_PATH') ?? '/'),
   logo: {
-    light: '/branding/logo-light.png',
-    dark: '/branding/logo-dark.png'
+    light: '/openblog-logo-light.png',
+    dark: '/openblog-logo-dark.png'
   },
-  favicon: '/branding/favicon.ico',
-  appleTouchIcon: '/branding/apple-touch-icon.png',
-  ogImage: '/branding/og-default.png',
+  favicon: '/favicon.ico',
+  appleTouchIcon: '/apple-touch-icon.png',
+  ogImage: '/og-default.png',
   accentColor: '#0969da',
   defaultTheme: 'light',
   nav: [
@@ -66,7 +66,7 @@ const config: OpenBlogConfig = {
     { label: 'About', href: '/about' }
   ],
   aboutMarkdownPath: 'content/about.md',
-  footerText: 'Built with OpenBlog. Write a post, open a PR, and publish.',
+  footerText: 'Built by contributors in public. Improve a post, open a PR, and publish.',
   repositoryUrl: 'https://github.com/hajiparvaneh/openblog'
 };
 
