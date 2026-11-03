@@ -1,25 +1,45 @@
 # Writing posts
 
-Create files at:
+Posts are Markdown files:
 
-`content/posts/<category>/<post>.md`
+```text
+content/posts/<category>/<post-name>.md
+```
+
+The **category** is the folder name (use lowercase words separated by hyphens, for example `getting-started`).
 
 ## Frontmatter
 
+```md
+---
+title: My post
+description: One-line summary for cards and search results.
+date: 2026-03-15
+tags: [notes, blogging]
+thumbnail: /og-default.png
+thumbnailAlt: Description of the image
+featured: true
+draft: false
+lang: en
+---
+
+Write the body in Markdown below the frontmatter.
+```
+
 | Field | Required | Notes |
 | --- | --- | --- |
-| `title` | yes | Post title |
-| `description` | recommended | Short summary for cards/SEO |
-| `date` | yes | `YYYY-MM-DD` |
+| `title` | yes | Shown as the post heading |
+| `description` | recommended | Used on cards and for SEO |
+| `date` | yes | Format `YYYY-MM-DD` |
 | `tags` | no | Array or comma-separated list |
-| `thumbnail` | no | Path under `public/` or absolute URL |
-| `thumbnailAlt` | no | Alt text for thumbnail |
-| `featured` | no | Boolean |
-| `draft` | no | If `true`, post is excluded from the build |
+| `thumbnail` | no | Path under `public/` or a full image URL |
+| `thumbnailAlt` | no | Accessibility text for the thumbnail |
+| `featured` | no | Set `true` to include the post in the featured slider |
+| `draft` | no | Set `true` to exclude the post from the build |
 | `lang` | no | Defaults to `en` |
 
 ## Tips
 
-- Keep category folders lowercase and hyphenated
-- Prefer focused PRs (one post or one topic)
-- Preview with `npm run dev` before opening a PR
+- One clear idea per post keeps the archive easy to browse.
+- Run `npm run dev` and check the home page, category page, and tags before you publish.
+- After you push to `main`, GitHub Pages rebuilds the site automatically.
