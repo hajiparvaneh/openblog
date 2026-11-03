@@ -87,7 +87,7 @@ function loadPost(filePath: string): Post | null {
     categoryLabel: humanize(category),
     title: String(data.title ?? humanize(path.basename(slug))),
     description: String(data.description ?? ''),
-    date: String(data.date ?? '1970-01-01'),
+    date: normalizeDate(data.date),
     thumbnail: data.thumbnail ? String(data.thumbnail) : undefined,
     thumbnailAlt: data.thumbnailAlt ? String(data.thumbnailAlt) : undefined,
     tags: normalizeTags(data.tags),
@@ -98,15 +98,30 @@ function loadPost(filePath: string): Post | null {
   };
 }
 
+function normalizeDate(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
+  }
+  if (typeof value === 'string' && value.trim()) {
+    const trimmed = value.trim();
+    const parsed = new Date(trimmed);
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+    return trimmed;
+  }
+  return '1970-01-01';
+}
+
 let cachedPosts: Post[] | null = null;
 
 export function getPosts(): Post[] {
-  if (cachedPosts) return cachedPosts;
+  // Avoid sticky module cache in `astro dev` after Markdown files change.
+  if (import.meta.env.PROD && cachedPosts) return cachedPosts;
   const posts = walkMarkdownFiles(POSTS_ROOT)
     .map(loadPost)
     .filter((post): post is Post => Boolean(post))
     .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
-  cachedPosts = posts;
+  if (import.meta.env.PROD) cachedPosts = posts;
   return posts;
 }
 
