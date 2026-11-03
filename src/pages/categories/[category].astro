@@ -12,9 +12,9 @@ const markdownModules = import.meta.glob('../../../content/posts/**/*.md', {
   query: '?raw',
   import: 'default'
 }) as Record<string, string>;
+void markdownModules;
 
 export function getStaticPaths() {
-  void Object.keys(markdownModules);
   const categoryMap = new Map<string, string>();
   for (const post of getPosts()) {
     if (!categoryMap.has(post.category)) {
