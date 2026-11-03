@@ -1,4 +1,3 @@
-import fs from 'node:fs';
 import path from 'node:path';
 import matter from 'gray-matter';
 
@@ -24,7 +23,12 @@ export type TagRecord = {
   postCount: number;
 };
 
-const POSTS_ROOT = path.join(process.cwd(), 'content/posts');
+// Vite tracks these files so `astro dev` refreshes routes when Markdown is added/changed.
+const postFiles = import.meta.glob('../../content/posts/**/*.md', {
+  eager: true,
+  query: '?raw',
+  import: 'default'
+}) as Record<string, string>;
 
 function humanize(value: string): string {
   return value
@@ -60,26 +64,32 @@ function normalizeTags(raw: unknown): string[] {
   return [];
 }
 
-function walkMarkdownFiles(dir: string): string[] {
-  if (!fs.existsSync(dir)) return [];
-  const entries = fs.readdirSync(dir, { withFileTypes: true });
-  const files: string[] = [];
-  for (const entry of entries) {
-    const full = path.join(dir, entry.name);
-    if (entry.isDirectory()) files.push(...walkMarkdownFiles(full));
-    else if (entry.isFile() && entry.name.endsWith('.md')) files.push(full);
+function normalizeDate(value: unknown): string {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return value.toISOString().slice(0, 10);
   }
-  return files;
+  if (typeof value === 'string' && value.trim()) {
+    const trimmed = value.trim();
+    const parsed = new Date(trimmed);
+    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
+    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
+    return trimmed;
+  }
+  return '1970-01-01';
 }
 
-function loadPost(filePath: string): Post | null {
-  const relative = path.relative(POSTS_ROOT, filePath).replace(/\\/g, '/');
-  const slug = relative.replace(/\.md$/, '');
+function slugFromGlobKey(key: string): string {
+  const normalized = key.replace(/\\/g, '/');
+  const marker = '/content/posts/';
+  const index = normalized.lastIndexOf(marker);
+  const relative = index >= 0 ? normalized.slice(index + marker.length) : path.basename(normalized);
+  return relative.replace(/\.md$/i, '');
+}
+
+function loadPost(slug: string, raw: string): Post | null {
   const category = slug.split('/')[0] ?? 'posts';
-  const raw = fs.readFileSync(filePath, 'utf8');
   const { data, content } = matter(raw);
-  const draft = Boolean(data.draft);
-  if (draft) return null;
+  if (Boolean(data.draft)) return null;
 
   return {
     slug,
@@ -98,27 +108,12 @@ function loadPost(filePath: string): Post | null {
   };
 }
 
-function normalizeDate(value: unknown): string {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
-  }
-  if (typeof value === 'string' && value.trim()) {
-    const trimmed = value.trim();
-    const parsed = new Date(trimmed);
-    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
-    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
-    return trimmed;
-  }
-  return '1970-01-01';
-}
-
 let cachedPosts: Post[] | null = null;
 
 export function getPosts(): Post[] {
-  // Avoid sticky module cache in `astro dev` after Markdown files change.
   if (import.meta.env.PROD && cachedPosts) return cachedPosts;
-  const posts = walkMarkdownFiles(POSTS_ROOT)
-    .map(loadPost)
+  const posts = Object.entries(postFiles)
+    .map(([filePath, raw]) => loadPost(slugFromGlobKey(filePath), raw))
     .filter((post): post is Post => Boolean(post))
     .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
   if (import.meta.env.PROD) cachedPosts = posts;

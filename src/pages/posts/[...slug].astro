@@ -15,6 +15,9 @@ import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
 import { toAbsoluteUrl } from '../../lib/seo';
 import { withBase } from '../../lib/paths';
 
+// Keep Markdown in this module's dependency graph so new posts refresh routes in `astro dev`.
+import.meta.glob('../../../content/posts/**/*.md');
+
 export function getStaticPaths() {
   return getPosts().map((post) => ({ params: { slug: post.slug } }));
 }
