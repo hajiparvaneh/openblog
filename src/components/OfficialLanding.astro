@@ -41,6 +41,7 @@ const pageDescription =
     />
   </head>
   <body>
+    <div class="official-landing">
     <div class="atmosphere" aria-hidden="true"></div>
 
     <header class="topbar">
@@ -149,7 +150,7 @@ const pageDescription =
     </footer>
 
     <style is:global>
-      :root {
+      .official-landing {
         --ink: #102033;
         --ink-soft: #3a4a5c;
         --paper: #f3f6f4;
@@ -162,16 +163,12 @@ const pageDescription =
         --font-body: 'Figtree', 'Avenir Next', 'Segoe UI', sans-serif;
       }
 
-      * {
+      .official-landing,
+      .official-landing * {
         box-sizing: border-box;
       }
 
-      html {
-        scroll-behavior: smooth;
-      }
-
-      body {
-        margin: 0;
+      .official-landing {
         min-height: 100vh;
         color: var(--ink);
         background: var(--paper);
@@ -182,7 +179,7 @@ const pageDescription =
         overflow-x: hidden;
       }
 
-      code {
+      .official-landing code {
         font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
         font-size: 0.9em;
         background: color-mix(in srgb, var(--paper-deep) 80%, white);
@@ -190,7 +187,7 @@ const pageDescription =
         border-radius: 0.25rem;
       }
 
-      a {
+      .official-landing a {
         color: var(--accent-deep);
       }
 
@@ -552,5 +549,6 @@ const pageDescription =
         }
       }
     </style>
+    </div>
   </body>
 </html>

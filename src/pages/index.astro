@@ -1,12 +1,12 @@
 ---
 /**
- * Official GitHub Pages (OPENBLOG_OFFICIAL_LANDING=1) shows the project landing.
- * Cloned blogs keep the normal Markdown blog home.
+ * Official GitHub Pages sets OPENBLOG_OFFICIAL_LANDING=1 (see astro.config define).
+ * Local dev / template clones get the Markdown blog home only — no landing CSS.
  */
-import BlogHome from '../components/BlogHome.astro';
-import OfficialLanding from '../components/OfficialLanding.astro';
-
-const officialLanding = process.env.OPENBLOG_OFFICIAL_LANDING === '1';
+const Page =
+  import.meta.env.OPENBLOG_OFFICIAL_LANDING === '1'
+    ? (await import('../components/OfficialLanding.astro')).default
+    : (await import('../components/BlogHome.astro')).default;
 ---
 
-{officialLanding ? <OfficialLanding /> : <BlogHome />}
+<Page />
