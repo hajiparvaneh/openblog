@@ -1,112 +1,32 @@
 import type { APIRoute } from 'astro';
-import { getCategoryPath, getKnownContributors, getPosts, getProfileContributionsPath, getProfilePath } from '../lib/openblog';
-import { toAbsoluteUrl } from '../lib/seo';
+import { getCategoryPath, getPostPath, getPosts, getTagPathBySlug, getTagRecords } from '../lib/posts';
 import { getSiteUrl } from '../lib/site';
+import { toAbsoluteUrl } from '../lib/seo';
+import { withBase } from '../lib/paths';
 
-type SitemapEntry = {
-  path: string;
-  lastmod?: string;
-  changefreq?: 'daily' | 'weekly' | 'monthly';
-  priority?: number;
-};
-
-function escapeXml(value: string): string {
-  return value
+const escapeXml = (value: string) =>
+  value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&apos;');
-}
-
-function postPath(slug: string): string {
-  return `/posts/${slug
-    .split('/')
-    .map((segment) => encodeURIComponent(segment))
-    .join('/')}`;
-}
 
 export const GET: APIRoute = ({ site }) => {
-  const baseUrl = getSiteUrl(site);
   const posts = getPosts();
-  const staticEntries: SitemapEntry[] = [
-    { path: '/', changefreq: 'daily', priority: 1 },
-    { path: '/leaderboard', changefreq: 'daily', priority: 0.8 },
-    { path: '/how-to-contribute', changefreq: 'weekly', priority: 0.7 },
-    { path: '/contribute/create', changefreq: 'weekly', priority: 0.7 },
-    { path: '/post-md-file-structure', changefreq: 'weekly', priority: 0.7 },
-    { path: '/markdown-file-standards', changefreq: 'weekly', priority: 0.7 }
-  ];
-
-  const categoryEntries: SitemapEntry[] = [...new Set(posts.map((post) => getCategoryPath(post.category)))].map((path) => ({
-    path,
-    changefreq: 'weekly',
-    priority: 0.7
-  }));
-
-  const postEntries: SitemapEntry[] = posts.map((post) => ({
-    path: postPath(post.slug),
-    lastmod: post.date || undefined,
-    changefreq: 'monthly',
-    priority: 0.9
-  }));
-
-  const profileEntries: SitemapEntry[] = getKnownContributors().map((username) => ({
-    path: getProfilePath(username),
-    changefreq: 'weekly',
-    priority: 0.6
-  }));
-
-  const profileContributionEntries: SitemapEntry[] = getKnownContributors().map((username) => ({
-    path: getProfileContributionsPath(username),
-    changefreq: 'weekly',
-    priority: 0.5
-  }));
-
-  const mergedByPath = new Map<string, SitemapEntry>();
-  for (const entry of [...staticEntries, ...categoryEntries, ...postEntries, ...profileEntries, ...profileContributionEntries]) {
-    const existing = mergedByPath.get(entry.path);
-    if (!existing) {
-      mergedByPath.set(entry.path, entry);
-      continue;
-    }
-
-    if (entry.lastmod && (!existing.lastmod || entry.lastmod > existing.lastmod)) {
-      existing.lastmod = entry.lastmod;
-    }
-    if (entry.priority && (!existing.priority || entry.priority > existing.priority)) {
-      existing.priority = entry.priority;
-    }
-    if (!existing.changefreq && entry.changefreq) {
-      existing.changefreq = entry.changefreq;
-    }
-  }
-
-  const urls = [...mergedByPath.values()]
-    .sort((a, b) => a.path.localeCompare(b.path))
-    .map((entry) => {
-      const absolute = toAbsoluteUrl(entry.path, baseUrl);
-      const lines = [`<loc>${escapeXml(absolute)}</loc>`];
-
-      if (entry.lastmod) {
-        lines.push(`<lastmod>${escapeXml(entry.lastmod)}</lastmod>`);
-      }
-      if (entry.changefreq) {
-        lines.push(`<changefreq>${entry.changefreq}</changefreq>`);
-      }
-      if (typeof entry.priority === 'number') {
-        lines.push(`<priority>${entry.priority.toFixed(1)}</priority>`);
-      }
-
-      return `  <url>\n    ${lines.join('\n    ')}\n  </url>`;
-    })
-    .join('\n');
-
-  const xml = `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
-
-  return new Response(xml, {
-    headers: {
-      'Content-Type': 'application/xml; charset=utf-8'
-    }
-  });
+  const paths = new Set([
+    '/',
+    '/about',
+    ...posts.map((post) => getPostPath(post.slug)),
+    ...posts.map((post) => getCategoryPath(post.category)),
+    ...getTagRecords().map((tag) => getTagPathBySlug(tag.slug))
+  ]);
+  const siteUrl = getSiteUrl(site);
+  const urls = [...paths]
+    .map((path) => `<url><loc>${escapeXml(toAbsoluteUrl(withBase(path), siteUrl))}</loc></url>`)
+    .join('');
+  return new Response(
+    `<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`,
+    { headers: { 'Content-Type': 'application/xml; charset=utf-8' } }
+  );
 };

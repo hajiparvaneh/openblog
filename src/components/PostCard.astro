@@ -1,65 +1,43 @@
 ---
-import { formatPostDate, getCategoryPath } from '../lib/openblog';
-import IconBadge from './IconBadge.astro';
-import PostContributorsStack from './PostContributorsStack.astro';
+import { formatPostDate, getCategoryPath, getPostPath, type Post } from '../lib/posts';
 import TagBadge from './TagBadge.astro';
-import type { Post } from '../lib/openblog';
+import { withBase } from '../lib/paths';
 
 type Props = {
   post: Post;
   showCategory?: boolean;
-  dataAttribute?: string;
-  dateSortValue?: string;
-  displayDate?: string;
 };
 
-const { post, showCategory = true, dataAttribute, dateSortValue, displayDate } = Astro.props as Props;
-const cardAttributes = {
-  ...(dataAttribute ? { [dataAttribute]: '' } : {}),
-  ...(dateSortValue ? { 'data-post-date': dateSortValue } : {})
-};
-const postPath = `/posts/${post.slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
-const visibleTags = post.tags.slice(0, 3);
-const hiddenTagCount = Math.max(0, post.tags.length - visibleTags.length);
-const showLanguageBadge = post.lang.toLowerCase() !== 'en';
+const { post, showCategory = true } = Astro.props;
+const postPath = withBase(getPostPath(post.slug));
+const categoryPath = withBase(getCategoryPath(post.category));
+const thumbnailSrc = post.thumbnail
+  ? post.thumbnail.startsWith('http')
+    ? post.thumbnail
+    : withBase(post.thumbnail)
+  : undefined;
 ---
-
-<article class="card post-card post-card-standard" {...cardAttributes}>
-  {post.thumbnail ? (
-    <a class="post-card-inline-thumbnail-link" href={postPath} aria-label={`Read ${post.title}`}>
-      <img
-        class="post-card-inline-thumbnail"
-        src={post.thumbnail}
-        alt={post.thumbnailAlt ?? post.title}
-        loading="lazy"
-        decoding="async"
-      />
+<article class="card post-card">
+  {thumbnailSrc ? (
+    <a class="post-card-thumb-link" href={postPath} aria-label={`Read ${post.title}`}>
+      <img class="post-card-thumb" src={thumbnailSrc} alt={post.thumbnailAlt ?? post.title} loading="lazy" />
     </a>
   ) : null}
-  <div class="post-card-standard-body">
+  <div class="post-card-body">
     <h2 class="post-card-title"><a href={postPath}>{post.title}</a></h2>
-    <p class="post-card-description">{post.description}</p>
-    {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
-      <div class="post-card-taxonomy">
-        {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-card-flag" /> : null}
-        {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
-        {visibleTags.map((tag) => (
-          <TagBadge tag={tag} class="post-card-tag" />
-        ))}
-        {hiddenTagCount > 0 ? <span class="post-card-tag post-tag-more">+{hiddenTagCount}</span> : null}
+    {post.description ? <p class="post-card-description">{post.description}</p> : null}
+    {post.tags.length > 0 ? (
+      <div class="post-card-tags">
+        {post.tags.slice(0, 4).map((tag) => <TagBadge tag={tag} />)}
       </div>
     ) : null}
-    <p class="meta meta-inline">
-      <PostContributorsStack slug={post.slug} />
-      <span class="meta-item">
-        <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
-        {formatPostDate(displayDate ?? post.date)}
-      </span>
+    <p class="meta">
+      <time datetime={post.date}>{formatPostDate(post.date)}</time>
       {showCategory ? (
-        <span class="meta-item">
-          <i class="ti ti-category icon-sm" aria-hidden="true"></i>
-          <a href={getCategoryPath(post.category)}>{post.categoryLabel}</a>
-        </span>
+        <>
+          <span aria-hidden="true">·</span>
+          <a href={categoryPath}>{post.categoryLabel}</a>
+        </>
       ) : null}
     </p>
   </div>

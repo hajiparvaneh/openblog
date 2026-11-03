@@ -1,0 +1,83 @@
+---
+import '../styles/global.css';
+import { getCategoryPath, getPosts } from '../lib/posts';
+import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
+import { toAbsoluteUrl } from '../lib/seo';
+import { withBase } from '../lib/paths';
+
+interface Props {
+  title?: string;
+  description?: string;
+  lang?: string;
+  ogImagePath?: string;
+}
+
+const config = getOpenBlogConfig();
+const {
+  title = config.title,
+  description = config.description,
+  lang = 'en',
+  ogImagePath = config.ogImage
+} = Astro.props;
+
+const siteUrl = getSiteUrl(Astro.site);
+const canonical = toAbsoluteUrl(Astro.url.pathname, siteUrl);
+const ogImageUrl = ogImagePath.startsWith('http')
+  ? ogImagePath
+  : toAbsoluteUrl(withBase(ogImagePath), siteUrl);
+const categories = [...new Map(getPosts().map((post) => [post.category, post.categoryLabel])).entries()];
+---
+<html lang={lang} data-theme={config.defaultTheme}>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <meta name="theme-color" content={config.accentColor} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={withBase(config.favicon)} sizes="any" />
+    <link rel="apple-touch-icon" href={withBase(config.appleTouchIcon)} />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={config.title} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <style define:vars={{ accent: config.accentColor }}>
+      :root {
+        --primary: var(--accent);
+        --primary-strong: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="site-header">
+        <a class="brand" href={withBase('/')}>
+          <img class="brand-logo" src={withBase(config.logo.dark)} alt="" width="28" height="28" />
+          <span>{config.title}</span>
+        </a>
+        <nav class="nav" aria-label="Main navigation">
+          {config.nav.map((item) => (
+            <a href={withBase(item.href)}>{item.label}</a>
+          ))}
+        </nav>
+      </header>
+      <main class="container">
+        <slot />
+      </main>
+      <footer class="site-footer">
+        <nav class="category-links" aria-label="Post categories">
+          {categories.map(([category, label]) => (
+            <a href={withBase(getCategoryPath(category))}>{label}</a>
+          ))}
+        </nav>
+        <p class="meta">{config.footerText}</p>
+      </footer>
+    </div>
+  </body>
+</html>
