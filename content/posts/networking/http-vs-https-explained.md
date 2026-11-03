@@ -1,8 +1,11 @@
 ---
-title: HTTP vs HTTPS Explained for Beginners
-description: Learn the key differences between HTTP and HTTPS, how TLS encryption works, and why HTTPS is essential for SEO, privacy, and website trust.
+title: HTTP vs HTTPS explained
+description: Learn the key differences between HTTP and HTTPS, how TLS encryption works, and why HTTPS matters for privacy and trust.
 date: 2026-03-11
-tags: http, https, tls, networking
+lang: en
+thumbnail: /og-default.png
+thumbnailAlt: OpenBlog default social image
+tags: [http, https, tls, networking, security]
 ---
 
 HTTP and HTTPS both transfer data between a browser and a web server, but they differ in one critical way: security.

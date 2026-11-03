@@ -43,12 +43,12 @@ function normalizeSiteUrl(value: string): string {
 
 const config: OpenBlogConfig = {
   title: 'OpenBlog',
-  tagline: 'Collaborative writing for portfolio growth',
+  tagline: 'A Markdown blog ready to publish',
   description:
-    'OpenBlog is a free Git-based technical blog. Publish with pull requests, brand your site from config, and ship a static site with no secrets.',
-  heroHeadline: 'Write together and grow with every pull request.',
+    'A free Git-based technical blog with sample posts, categories, and tags. Brand it, write in Markdown, and publish with GitHub Pages — no secrets required.',
+  heroHeadline: 'Your technical blog starts here.',
   heroSupporting:
-    'Every accepted pull request improves content and creates visible proof of teamwork, consistency, and technical communication.',
+    'This site already has posts, categories, and tags. Replace the samples with your writing, brand the header, and publish from Git.',
   siteUrl: normalizeSiteUrl(env('OPENBLOG_BASE_URL') ?? env('SITE_URL') ?? 'https://example.com/'),
   basePath: normalizeBasePath(env('OPENBLOG_BASE_PATH') ?? '/'),
   logo: {
@@ -66,7 +66,7 @@ const config: OpenBlogConfig = {
     { label: 'About', href: '/about' }
   ],
   aboutMarkdownPath: 'content/about.md',
-  footerText: 'Built by contributors in public. Improve a post, open a PR, and publish.',
+  footerText: 'Published with OpenBlog. Write a post, open a PR, and ship.',
   repositoryUrl: 'https://github.com/hajiparvaneh/openblog'
 };
 

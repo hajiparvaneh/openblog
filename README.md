@@ -27,8 +27,8 @@ Requires Node.js 22+.
 
 ### 3. Brand the site
 
-Edit `openblog.config.ts` and replace files in `public/branding/`.  
-Edit About content in `content/about.md`.
+Edit `openblog.config.ts` and replace logos/icons under `public/` (see paths in the config).  
+Edit About content in `content/about.md`. Sample posts under `content/posts/` already fill categories and tags so the first deploy looks like a real site.
 
 ### 4. Write a post
 

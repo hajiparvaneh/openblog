@@ -1,16 +1,15 @@
 ---
-title: How DNS Works
-description: Understand DNS resolution end to end, including recursive lookup, caching, record types, and a practical OpenBlog example you can test with dig or nslookup.
+title: How DNS works
+description: Understand DNS resolution end to end — recursive lookup, caching, record types, and practical checks with dig or nslookup.
 date: 2026-03-12
-thumbnail: https://cdn.pixabay.com/photo/2016/08/12/05/06/technology-1587673_1280.jpg
-thumbnailAlt: Network infrastructure visualization with glowing technology lines
-tags: dns, networking, internet, web, infrastructure
-draft: false
 featured: true
 lang: en
+thumbnail: https://cdn.pixabay.com/photo/2016/08/12/05/06/technology-1587673_1280.jpg
+thumbnailAlt: Network infrastructure visualization with glowing technology lines
+tags: [dns, networking, internet, web, infrastructure]
 ---
 
-DNS (Domain Name System) is the internet directory that maps a name like `openblog.cc` to an IP address a server can route to.
+DNS (Domain Name System) is the internet directory that maps a name like `example.com` to an IP address a server can route to.
 Without DNS, users would need to remember raw IPs for every site.
 
 ## Why DNS matters

@@ -1,8 +1,11 @@
 ---
-title: Dockerfile Best Practices for Node.js Apps
-description: Build smaller, faster, and safer Node.js containers with practical Dockerfile best practices, multi-stage builds, and production-ready defaults.
+title: Dockerfile best practices for Node.js
+description: Build smaller, faster, safer Node.js containers with multi-stage builds and production-ready defaults.
 date: 2026-03-08
-tags: docker, devops, nodejs, containers
+lang: en
+thumbnail: /og-default.png
+thumbnailAlt: OpenBlog default social image
+tags: [docker, devops, nodejs, containers]
 ---
 
 A good Dockerfile improves build speed, image size, and security posture.

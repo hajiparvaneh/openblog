@@ -1,8 +1,11 @@
 ---
-title: C# Performance Techniques for Clean and Scalable Applications
-description: Learn practical C# performance techniques to build faster, cleaner, and more scalable .NET applications with efficient memory usage, async patterns, and LINQ optimization.
+title: C# performance techniques for scalable apps
+description: Practical C# performance tips for faster .NET apps — async I/O, memory usage, and LINQ choices that stay readable.
 date: 2026-03-12
-tags: csharp, dotnet, performance, async
+lang: en
+thumbnail: /og-default.png
+thumbnailAlt: OpenBlog default social image
+tags: [csharp, dotnet, performance, async]
 ---
 
 High-quality C# code should be readable, maintainable, and fast enough for real production traffic.

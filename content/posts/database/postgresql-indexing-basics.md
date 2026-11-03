@@ -1,8 +1,11 @@
 ---
-title: PostgreSQL Indexing Basics for Faster Queries
-description: Learn PostgreSQL indexing fundamentals, when to add B-tree indexes, and how to avoid over-indexing that slows down writes.
+title: PostgreSQL indexing basics
+description: Learn when to add B-tree indexes in PostgreSQL and how to avoid over-indexing that slows down writes.
 date: 2026-03-07
-tags: postgresql, database, indexing, sql
+lang: en
+thumbnail: /og-default.png
+thumbnailAlt: OpenBlog default social image
+tags: [postgresql, database, indexing, sql]
 ---
 
 Indexes can dramatically improve PostgreSQL read performance, but they are not free.
