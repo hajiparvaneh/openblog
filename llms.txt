@@ -1,0 +1,15 @@
+# OpenBlog
+
+> A file-based Markdown blog. Write posts as Markdown, brand one config file, and publish a static site.
+
+The guides below are the source of truth. They live in this repository.
+
+## Docs
+
+- [Documentation index](https://github.com/hajiparvaneh/openblog/blob/main/docs/README.md): Map of every guide
+- [Start](https://github.com/hajiparvaneh/openblog/blob/main/docs/start.md): Clone, install, and run the site
+- [Brand](https://github.com/hajiparvaneh/openblog/blob/main/docs/brand.md): Name, author, navigation, license, and images
+- [Posts](https://github.com/hajiparvaneh/openblog/blob/main/docs/posts.md): Post files, series, translations, and drafts
+- [Pages](https://github.com/hajiparvaneh/openblog/blob/main/docs/pages.md): About and extra Markdown pages
+- [Publish](https://github.com/hajiparvaneh/openblog/blob/main/docs/publish.md): Build, public URL, feeds, and GitHub Pages
+- [Layout](https://github.com/hajiparvaneh/openblog/blob/main/docs/layout.md): Where files and routes live
