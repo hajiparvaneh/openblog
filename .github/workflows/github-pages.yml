@@ -44,8 +44,10 @@ jobs:
         env:
           OPENBLOG_BASE_URL: ${{ steps.site.outputs.site_url }}
           OPENBLOG_BASE_PATH: ${{ steps.site.outputs.base_path }}
-          # Project site landing (not the blog preview — that lives at openblog.cc).
-          OPENBLOG_OFFICIAL_LANDING: '1'
+          # Landing page is the upstream project site only.
+          # "Use this template" copies this file, but github.repository
+          # becomes the new repo, so those builds get the blog home.
+          OPENBLOG_OFFICIAL_LANDING: ${{ github.repository == 'hajiparvaneh/openblog' && '1' || '' }}
           ASTRO_TELEMETRY_DISABLED: '1'
         run: npm run build
       - uses: actions/upload-pages-artifact@v3

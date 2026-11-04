@@ -126,9 +126,7 @@ Default GitHub Pages URL for **your** clone (the blog):
 https://<your-username>.github.io/<your-repo>/
 ```
 
-On the upstream OpenBlog repository, the same workflow sets `OPENBLOG_OFFICIAL_LANDING=1` so
-[hajiparvaneh.github.io/openblog](https://hajiparvaneh.github.io/openblog/) shows the **project landing page**.
-Your fork/template clone builds the normal blog home unless you set that variable yourself.
+[hajiparvaneh.github.io/openblog](https://hajiparvaneh.github.io/openblog/) shows the **project landing page** because the workflow turns that page on only for `hajiparvaneh/openblog`. A repository created with **Use this template** (or a fork) builds the normal blog home.
 
 ### Custom domain or project path
 
