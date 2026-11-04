@@ -1,0 +1,59 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { formatPostDate, getSeriesList, getSeriesPath, getSeriesPosts } from '../../lib/posts';
+import { getOpenBlogConfig } from '../../lib/site';
+import { withBase } from '../../lib/paths';
+
+const config = getOpenBlogConfig();
+const seriesList = getSeriesList().map((series) => ({
+  ...series,
+  posts: getSeriesPosts(series.slug)
+}));
+---
+
+<BaseLayout
+  title={`Series | ${config.title}`}
+  description={`Post series on ${config.title}.`}
+  canonicalPath="/series"
+>
+  <section class="card">
+    <p class="kicker icon-label"><i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>Browse</p>
+    <h1>Series</h1>
+    <p class="meta icon-label">
+      <i class="ti ti-notes icon-sm" aria-hidden="true"></i>
+      {seriesList.length === 1 ? '1 series' : `${seriesList.length} series`} in reading order.
+    </p>
+  </section>
+
+  {seriesList.length === 0 ? (
+    <section class="card">
+      <p class="meta">No series yet. Add <code>series</code> and <code>seriesOrder</code> to related posts.</p>
+    </section>
+  ) : (
+    seriesList.map((series) => (
+      <section class="list" aria-labelledby={`series-${series.slug}`}>
+        <div class="series-heading">
+          <div>
+            <p class="kicker icon-label">
+              <i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>
+              {series.postCount === 1 ? '1 part' : `${series.postCount} parts`}
+            </p>
+            <h2 id={`series-${series.slug}`}>
+              <a href={withBase(getSeriesPath(series.slug))}>{series.title}</a>
+            </h2>
+          </div>
+          <p class="meta icon-label">
+            <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
+            <time datetime={series.latestDate}>{formatPostDate(series.latestDate)}</time>
+          </p>
+        </div>
+        <div class="post-grid">
+          {series.posts.map((post, index) => (
+            <PostCard post={post} eyebrow={`Part ${index + 1}`} />
+          ))}
+        </div>
+      </section>
+    ))
+  )}
+</BaseLayout>

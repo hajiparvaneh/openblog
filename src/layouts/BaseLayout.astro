@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { getCategoryPath, getPosts } from '../lib/posts';
+import { getCategoryPath, getPosts, getTagPath, getTagRecords } from '../lib/posts';
 import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
 import { toAbsoluteUrl } from '../lib/seo';
 import { withBase } from '../lib/paths';
@@ -19,6 +19,7 @@ interface Props {
   robots?: string;
   publishedTime?: string;
   modifiedTime?: string;
+  alternates?: { lang: string; href: string }[];
   structuredData?: JsonLd | JsonLd[];
   hideGlobalSidebar?: boolean;
 }
@@ -36,13 +37,30 @@ const {
   robots = 'index, follow',
   publishedTime,
   modifiedTime,
+  alternates = [],
   structuredData,
   hideGlobalSidebar = false
 } = Astro.props;
 const documentLang = pageLang || lang || 'en';
+const rtlLanguages = new Set(['ar', 'fa', 'he', 'ur']);
+const documentDir = rtlLanguages.has(documentLang.split('-')[0].toLowerCase()) ? 'rtl' : 'ltr';
 
 const siteUrl = getSiteUrl(Astro.site);
-const canonicalUrl = toAbsoluteUrl(canonicalPath, siteUrl);
+const canonicalUrl = (() => {
+  if (/^[a-z][a-z\d+\-.]*:\/\//i.test(canonicalPath)) return canonicalPath;
+  const base = typeof import.meta.env.BASE_URL === 'string' ? import.meta.env.BASE_URL : '/';
+  const normalizedBase = base === '/' ? '' : base.replace(/\/+$/, '');
+  const path = canonicalPath.startsWith('/') ? canonicalPath : `/${canonicalPath}`;
+  const prefixed =
+    normalizedBase && (path === normalizedBase || path.startsWith(`${normalizedBase}/`))
+      ? path
+      : `${normalizedBase}${path}`;
+  return toAbsoluteUrl(prefixed || '/', siteUrl);
+})();
+const rssHref = withBase('/rss.xml');
+const atomHref = withBase('/atom.xml');
+const jsonFeedHref = withBase('/feed.json');
+const ogLocale = documentLang.replace('-', '_');
 const ogImageUrl = ogImagePath.startsWith('http')
   ? ogImagePath
   : toAbsoluteUrl(withBase(ogImagePath), siteUrl);
@@ -69,6 +87,9 @@ const categories = [...posts.reduce((map, post) => {
   .sort((a, b) => b[1].postCount - a[1].postCount || a[1].label.localeCompare(b[1].label));
 
 const hasSidebarExtra = Astro.slots.has('sidebar-extra');
+const tagRecords = getTagRecords();
+const popularTags = tagRecords.slice(0, 20);
+const hiddenTagCount = Math.max(0, tagRecords.length - popularTags.length);
 const showGlobalSidebar = categories.length > 0 && !hideGlobalSidebar;
 const homeHref = withBase('/');
 const defaultTheme = config.defaultTheme === 'dark' ? 'dark' : 'light';
@@ -86,11 +107,17 @@ const navIconFor = (label: string, href: string): string => {
   const key = `${label} ${href}`.toLowerCase();
   if (key.includes('home') || href === '/' || href === '') return 'ti-home';
   if (key.includes('about')) return 'ti-info-circle';
+  if (key.includes('archive')) return 'ti-archive';
+  if (key.includes('search')) return 'ti-search';
+  if (key.includes('series')) return 'ti-list-numbers';
+  if (key.includes('now')) return 'ti-clock';
+  if (key.includes('colophon')) return 'ti-notebook';
+  if (key.includes('uses')) return 'ti-tool';
   if (key.includes('blog') || key.includes('post')) return 'ti-news';
   return 'ti-link';
 };
 ---
-<html lang={documentLang}>
+<html lang={documentLang} dir={documentDir}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -103,6 +130,12 @@ const navIconFor = (label: string, href: string): string => {
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <link rel="canonical" href={canonicalUrl} />
+    <link rel="alternate" type="application/rss+xml" title={`${config.title} RSS`} href={rssHref} />
+    <link rel="alternate" type="application/atom+xml" title={`${config.title} Atom`} href={atomHref} />
+    <link rel="alternate" type="application/feed+json" title={`${config.title} JSON Feed`} href={jsonFeedHref} />
+    {alternates.map((alternate) => (
+      <link rel="alternate" hreflang={alternate.lang} href={alternate.href} />
+    ))}
     <link rel="icon" href={faviconHref} sizes="any" />
     <link rel="icon" type="image/png" sizes="32x32" href={favicon32Href} />
     <link rel="icon" type="image/png" sizes="16x16" href={favicon16Href} />
@@ -112,7 +145,7 @@ const navIconFor = (label: string, href: string): string => {
 
     <meta property="og:type" content={ogType} />
     <meta property="og:site_name" content={config.title} />
-    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale" content={ogLocale} />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
     <meta property="og:url" content={canonicalUrl} />
@@ -216,6 +249,18 @@ const navIconFor = (label: string, href: string): string => {
                 <i class="ti ti-info-circle icon-sm" aria-hidden="true"></i>
                 Read the About page
               </a>
+              <a class="sidebar-link" href={withBase('/archive')}>
+                <i class="ti ti-archive icon-sm" aria-hidden="true"></i>
+                Archive
+              </a>
+              <a class="sidebar-link" href={withBase('/search')}>
+                <i class="ti ti-search icon-sm" aria-hidden="true"></i>
+                Search
+              </a>
+              <a class="sidebar-link" href={withBase('/series')}>
+                <i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>
+                Series
+              </a>
               <a class="sidebar-sub-link" href={homeHref}>Back to home</a>
             </section>
 
@@ -238,6 +283,29 @@ const navIconFor = (label: string, href: string): string => {
                 <slot name="sidebar-extra" />
               </>
             ) : null}
+
+            {popularTags.length > 0 ? (
+              <section class="sidebar-tags">
+                <hr class="sidebar-sep" />
+                <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
+                <nav aria-label="Popular tags">
+                  <div class="tag-cloud" role="list">
+                    {popularTags.map((tag) => (
+                      <a role="listitem" class="tag-cloud-item" href={withBase(getTagPath(tag.label))}>
+                        <span>{tag.label}</span>
+                        <span class="badge">{tag.postCount}</span>
+                      </a>
+                    ))}
+                  </div>
+                </nav>
+                {hiddenTagCount > 0 ? (
+                  <p class="meta list-limit-note icon-label">
+                    <i class="ti ti-tags icon-sm" aria-hidden="true"></i>
+                    +{hiddenTagCount} more tags
+                  </p>
+                ) : null}
+              </section>
+            ) : null}
           </aside>
         </div>
       ) : (
@@ -247,19 +315,27 @@ const navIconFor = (label: string, href: string): string => {
       )}
 
       <footer class="site-footer meta">
-        <span class="icon-label">
+        <p class="icon-label">
           <i class="ti ti-book icon-sm" aria-hidden="true"></i>
           {config.footerText}
-        </span>
-        {config.repositoryUrl ? (
-          <>
-            {' · '}
-            <a class="icon-label" href={config.repositoryUrl} target="_blank" rel="noopener noreferrer">
-              <i class="ti ti-brand-github icon-sm" aria-hidden="true"></i>
-              Source
-            </a>
-          </>
-        ) : null}
+        </p>
+        <nav class="footer-links" aria-label="Footer">
+          <a href={rssHref}>RSS</a>
+          <a href={atomHref}>Atom</a>
+          <a href={jsonFeedHref}>JSON</a>
+          {config.mastodonUrl ? (
+            <a href={config.mastodonUrl} rel="me noopener noreferrer">Mastodon</a>
+          ) : null}
+          {config.repositoryUrl ? (
+            <a href={config.repositoryUrl} target="_blank" rel="noopener noreferrer">Source</a>
+          ) : null}
+          {config.contentLicense.name && config.contentLicense.url ? (
+            <a href={config.contentLicense.url} rel="license noopener noreferrer">Posts: {config.contentLicense.name}</a>
+          ) : null}
+          {config.footerLinks.map((item) => (
+            <a href={withBase(item.href)}>{item.label}</a>
+          ))}
+        </nav>
       </footer>
     </div>
 
@@ -296,6 +372,12 @@ const navIconFor = (label: string, href: string): string => {
         border-color: var(--primary);
         background: var(--surface-soft);
         color: var(--text);
+      }
+
+      .list-limit-note {
+        margin: 0.45rem 0 0;
+        font-size: 0.76rem;
+        line-height: 1.25;
       }
     </style>
 

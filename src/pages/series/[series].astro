@@ -1,0 +1,55 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getSeriesBySlug, getSeriesList, getSeriesPosts } from '../../lib/posts';
+import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
+import { toAbsoluteUrl } from '../../lib/seo';
+import { withBase } from '../../lib/paths';
+
+export function getStaticPaths() {
+  return getSeriesList().map((series) => ({ params: { series: series.slug } }));
+}
+
+const seriesSlug = Astro.params.series ?? '';
+const series = getSeriesBySlug(seriesSlug);
+if (!series) throw new Error('Series not found');
+const posts = getSeriesPosts(series.slug);
+const config = getOpenBlogConfig();
+const canonicalPath = `/series/${series.slug}`;
+const pageDescription = `${posts.length === 1 ? '1 part' : `${posts.length} parts`} in ${series.title}.`;
+const siteUrl = getSiteUrl(Astro.site);
+const canonicalUrl = toAbsoluteUrl(withBase(canonicalPath), siteUrl);
+---
+
+<BaseLayout
+  title={`${series.title} | ${config.title}`}
+  description={pageDescription}
+  canonicalPath={canonicalPath}
+  structuredData={{
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    name: series.title,
+    description: pageDescription,
+    url: canonicalUrl
+  }}
+>
+  <section class="card">
+    <p class="kicker icon-label">
+      <i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>
+      <a href={withBase('/series')}>Series</a>
+    </p>
+    <h1>{series.title}</h1>
+    <p class="meta icon-label">
+      <i class="ti ti-notes icon-sm" aria-hidden="true"></i>
+      {pageDescription} Read them in order.
+    </p>
+  </section>
+
+  <section class="list" aria-label={`${series.title} parts`}>
+    <div class="post-grid">
+      {posts.map((post, index) => (
+        <PostCard post={post} eyebrow={`Part ${index + 1}`} />
+      ))}
+    </div>
+  </section>
+</BaseLayout>

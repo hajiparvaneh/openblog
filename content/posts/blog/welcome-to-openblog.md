@@ -2,6 +2,7 @@
 title: Welcome to OpenBlog
 description: OpenBlog is a free blogging template — write in Markdown, publish from GitHub, and share a clean site with your readers.
 date: 2026-03-15
+updated: 2026-11-04
 featured: true
 lang: en
 thumbnail: /og-default.png

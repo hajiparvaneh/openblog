@@ -1,0 +1,49 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { formatPostDate, getCategoryPath, getPostPath, getPosts } from '../lib/posts';
+import { getOpenBlogConfig } from '../lib/site';
+import { withBase } from '../lib/paths';
+
+const config = getOpenBlogConfig();
+const posts = getPosts();
+const years = new Map<string, typeof posts>();
+for (const post of posts) {
+  const year = post.date.slice(0, 4);
+  const list = years.get(year) ?? [];
+  list.push(post);
+  years.set(year, list);
+}
+const yearGroups = [...years.entries()].sort((a, b) => b[0].localeCompare(a[0]));
+---
+
+<BaseLayout
+  title={`Archive | ${config.title}`}
+  description={`Every post on ${config.title}, grouped by year.`}
+  canonicalPath="/archive"
+>
+  <section class="card">
+    <h1>Archive</h1>
+    <p class="meta">{posts.length === 1 ? '1 post' : `${posts.length} posts`} grouped by year.</p>
+  </section>
+
+  {yearGroups.length === 0 ? (
+    <section class="card">
+      <p class="meta">No posts yet.</p>
+    </section>
+  ) : (
+    yearGroups.map(([year, yearPosts]) => (
+      <section class="card archive-year" aria-labelledby={`year-${year}`}>
+        <h2 id={`year-${year}`}>{year}</h2>
+        <ol class="archive-list">
+          {yearPosts.map((post) => (
+            <li>
+              <time datetime={post.date}>{formatPostDate(post.date)}</time>
+              <a href={withBase(getPostPath(post.slug))}>{post.title}</a>
+              <a class="meta" href={withBase(getCategoryPath(post.category))}>{post.categoryLabel}</a>
+            </li>
+          ))}
+        </ol>
+      </section>
+    ))
+  )}
+</BaseLayout>

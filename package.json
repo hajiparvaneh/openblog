@@ -1,18 +1,20 @@
 {
   "name": "openblog",
-  "version": "0.1.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "check": "astro check"
+    "check": "astro check && node scripts/check-posts.mjs",
+    "check:posts": "node scripts/check-posts.mjs"
   },
   "dependencies": {
     "astro": "^6.0.4",
     "gray-matter": "^4.0.3",
-    "marked": "^17.0.4"
+    "marked": "^17.0.4",
+    "shiki": "^4.6.0"
   },
   "devDependencies": {
     "@astrojs/check": "^0.9.7",

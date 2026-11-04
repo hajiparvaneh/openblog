@@ -1,5 +1,5 @@
 ---
-import IconBadge from './IconBadge.astro';
+import LanguageLabel from './LanguageLabel.astro';
 import TagBadge from './TagBadge.astro';
 import { formatPostDate, getCategoryPath, getPostPath, getPosts, normalizeCategoryKey } from '../lib/posts';
 import { withBase } from '../lib/paths';
@@ -104,15 +104,13 @@ const rootClass = `featured-slider ${className}`.trim();
                     <span aria-hidden="true">•</span>
                     <span class="icon-label"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
                   </p>
-                  {(post.visibleTags.length > 0 || post.lang !== 'en') ? (
-                    <div class="post-card-taxonomy">
-                      {post.lang !== 'en' ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
+                  <div class="post-card-taxonomy">
+                      <LanguageLabel lang={post.lang} class="post-card-flag" />
                       {post.visibleTags.map((tag) => (
                         <TagBadge tag={tag} class="post-card-tag" />
                       ))}
                       {post.hiddenTagCount > 0 ? <span class="post-card-tag post-tag-more">+{post.hiddenTagCount}</span> : null}
                     </div>
-                  ) : null}
                   <p class="meta meta-inline featured-slide-footer">
                     <a class="featured-slide-link" href={post.url}>
                       Read post

@@ -1,26 +1,47 @@
 import path from 'node:path';
 import matter from 'gray-matter';
+import { normalizePost, slugify as slugifyTag, type NormalizedPost } from './post-model.mjs';
+import { getOpenBlogConfig, type OpenBlogConfig } from './site';
 
-export type Post = {
-  slug: string;
-  category: string;
-  categoryLabel: string;
-  title: string;
-  description: string;
-  date: string;
-  thumbnail?: string;
-  thumbnailAlt?: string;
-  tags: string[];
-  draft: boolean;
-  featured: boolean;
-  lang: string;
-  body: string;
+export type Post = NormalizedPost & {
+  translateOfSlug?: string;
+};
+
+export type AuthorCredit = {
+  name: string;
+  url?: string;
+  avatar?: string;
 };
 
 export type TagRecord = {
   slug: string;
   label: string;
   postCount: number;
+};
+
+export type SeriesRecord = {
+  slug: string;
+  title: string;
+  postCount: number;
+  latestDate: string;
+};
+
+const LANGUAGE_NAMES: Record<string, string> = {
+  en: 'English',
+  fa: 'فارسی',
+  de: 'Deutsch',
+  fr: 'Français',
+  es: 'Español',
+  ar: 'العربية',
+  zh: '中文',
+  ja: '日本語',
+  pt: 'Português',
+  ru: 'Русский',
+  tr: 'Türkçe',
+  nl: 'Nederlands',
+  it: 'Italiano',
+  ko: '한국어',
+  hi: 'हिन्दी'
 };
 
 // Vite tracks these files so `astro dev` refreshes routes when Markdown is added/changed.
@@ -30,53 +51,7 @@ const postFiles = import.meta.glob('../../content/posts/**/*.md', {
   import: 'default'
 }) as Record<string, string>;
 
-function humanize(value: string): string {
-  return value
-    .split(/[-_/]+/)
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-}
-
-export function slugifyTag(tag: string): string {
-  return tag
-    .normalize('NFKD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .trim()
-    .toLowerCase()
-    .replace(/['’]/g, '')
-    .replace(/&/g, ' and ')
-    .replace(/[^\p{Letter}\p{Number}]+/gu, '-')
-    .replace(/^-+|-+$/g, '')
-    .replace(/-{2,}/g, '-');
-}
-
-function normalizeTags(raw: unknown): string[] {
-  if (Array.isArray(raw)) {
-    return raw.map((tag) => String(tag).trim()).filter(Boolean);
-  }
-  if (typeof raw === 'string') {
-    return raw
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
-  }
-  return [];
-}
-
-function normalizeDate(value: unknown): string {
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
-  }
-  if (typeof value === 'string' && value.trim()) {
-    const trimmed = value.trim();
-    const parsed = new Date(trimmed);
-    if (/^\d{4}-\d{2}-\d{2}/.test(trimmed)) return trimmed.slice(0, 10);
-    if (!Number.isNaN(parsed.getTime())) return parsed.toISOString().slice(0, 10);
-    return trimmed;
-  }
-  return '1970-01-01';
-}
+export { slugifyTag };
 
 function slugFromGlobKey(key: string): string {
   const normalized = key.replace(/\\/g, '/');
@@ -86,36 +61,28 @@ function slugFromGlobKey(key: string): string {
   return relative.replace(/\.md$/i, '');
 }
 
-function loadPost(slug: string, raw: string): Post | null {
-  const category = slug.split('/')[0] ?? 'posts';
-  const { data, content } = matter(raw);
-  if (Boolean(data.draft)) return null;
-
-  return {
-    slug,
-    category,
-    categoryLabel: humanize(category),
-    title: String(data.title ?? humanize(path.basename(slug))),
-    description: String(data.description ?? ''),
-    date: normalizeDate(data.date),
-    thumbnail: data.thumbnail ? String(data.thumbnail) : undefined,
-    thumbnailAlt: data.thumbnailAlt ? String(data.thumbnailAlt) : undefined,
-    tags: normalizeTags(data.tags),
-    draft: false,
-    featured: Boolean(data.featured),
-    lang: String(data.lang ?? 'en'),
-    body: content.trim()
-  };
+function attachTranslations(posts: Post[]): Post[] {
+  const slugs = new Set(posts.map((post) => post.slug));
+  return posts.map((post) => {
+    if (!post.translateOfFile) return post;
+    const target = `${post.category}/${post.translateOfFile.replace(/\.md$/i, '')}`;
+    if (!slugs.has(target) || target === post.slug) return post;
+    return { ...post, translateOfSlug: target };
+  });
 }
 
 let cachedPosts: Post[] | null = null;
 
 export function getPosts(): Post[] {
   if (import.meta.env.PROD && cachedPosts) return cachedPosts;
-  const posts = Object.entries(postFiles)
-    .map(([filePath, raw]) => loadPost(slugFromGlobKey(filePath), raw))
-    .filter((post): post is Post => Boolean(post))
-    .sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
+  const posts = attachTranslations(
+    Object.entries(postFiles)
+      .map(([filePath, raw]) => {
+        const parsed = matter(raw);
+        return normalizePost(slugFromGlobKey(filePath), parsed.data, parsed.content);
+      })
+      .filter((post) => !post.draft)
+  ).sort((a, b) => b.date.localeCompare(a.date) || a.slug.localeCompare(b.slug));
   if (import.meta.env.PROD) cachedPosts = posts;
   return posts;
 }
@@ -139,6 +106,10 @@ export function getTagPath(tag: string): string {
 
 export function getTagPathBySlug(tagSlug: string): string {
   return `/tag/${encodeURIComponent(slugifyTag(tagSlug))}`;
+}
+
+export function getSeriesPath(seriesSlug: string): string {
+  return `/series/${encodeURIComponent(seriesSlug)}`;
 }
 
 export function getTagRecords(): TagRecord[] {
@@ -165,10 +136,110 @@ export function getPostsByTagSlug(tagSlug: string): Post[] {
   return getPosts().filter((post) => post.tags.some((tag) => slugifyTag(tag) === normalized));
 }
 
+export function getSeriesPosts(seriesSlug: string): Post[] {
+  return getPosts()
+    .filter((post) => post.seriesSlug === seriesSlug)
+    .sort(
+      (a, b) =>
+        (a.seriesOrder ?? 9999) - (b.seriesOrder ?? 9999) ||
+        a.date.localeCompare(b.date) ||
+        a.slug.localeCompare(b.slug)
+    );
+}
+
+export function getSeriesList(): SeriesRecord[] {
+  const series = new Map<string, SeriesRecord>();
+  for (const post of getPosts()) {
+    if (!post.seriesSlug || !post.series) continue;
+    const current = series.get(post.seriesSlug);
+    if (!current) {
+      series.set(post.seriesSlug, {
+        slug: post.seriesSlug,
+        title: post.series,
+        postCount: 1,
+        latestDate: post.updated ?? post.date
+      });
+      continue;
+    }
+    current.postCount += 1;
+    const stamp = post.updated ?? post.date;
+    if (stamp > current.latestDate) current.latestDate = stamp;
+  }
+  return [...series.values()].sort((a, b) => b.latestDate.localeCompare(a.latestDate) || a.title.localeCompare(b.title));
+}
+
+export function getSeriesBySlug(seriesSlug: string): SeriesRecord | undefined {
+  return getSeriesList().find((series) => series.slug === seriesSlug);
+}
+
+function translationRoot(post: Post, bySlug: Map<string, Post>, seen = new Set<string>()): string {
+  if (seen.has(post.slug)) return post.slug;
+  seen.add(post.slug);
+  if (!post.translateOfSlug) return post.slug;
+  const target = bySlug.get(post.translateOfSlug);
+  if (!target) return post.slug;
+  return translationRoot(target, bySlug, seen);
+}
+
+export function getTranslationGroup(post: Post): Post[] {
+  const posts = getPosts();
+  const bySlug = new Map(posts.map((entry) => [entry.slug, entry]));
+  const root = translationRoot(post, bySlug);
+  return posts
+    .filter((entry) => translationRoot(entry, bySlug) === root)
+    .sort((a, b) => a.lang.localeCompare(b.lang) || a.slug.localeCompare(b.slug));
+}
+
+export function getRelatedPosts(post: Post, limit = 3): Post[] {
+  const excluded = new Set(getTranslationGroup(post).map((entry) => entry.slug));
+  const tags = new Set(post.tags.map((tag) => slugifyTag(tag)));
+  return getPosts()
+    .filter((entry) => !excluded.has(entry.slug))
+    .map((entry) => {
+      const shared = entry.tags.reduce((count, tag) => count + (tags.has(slugifyTag(tag)) ? 1 : 0), 0);
+      const sameCategory = entry.category === post.category ? 1 : 0;
+      return { entry, score: shared * 2 + sameCategory };
+    })
+    .filter((item) => item.score > 0)
+    .sort(
+      (a, b) => b.score - a.score || b.entry.date.localeCompare(a.entry.date) || a.entry.slug.localeCompare(b.entry.slug)
+    )
+    .slice(0, limit)
+    .map((item) => item.entry);
+}
+
+export function getPostAuthor(post: Post, config: OpenBlogConfig = getOpenBlogConfig()): AuthorCredit {
+  if (post.author) return { name: post.author };
+  return {
+    name: config.author.name,
+    url: config.author.url || undefined,
+    avatar: config.author.avatar || undefined
+  };
+}
+
+export function languageLabel(code: string): string {
+  const normalized = code.trim().toLowerCase();
+  return LANGUAGE_NAMES[normalized] ?? LANGUAGE_NAMES[normalized.split('-')[0] ?? ''] ?? code;
+}
+
 export function formatPostDate(date: string): string {
   return date;
 }
 
+export function formatReadingTime(minutes: number): string {
+  return minutes === 1 ? '1 min read' : `${minutes} min read`;
+}
+
+export function newestStamp(posts: Post[] = getPosts()): string {
+  return posts.reduce((latest, post) => {
+    const stamp = post.updated ?? post.date;
+    return stamp > latest ? stamp : latest;
+  }, '');
+}
+
 export function getPostPath(slug: string): string {
-  return `/posts/${slug.split('/').map((segment) => encodeURIComponent(segment)).join('/')}`;
+  return `/posts/${slug
+    .split('/')
+    .map((segment) => encodeURIComponent(segment))
+    .join('/')}`;
 }

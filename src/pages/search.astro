@@ -1,0 +1,99 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import PostCard from '../components/PostCard.astro';
+import { getPosts } from '../lib/posts';
+import { getOpenBlogConfig } from '../lib/site';
+import { withBase } from '../lib/paths';
+
+const config = getOpenBlogConfig();
+const posts = getPosts();
+const searchText = (post: (typeof posts)[number]) =>
+  [post.title, post.description, post.categoryLabel, post.series ?? '', post.lang, ...post.tags]
+    .join(' ')
+    .toLowerCase();
+---
+
+<BaseLayout
+  title={`Search | ${config.title}`}
+  description={`Search posts on ${config.title} by title, description, category, or tag.`}
+  canonicalPath="/search"
+>
+  <section class="card">
+    <h1>Search</h1>
+    <p class="meta">Filter the posts that ship with this site. Nothing is sent to a search service.</p>
+    <form id="search-form" class="search-form" role="search" action={withBase('/search')} method="get">
+      <label for="q">
+        Find a post
+        <input id="q" name="q" type="search" autocomplete="off" placeholder="Title, tag, or category" />
+      </label>
+      <button type="submit">Search</button>
+    </form>
+    <p id="search-status" class="meta" role="status" aria-live="polite">Showing all {posts.length} posts.</p>
+    <noscript>
+      <p class="meta">JavaScript is off, so this page lists every post instead of filtering as you type.</p>
+    </noscript>
+  </section>
+
+  {posts.length === 0 ? (
+    <section class="card">
+      <p class="meta">No posts yet. Add a Markdown file under <code>content/posts/</code>.</p>
+    </section>
+  ) : (
+    <div class="post-grid">
+      {posts.map((post) => (
+        <div data-search-item data-search-text={searchText(post)}>
+          <PostCard post={post} />
+        </div>
+      ))}
+    </div>
+  )}
+
+  <script is:inline>
+    (function () {
+      var input = document.getElementById('q');
+      var status = document.getElementById('search-status');
+      var form = document.getElementById('search-form');
+      var results = Array.from(document.querySelectorAll('[data-search-item]'));
+      if (!input) return;
+
+      var params = new URLSearchParams(window.location.search);
+      var initial = params.get('q') || '';
+      input.value = initial;
+
+      var apply = function () {
+        var query = input.value.trim().toLowerCase();
+        var visible = 0;
+        results.forEach(function (item) {
+          var haystack = (item.getAttribute('data-search-text') || '').toLowerCase();
+          var match = !query || haystack.indexOf(query) !== -1;
+          item.hidden = !match;
+          if (match) visible += 1;
+        });
+        if (!status) return;
+        if (!query) {
+          status.textContent = 'Showing all ' + results.length + ' posts.';
+          return;
+        }
+        status.textContent = visible === 1 ? '1 post matches this search.' : visible + ' posts match this search.';
+      };
+
+      input.addEventListener('input', function () {
+        var url = new URL(window.location.href);
+        var query = input.value.trim();
+        if (query) url.searchParams.set('q', query);
+        else url.searchParams.delete('q');
+        window.history.replaceState({}, '', url);
+        apply();
+      });
+
+      if (form) {
+        form.addEventListener('submit', function (event) {
+          event.preventDefault();
+          input.focus();
+        });
+      }
+
+      apply();
+    })();
+  </script>
+</BaseLayout>

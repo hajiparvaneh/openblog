@@ -1,8 +1,8 @@
 ---
 import fs from 'node:fs';
 import path from 'node:path';
-import { marked } from 'marked';
 import BaseLayout from '../layouts/BaseLayout.astro';
+import { renderMarkdown } from '../lib/markdown';
 import { getOpenBlogConfig } from '../lib/site';
 
 const config = getOpenBlogConfig();
@@ -10,7 +10,7 @@ const aboutPath = path.join(process.cwd(), config.aboutMarkdownPath);
 const markdown = fs.existsSync(aboutPath)
   ? fs.readFileSync(aboutPath, 'utf8')
   : `# About\n\nAdd content in \`${config.aboutMarkdownPath}\`.`;
-const html = marked.parse(markdown.replace(/^---[\s\S]*?---\n?/, ''));
+const { html } = await renderMarkdown(markdown.replace(/^---[\s\S]*?---\n?/, ''));
 ---
 <BaseLayout title={`About | ${config.title}`} description={config.description}>
   <article class="card article-content" set:html={html} />

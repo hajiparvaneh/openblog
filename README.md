@@ -15,9 +15,7 @@
 </p>
 
 <p align="center">
-  🏠 Project site: <a href="https://hajiparvaneh.github.io/openblog/">hajiparvaneh.github.io/openblog</a><br />
-  🌐 Community blog preview: <a href="https://openblog.cc">openblog.cc</a>
-  (<a href="https://github.com/hajiparvaneh/openblogcc">openblogcc</a>)
+  🏠 Project site: <a href="https://hajiparvaneh.github.io/openblog/">hajiparvaneh.github.io/openblog</a>
 </p>
 
 ---
@@ -25,17 +23,19 @@
 ## ✨ Features
 
 - 📝 **Markdown posts** stored as files in your git repo
-- 📁 **Categories** from folders, **tags** from frontmatter
-- 🏠 Home page with featured posts, archive, and About
+- 📁 **Categories** from folders, **tags** from frontmatter, **series** and a year **archive**
+- 🔍 **Search** that filters posts in the browser
+- 🌐 **RSS, Atom, and JSON** feeds generated at build time
+- 🔤 Linked **translations**, reading time, table of contents, and syntax highlighting
+- 🏠 Home page with featured posts, extra Markdown pages, and About
 - 🌓 Light / dark theme
-- 🎨 Branding from `openblog.config.ts` + `public/`
+- 🎨 Branding, author, and content license from `openblog.config.ts` + `public/`
 - 📦 Static build — no accounts, database, or API secrets required
-- 📄 **MIT** license
+- 📄 **MIT** license for the code
 
-> **Three surfaces:**  
+> **Two surfaces:**  
 > • **This repo** — cloneable Markdown blog template (GitHub → **Use this template**).  
-> • **[GitHub Pages](https://hajiparvaneh.github.io/openblog/)** — project landing for OpenBlog (features / get started).  
-> • **[openblog.cc](https://openblog.cc)** — community preview with sign-in and scoring ([openblogcc](https://github.com/hajiparvaneh/openblogcc)), not the template.
+> • **[GitHub Pages](https://hajiparvaneh.github.io/openblog/)** — project landing for OpenBlog (features / get started).
 
 ## 📋 Requirements
 
@@ -66,7 +66,7 @@ Open the local URL shown in the terminal (usually `http://localhost:4321`).
 
 ## 🎨 Brand your blog
 
-1. Edit [`openblog.config.ts`](openblog.config.ts) — title, tagline, colors, navigation, footer, and asset paths.
+1. Edit [`openblog.config.ts`](openblog.config.ts) — title, tagline, author, colors, navigation, footer, content license, and asset paths.
 2. Replace images under [`public/`](public/) (logo, favicon, social image).
 3. Update [`content/about.md`](content/about.md).
 
@@ -106,7 +106,7 @@ Your content in Markdown.
 | `draft` | no | Hide from the site when `true` |
 | `lang` | no | Language code (default `en`) |
 
-More detail: [POSTS-README.md](POSTS-README.md)
+Series, translations, `updated`, `canonical`, `noindex`, and `discussionUrl` are optional. The full list is in [POSTS-README.md](POSTS-README.md).
 
 Commit and push when you are ready — your git history *is* your editorial history.
 
@@ -151,8 +151,9 @@ npm run preview
 ```text
 content/
   about.md                 About page
+  pages/*.md               Extra pages (Now, Colophon, Uses, …)
   posts/<category>/*.md    Blog posts (in git)
-openblog.config.ts         Site title, nav, branding paths
+openblog.config.ts         Site title, author, nav, footer, license
 public/                    Logos, favicon, images
 src/                       Site theme and pages
 ```
@@ -164,7 +165,8 @@ src/                       Site theme and pages
 | `npm run dev` | Local development server |
 | `npm run build` | Production build into `dist/` |
 | `npm run preview` | Preview the production build |
-| `npm run check` | Type / Astro checks |
+| `npm run check` | Type / Astro checks, then the post checker |
+| `npm run check:posts` | Check titles, dates, slugs, translations, and extra pages |
 
 ## 📜 License
 

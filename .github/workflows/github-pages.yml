@@ -1,5 +1,4 @@
 # Only deploy path for this template: static GitHub Pages.
-# Cloudflare Workers / Pages and OAuth belong in the openblogcc preview repo, not here.
 name: Deploy GitHub Pages
 
 on:
@@ -26,6 +25,7 @@ jobs:
           node-version: '22'
           cache: npm
       - run: npm ci
+      - run: npm run check:posts
       - name: Resolve site URL and base path
         id: site
         shell: bash

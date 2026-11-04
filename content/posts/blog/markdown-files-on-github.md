@@ -3,6 +3,7 @@ title: Your posts are Markdown files on GitHub
 description: OpenBlog is file-based — each article is a .md file in the repository, versioned on GitHub, and turned into pages when the site builds.
 date: 2026-03-14
 featured: true
+discussionUrl: https://github.com/hajiparvaneh/openblog/discussions
 lang: en
 thumbnail: /og-default.png
 thumbnailAlt: OpenBlog default social image

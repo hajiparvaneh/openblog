@@ -1,0 +1,42 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import { renderMarkdown } from '../lib/markdown';
+import { getPageBySlug, getPagePath, getPages } from '../lib/pages';
+import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
+import { toAbsoluteUrl } from '../lib/seo';
+import { withBase } from '../lib/paths';
+
+export function getStaticPaths() {
+  return getPages().map((page) => ({ params: { slug: page.slug } }));
+}
+
+const slug = Astro.params.slug ?? '';
+const page = getPageBySlug(slug);
+if (!page) throw new Error('Page not found');
+
+const config = getOpenBlogConfig();
+const { html } = await renderMarkdown(page.body);
+const description = page.description || config.description;
+const canonicalPath = getPagePath(page.slug);
+const siteUrl = getSiteUrl(Astro.site);
+const pageUrl = toAbsoluteUrl(withBase(canonicalPath), siteUrl);
+---
+
+<BaseLayout
+  title={`${page.title} | ${config.title}`}
+  description={description}
+  canonicalPath={canonicalPath}
+  structuredData={{
+    '@context': 'https://schema.org',
+    '@type': 'WebPage',
+    name: page.title,
+    description,
+    url: pageUrl
+  }}
+>
+  <article class="card">
+    <h1>{page.title}</h1>
+    {page.description ? <p class="meta">{page.description}</p> : null}
+    <div class="article-content" set:html={html} />
+  </article>
+</BaseLayout>

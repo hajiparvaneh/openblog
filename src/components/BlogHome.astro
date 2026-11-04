@@ -6,7 +6,6 @@ import PostCard from './PostCard.astro';
 import {
   getCategoryPath,
   getPosts,
-  getTagPath,
   getTagRecords
 } from '../lib/posts';
 import { getOpenBlogConfig, getSiteUrl } from '../lib/site';
@@ -28,11 +27,8 @@ const paginatedPosts = remainingPosts.slice(pageStart, pageStart + postsPerPage)
 const postPageNumbers = Array.from({ length: postsTotalPages }, (_, index) => index + 1);
 const categoryCount = new Set(posts.map((post) => post.category)).size;
 const featuredPostCount = posts.filter((post) => post.featured).length;
-const TAGS_LIMIT = 20;
 const tagRecords = getTagRecords();
-const topTags = tagRecords.slice(0, TAGS_LIMIT);
 const tagCount = tagRecords.length;
-const hiddenTagCount = Math.max(0, tagRecords.length - topTags.length);
 
 const categoryInsightsMap = new Map<string, {
   key: string;
@@ -62,28 +58,51 @@ const categoryInsights = [...categoryInsightsMap.values()]
   .sort((a, b) => b.postCount - a.postCount || a.label.localeCompare(b.label))
   .slice(0, CATEGORY_INSIGHTS_LIMIT);
 
+const licenseAnswer = config.contentLicense.name
+  ? `Look for ${config.contentLicense.name} at the end of a post and in the footer. That license says how the writing may be shared.`
+  : 'Check the note at the end of a post and in the footer. It says how the writing may be shared.';
+
 const faqEntries = [
   {
-    question: 'What is OpenBlog?',
+    question: 'How do I find a post?',
     answer:
-      'OpenBlog is a free, open-source blogging template. Posts are Markdown files in a GitHub repository, and the site publishes as static pages.'
-  },
-  {
-    question: 'How should I read this starter site?',
-    answer:
-      'Start with the featured posts. They explain that OpenBlog is free, file-based, GitHub-based, and MIT licensed. Use the Blog category or tags to jump between them.'
+      'Use Search in the header. It matches titles, descriptions, categories, and tags as you type. You can also open a category, a tag, or the year archive.'
   },
   {
     question: 'How are posts organized?',
     answer:
-      'Each post sits in a category folder and can include tags. Category and tag pages help you browse without scrolling the full archive.'
+      'Each post belongs to one category and can have several tags. A category is a topic. Tags connect posts that share an idea. A series is a set of posts meant to be read in order.'
+  },
+  {
+    question: 'How do I follow new posts?',
+    answer:
+      'Subscribe with the RSS, Atom, or JSON feed in the footer. A feed reader will show new posts, so you do not have to check the site.'
+  },
+  {
+    question: 'Where are older posts?',
+    answer:
+      'Open Archive to browse by year. The home page shows the latest posts first, and each category page lists everything in that topic.'
   },
   {
     question: 'Can I share a post?',
     answer:
-      'Yes. Use the share control on a post page, or copy the URL from your browser.'
+      'Yes. Use the share button on the post, or copy the page address from your browser and send that link.'
+  },
+  {
+    question: 'What if a post is in another language?',
+    answer:
+      'When a translation exists, the post shows a language switcher. Pick the language you want. It is the same post, not a different story.'
+  },
+  {
+    question: 'Who writes the posts?',
+    answer:
+      'The byline on each post names the author. The About page tells you more about this blog.'
+  },
+  {
+    question: 'Can I reuse what I read?',
+    answer: licenseAnswer
   }
-] as const;
+];
 
 const getHomePagePath = (page: number): string => withBase(page <= 1 ? '/' : `/page/${page}`);
 
@@ -195,28 +214,6 @@ const structuredData = [
 
   {latestPost ? <LatestPostCard post={latestPost} /> : null}
 
-  {topTags.length > 0 ? (
-    <Fragment slot="sidebar-extra">
-      <p class="kicker icon-label"><i class="ti ti-tags icon-sm" aria-hidden="true"></i>Popular tags</p>
-      <nav aria-label="Popular tags">
-        <div class="tag-cloud" role="list">
-          {topTags.map((tag) => (
-            <a role="listitem" class="tag-cloud-item" href={withBase(getTagPath(tag.label))}>
-              <span>{tag.label}</span>
-              <span class="badge">{tag.postCount}</span>
-            </a>
-          ))}
-        </div>
-      </nav>
-      {hiddenTagCount > 0 ? (
-        <p class="meta list-limit-note icon-label">
-          <i class="ti ti-tags icon-sm" aria-hidden="true"></i>
-          +{hiddenTagCount} more tags
-        </p>
-      ) : null}
-    </Fragment>
-  ) : null}
-
   {remainingPosts.length > 0 ? (
     <section id="home-posts" class="card list paginated-list home-posts-section">
       <div class="section-head section-head-inline">
@@ -310,10 +307,10 @@ const structuredData = [
   <section id="home-faq" class="card home-faq">
     <div class="section-head">
       <div>
-        <p class="kicker icon-label"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>Reader FAQ</p>
-        <h2>Common questions while browsing</h2>
+        <p class="kicker icon-label"><i class="ti ti-help-hexagon icon-sm" aria-hidden="true"></i>FAQ</p>
+        <h2>Common questions</h2>
       </div>
-      <p class="meta">Quick answers if you are new to this archive.</p>
+      <p class="meta">Short answers for finding, following, and reading posts.</p>
     </div>
 
     <div class="faq-list">
@@ -557,46 +554,6 @@ const structuredData = [
       font-size: 0.72rem;
       font-weight: 400;
       line-height: 1.2;
-    }
-
-    .list-limit-note {
-      margin: 0.05rem 0 0;
-      font-size: 0.76rem;
-      line-height: 1.25;
-    }
-
-    .tag-cloud {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 0.38rem;
-    }
-
-    .tag-cloud-item {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.38rem;
-      border: 1px solid var(--border);
-      border-radius: var(--radius-sm);
-      background: var(--surface);
-      color: var(--text);
-      font-family: var(--font-main);
-      font-size: 0.82rem;
-      font-weight: 600;
-      line-height: 1;
-      padding: 0.3rem 0.42rem;
-      text-decoration: none;
-    }
-
-    .tag-cloud-item .badge {
-      font-size: 0.68rem;
-      padding: 0.12rem 0.35rem;
-      background: var(--surface);
-    }
-
-    .tag-cloud-item:hover {
-      border-color: var(--primary);
-      background: var(--surface-soft);
-      color: var(--text);
     }
 
     .faq-list {

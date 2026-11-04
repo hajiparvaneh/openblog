@@ -1,5 +1,7 @@
 import openblogConfig from '../../openblog.config';
 
+export type { OpenBlogConfig } from '../../openblog.config';
+
 function ensureTrailingSlash(url: string): string {
   return url.endsWith('/') ? url : `${url}/`;
 }

@@ -1,7 +1,8 @@
 ---
-import { formatPostDate, getCategoryPath, getPostPath } from '../lib/posts';
+import { formatPostDate, formatReadingTime, getCategoryPath, getPostPath, getSeriesPath } from '../lib/posts';
 import { withBase } from '../lib/paths';
 import IconBadge from './IconBadge.astro';
+import LanguageLabel from './LanguageLabel.astro';
 import TagBadge from './TagBadge.astro';
 import type { Post } from '../lib/posts';
 
@@ -11,9 +12,10 @@ type Props = {
   dataAttribute?: string;
   dateSortValue?: string;
   displayDate?: string;
+  eyebrow?: string;
 };
 
-const { post, showCategory = true, dataAttribute, dateSortValue, displayDate } = Astro.props as Props;
+const { post, showCategory = true, dataAttribute, dateSortValue, displayDate, eyebrow } = Astro.props as Props;
 const cardAttributes = {
   ...(dataAttribute ? { [dataAttribute]: '' } : {}),
   ...(dateSortValue ? { 'data-post-date': dateSortValue } : {})
@@ -26,7 +28,6 @@ const thumbnailSrc = post.thumbnail
   : undefined;
 const visibleTags = post.tags.slice(0, 3);
 const hiddenTagCount = Math.max(0, post.tags.length - visibleTags.length);
-const showLanguageBadge = post.lang.toLowerCase() !== 'en';
 ---
 
 <article class="card post-card post-card-standard" {...cardAttributes}>
@@ -42,12 +43,18 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
     </a>
   ) : null}
   <div class="post-card-standard-body">
+    {eyebrow ? (
+      <p class="kicker icon-label post-card-eyebrow">
+        <i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>
+        {eyebrow}
+      </p>
+    ) : null}
     <h2 class="post-card-title"><a href={postPath}>{post.title}</a></h2>
     <p class="post-card-description">{post.description}</p>
-    {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
+    {(post.featured || post.lang || post.tags.length > 0) ? (
       <div class="post-card-taxonomy">
         {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-card-flag" /> : null}
-        {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-card-flag" /> : null}
+        <LanguageLabel lang={post.lang} class="post-card-flag" />
         {visibleTags.map((tag) => (
           <TagBadge tag={tag} class="post-card-tag" />
         ))}
@@ -59,6 +66,16 @@ const showLanguageBadge = post.lang.toLowerCase() !== 'en';
         <i class="ti ti-calendar icon-sm" aria-hidden="true"></i>
         {formatPostDate(displayDate ?? post.date)}
       </span>
+      <span class="meta-item">
+        <i class="ti ti-clock-hour-4 icon-sm" aria-hidden="true"></i>
+        {formatReadingTime(post.readingMinutes)}
+      </span>
+      {post.series && post.seriesSlug ? (
+        <span class="meta-item">
+          <i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>
+          <a href={withBase(getSeriesPath(post.seriesSlug))}>{post.series}</a>
+        </span>
+      ) : null}
       {showCategory ? (
         <span class="meta-item">
           <i class="ti ti-category icon-sm" aria-hidden="true"></i>

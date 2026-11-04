@@ -1,15 +1,22 @@
 ---
-import { marked } from 'marked';
 import BaseLayout from '../../layouts/BaseLayout.astro';
-import LatestInCategory from '../../components/LatestInCategory.astro';
+import RelatedPosts from '../../components/RelatedPosts.astro';
 import IconBadge from '../../components/IconBadge.astro';
+import LanguageLabel from '../../components/LanguageLabel.astro';
 import TagBadge from '../../components/TagBadge.astro';
+import { renderMarkdown } from '../../lib/markdown';
 import {
   formatPostDate,
+  formatReadingTime,
   getCategoryPath,
+  getPostAuthor,
   getPostBySlug,
   getPostPath,
-  getPosts
+  getPosts,
+  getRelatedPosts,
+  getSeriesPath,
+  getSeriesPosts,
+  getTranslationGroup
 } from '../../lib/posts';
 import { getOpenBlogConfig, getSiteUrl } from '../../lib/site';
 import { toAbsoluteUrl } from '../../lib/seo';
@@ -33,12 +40,39 @@ const post = getPostBySlug(slug);
 if (!post) throw new Error('Post not found');
 
 const config = getOpenBlogConfig();
-const html = marked.parse(post.body);
+const rendered = await renderMarkdown(post.body);
+const html = rendered.html;
+const toc = rendered.toc;
 const categoryPath = withBase(getCategoryPath(post.category));
-const canonicalPath = getPostPath(post.slug);
+const canonicalPath = post.canonical || getPostPath(post.slug);
 const pageDescription = post.description || `Read ${post.title} on ${config.title}.`;
 const siteUrl = getSiteUrl(Astro.site);
-const canonicalUrl = toAbsoluteUrl(withBase(canonicalPath), siteUrl);
+const canonicalUrl = toAbsoluteUrl(post.canonical ? post.canonical : withBase(canonicalPath), siteUrl);
+const author = getPostAuthor(post, config);
+const authorAvatar = author.avatar
+  ? author.avatar.startsWith('http')
+    ? author.avatar
+    : withBase(author.avatar)
+  : undefined;
+const relatedPosts = getRelatedPosts(post);
+const translations = getTranslationGroup(post);
+const showTranslations = translations.length > 1;
+const seriesPosts = post.seriesSlug ? getSeriesPosts(post.seriesSlug) : [];
+const seriesIndex = seriesPosts.findIndex((entry) => entry.slug === post.slug);
+const previousInSeries = seriesIndex > 0 ? seriesPosts[seriesIndex - 1] : undefined;
+const nextInSeries = seriesIndex >= 0 && seriesIndex < seriesPosts.length - 1 ? seriesPosts[seriesIndex + 1] : undefined;
+const seriesPath = post.seriesSlug ? withBase(getSeriesPath(post.seriesSlug)) : undefined;
+const translationUrl = (entry: typeof post) =>
+  entry.slug === post.slug && post.canonical
+    ? post.canonical
+    : toAbsoluteUrl(withBase(getPostPath(entry.slug)), siteUrl);
+const xDefault = translations.find((entry) => !entry.translateOfSlug) ?? translations.find((entry) => entry.lang === 'en') ?? translations[0];
+const alternates = showTranslations
+  ? [
+      ...translations.map((entry) => ({ lang: entry.lang, href: translationUrl(entry) })),
+      ...(xDefault ? [{ lang: 'x-default', href: translationUrl(xDefault) }] : [])
+    ]
+  : [];
 const thumbnailSrc = post.thumbnail
   ? post.thumbnail.startsWith('http')
     ? post.thumbnail
@@ -46,7 +80,7 @@ const thumbnailSrc = post.thumbnail
   : undefined;
 const ogImagePath = post.thumbnail ?? config.ogImage;
 const publishedTime = post.date ? `${post.date}T00:00:00Z` : undefined;
-const showLanguageBadge = post.lang.toLowerCase() !== 'en';
+const modifiedTime = post.updated ? `${post.updated}T00:00:00Z` : undefined;
 const homeHref = withBase('/');
 
 const blogPostingSchema: Record<string, unknown> = {
@@ -58,6 +92,12 @@ const blogPostingSchema: Record<string, unknown> = {
   mainEntityOfPage: canonicalUrl,
   articleSection: post.categoryLabel,
   inLanguage: post.lang,
+  timeRequired: `PT${post.readingMinutes}M`,
+  author: {
+    '@type': author.name === config.title ? 'Organization' : 'Person',
+    name: author.name,
+    ...(author.url ? { url: author.url } : {})
+  },
   publisher: {
     '@type': 'Organization',
     name: config.title,
@@ -65,6 +105,8 @@ const blogPostingSchema: Record<string, unknown> = {
   }
 };
 if (post.date) blogPostingSchema.datePublished = post.date;
+if (post.updated) blogPostingSchema.dateModified = post.updated;
+if (config.contentLicense.url) blogPostingSchema.license = config.contentLicense.url;
 if (post.tags.length > 0) blogPostingSchema.keywords = post.tags;
 if (thumbnailSrc) {
   blogPostingSchema.image = [thumbnailSrc.startsWith('http') ? thumbnailSrc : toAbsoluteUrl(thumbnailSrc, siteUrl)];
@@ -106,7 +148,10 @@ const structuredData = [
   ogType="article"
   ogImagePath={ogImagePath}
   ogImageAlt={post.thumbnailAlt ?? post.title}
+  robots={post.noindex ? 'noindex, follow' : 'index, follow'}
   publishedTime={publishedTime}
+  modifiedTime={modifiedTime}
+  alternates={alternates}
   structuredData={structuredData}
 >
   <article class="card">
@@ -115,8 +160,22 @@ const structuredData = [
       <a href={homeHref}>Home</a> / <a href={categoryPath}>{post.categoryLabel}</a>
     </p>
     <h1>{post.title}</h1>
+    <p class="post-byline">
+      {authorAvatar ? (
+        <img src={authorAvatar} alt="" width="32" height="32" />
+      ) : (
+        <i class="ti ti-user icon-sm" aria-hidden="true"></i>
+      )}
+      <span>
+        {author.url ? <a href={author.url}>{author.name}</a> : author.name}
+      </span>
+    </p>
     <p class="meta meta-inline">
-      <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i>{formatPostDate(post.date)}</span>
+      <span class="meta-item"><i class="ti ti-calendar icon-sm" aria-hidden="true"></i><time datetime={post.date}>{formatPostDate(post.date)}</time></span>
+      {post.updated ? (
+        <span class="meta-item"><i class="ti ti-refresh icon-sm" aria-hidden="true"></i>Updated <time datetime={post.updated}>{formatPostDate(post.updated)}</time></span>
+      ) : null}
+      <span class="meta-item"><i class="ti ti-clock-hour-4 icon-sm" aria-hidden="true"></i>{formatReadingTime(post.readingMinutes)}</span>
       <span class="meta-item"><i class="ti ti-category icon-sm" aria-hidden="true"></i><a href={categoryPath}>{post.categoryLabel}</a></span>
       <span class="meta-item share-article-meta">
         <button
@@ -189,19 +248,77 @@ const structuredData = [
         </div>
       </>
     ) : null}
-    {(post.featured || showLanguageBadge || post.tags.length > 0) ? (
-      <div class="post-meta-chips">
+    <div class="post-meta-chips">
         {post.featured ? <IconBadge label="Featured" icon="star-filled" class="post-meta-chip" /> : null}
-        {showLanguageBadge ? <IconBadge label={post.lang} icon="language" class="post-meta-chip" /> : null}
+        <LanguageLabel lang={post.lang} class="post-meta-chip" />
         {post.tags.map((tag) => (
           <TagBadge tag={tag} class="post-meta-chip" />
         ))}
       </div>
+    {post.series && seriesPath && seriesIndex >= 0 ? (
+      <nav class="series-nav" aria-label={`${post.series} series`}>
+        <p class="series-nav-label">
+          <i class="ti ti-list-numbers icon-sm" aria-hidden="true"></i>
+          <span>Part {seriesIndex + 1} of {seriesPosts.length}</span>
+          <a href={seriesPath}>{post.series}</a>
+        </p>
+        {previousInSeries || nextInSeries ? (
+          <p class="series-nav-steps">
+            {previousInSeries ? (
+              <a href={withBase(getPostPath(previousInSeries.slug))}>
+                <i class="ti ti-arrow-left icon-sm" aria-hidden="true"></i>
+                <span>{previousInSeries.title}</span>
+              </a>
+            ) : <span></span>}
+            {nextInSeries ? (
+              <a class="series-nav-next" href={withBase(getPostPath(nextInSeries.slug))}>
+                <span>{nextInSeries.title}</span>
+                <i class="ti ti-arrow-right icon-sm" aria-hidden="true"></i>
+              </a>
+            ) : null}
+          </p>
+        ) : null}
+      </nav>
+    ) : null}
+    {showTranslations ? (
+      <nav class="translation-nav" aria-label="Translations">
+        <ul class="translation-list">
+          {translations.map((entry) => (
+            entry.slug === post.slug ? (
+              <li><span lang={entry.lang} aria-current="page"><LanguageLabel lang={entry.lang} bare /></span></li>
+            ) : (
+              <li><a href={withBase(getPostPath(entry.slug))} hreflang={entry.lang} lang={entry.lang}><LanguageLabel lang={entry.lang} bare /></a></li>
+            )
+          ))}
+        </ul>
+      </nav>
+    ) : null}
+    {toc.length >= 2 ? (
+      <details class="post-toc" open>
+        <summary>On this page</summary>
+        <ol>
+          {toc.map((item) => (
+            <li class={item.depth === 3 ? 'toc-depth-3' : undefined}>
+              <a href={`#${item.id}`}>{item.text}</a>
+            </li>
+          ))}
+        </ol>
+      </details>
     ) : null}
     <div class="article-content" set:html={html} />
+    {post.discussionUrl ? (
+      <p class="meta">
+        <a href={post.discussionUrl} rel="noopener noreferrer">Discuss this post</a>
+      </p>
+    ) : null}
+    {config.contentLicense.name && config.contentLicense.url ? (
+      <p class="meta">
+        Content license: <a href={config.contentLicense.url} rel="noopener noreferrer">{config.contentLicense.name}</a>
+      </p>
+    ) : null}
   </article>
 
-  <LatestInCategory category={post.category} currentPostSlug={post.slug} />
+  <RelatedPosts posts={relatedPosts} />
 
   <script is:inline>
     (function () {

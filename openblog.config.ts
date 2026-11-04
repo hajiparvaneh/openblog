@@ -3,6 +3,17 @@
  */
 export type OpenBlogNavItem = { label: string; href: string };
 
+export type OpenBlogAuthor = {
+  name: string;
+  url: string;
+  avatar: string;
+};
+
+export type OpenBlogLicense = {
+  name: string;
+  url: string;
+};
+
 export type OpenBlogConfig = {
   title: string;
   tagline: string;
@@ -19,11 +30,19 @@ export type OpenBlogConfig = {
   ogImage: string;
   accentColor: string;
   defaultTheme: 'light' | 'dark';
+  /** Default byline when a post does not set `author` */
+  author: OpenBlogAuthor;
   nav: OpenBlogNavItem[];
   aboutMarkdownPath: string;
+  /** Extra pages linked from the footer. Point these at files in `content/pages/` */
+  footerLinks: OpenBlogNavItem[];
   footerText: string;
   /** Shown as a “Source” link in the footer; set empty to hide */
   repositoryUrl: string;
+  /** Mastodon profile URL; set empty to hide */
+  mastodonUrl: string;
+  /** License for post content. The code stays MIT. Set name empty to hide. */
+  contentLicense: OpenBlogLicense;
 };
 
 function env(name: string): string | undefined {
@@ -61,13 +80,30 @@ const config: OpenBlogConfig = {
   ogImage: '/og-default.png',
   accentColor: '#0969da',
   defaultTheme: 'light',
+  author: {
+    name: 'OpenBlog',
+    url: 'https://github.com/hajiparvaneh/openblog',
+    avatar: '/openblog-logo-light.png'
+  },
   nav: [
     { label: 'Home', href: '/' },
+    { label: 'Archive', href: '/archive' },
+    { label: 'Search', href: '/search' },
     { label: 'About', href: '/about' }
   ],
   aboutMarkdownPath: 'content/about.md',
-  footerText: 'Thanks for reading. Explore more posts by category or tag.',
-  repositoryUrl: 'https://github.com/hajiparvaneh/openblog'
+  footerLinks: [
+    { label: 'Now', href: '/now' },
+    { label: 'Colophon', href: '/colophon' },
+    { label: 'Uses', href: '/uses' }
+  ],
+  footerText: 'Thanks for reading. Explore more posts by category, tag, or year.',
+  repositoryUrl: 'https://github.com/hajiparvaneh/openblog',
+  mastodonUrl: '',
+  contentLicense: {
+    name: 'CC BY 4.0',
+    url: 'https://creativecommons.org/licenses/by/4.0/'
+  }
 };
 
 export default config;
